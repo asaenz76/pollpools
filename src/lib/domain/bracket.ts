@@ -8,8 +8,10 @@
  *
  * V1 is single-elimination only (no double elimination). Byes are supported when
  * the competitor count is not a power of two: the extra top seeds get a bye and
- * advance without a played matchup.
+ * advance without a played matchup. Supports 2–32 competitors (creator-selected).
  */
+
+import { MIN_BRACKET_COMPETITORS, MAX_BRACKET_COMPETITORS } from "@/lib/constants";
 
 export type BracketSlot = {
   /** Seeded/known competitor, or null when fed by a source matchup. */
@@ -69,7 +71,13 @@ export function seedOrder(size: number): number[] {
  */
 export function generateBracket(competitors: readonly string[]): Bracket {
   const count = competitors.length;
-  if (count < 2) throw new Error("A bracket needs at least 2 competitors");
+  if (count < MIN_BRACKET_COMPETITORS) throw new Error("A bracket needs at least 2 competitors");
+  if (count > MAX_BRACKET_COMPETITORS) {
+    throw new Error(`A bracket supports at most ${MAX_BRACKET_COMPETITORS} competitors`);
+  }
+  if (new Set(competitors).size !== count) {
+    throw new Error("Bracket competitors must be unique");
+  }
 
   const size = nextPowerOfTwo(count);
   const totalRounds = Math.log2(size);

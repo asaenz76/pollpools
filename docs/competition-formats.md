@@ -30,6 +30,13 @@ The spec-critical format. Implemented as a tree in `bracket_slots`, where **each
 slot is a matchup node** carrying its two competitors and pointers
 (`source_a_id` / `source_b_id`) to the two feeder matchups whose winners fill it.
 
+**Size — 2 to 32 competitors, creator-selected.** When creating a knockout the
+creator chooses the competitors; their count is the bracket size (byes fill out
+the next power of two). The bound is enforced in three places: the `createBracket`
+server action (`MIN/MAX_BRACKET_COMPETITORS`), `generateBracket`, and the
+`create_bracket` DB function (`BRACKET_TOO_LARGE`). Round names follow the size:
+Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final.
+
 - **Generation** — `src/lib/domain/bracket.ts` (pure, unit-tested) computes the
   structure: bracket size = next power of two ≥ competitor count; standard seed
   order (each first-round pair sums to size+1, so top seeds meet late); byes for

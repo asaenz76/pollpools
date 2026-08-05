@@ -17,3 +17,10 @@ export const TENANT_ROUTE_PREFIX = "/t";
 
 /** Threshold below which sentiment may be shown as "Picked by X of Y". */
 export const SMALL_PARTICIPATION_THRESHOLD = 10;
+
+/**
+ * Bracket competitor bounds. A knockout supports 2–32 competitors; the creator
+ * selects how many, and byes fill out the next power of two when needed.
+ */
+export const MIN_BRACKET_COMPETITORS = 2;
+export const MAX_BRACKET_COMPETITORS = 32;

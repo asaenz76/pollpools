@@ -67,6 +67,32 @@ describe("generateBracket", () => {
     expect(new Set(byes.map((m) => m.byeCompetitorId))).toEqual(new Set(["c1", "c2", "c3"]));
   });
 
+  it("supports up to 32 competitors (creator-selected count)", () => {
+    const b16 = generateBracket(ids(16));
+    expect(b16.size).toBe(16);
+    expect(b16.rounds).toBe(4); // R16, QF, SF, Final
+    expect(b16.matches).toHaveLength(15);
+
+    const b32 = generateBracket(ids(32));
+    expect(b32.size).toBe(32);
+    expect(b32.rounds).toBe(5); // R32, R16, QF, SF, Final
+    expect(b32.matches).toHaveLength(31);
+    expect(b32.matches.some((m) => m.isBye)).toBe(false);
+
+    // 20 competitors → size 32 with 12 byes, all in round 1.
+    const b20 = generateBracket(ids(20));
+    expect(b20.size).toBe(32);
+    expect(b20.matches.filter((m) => m.isBye)).toHaveLength(12);
+  });
+
+  it("rejects more than 32 competitors", () => {
+    expect(() => generateBracket(ids(33))).toThrow(/at most 32/);
+  });
+
+  it("rejects duplicate competitors", () => {
+    expect(() => generateBracket(["a", "b", "a"])).toThrow(/unique/);
+  });
+
   it("later-round slots reference previous matchups, not duplicated competitors", () => {
     const b = generateBracket(ids(4));
     const r2 = b.matches.find((m) => m.round === 2)!;

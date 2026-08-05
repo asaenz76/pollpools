@@ -126,6 +126,11 @@ begin
   if exists (select 1 from bracket_rounds where competition_id = p_competition_id) then
     raise exception 'BRACKET_ALREADY_EXISTS' using errcode = '23505';
   end if;
+  -- Knockouts support up to 32 competitors (creator-selected count). The first
+  -- round's size is the full bracket size.
+  if coalesce((select max((r->>'size')::int) from jsonb_array_elements(p_structure->'rounds') r), 0) > 32 then
+    raise exception 'BRACKET_TOO_LARGE' using errcode = '22000';
+  end if;
 
   for v_round in select * from jsonb_array_elements(p_structure->'rounds') loop
     insert into bracket_rounds (tenant_id, competition_id, round_number, name, size)
