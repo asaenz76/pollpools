@@ -33,7 +33,7 @@ export default async function CompetitionPage({
   const draft = await getDraftSection(ctx.tenant.id, competition.id, user?.id ?? null);
 
   return (
-    <article className="grid gap-5">
+    <article className="flex flex-col gap-5">
       <Link href={`/t/${ctx.tenant.slug}`} className="text-sm text-muted-foreground hover:underline">
         ← {ctx.tenant.displayName}
       </Link>
@@ -79,7 +79,7 @@ export default async function CompetitionPage({
               </CardHeader>
             </Card>
           ) : (
-            <ul className="grid gap-3">
+            <ul className="flex flex-col gap-3">
               {competition.events.map((e) => (
                 <li key={e.id}>
                   <Link href={`/t/${ctx.tenant.slug}/e/${e.slug}`} className="block">

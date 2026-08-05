@@ -19,7 +19,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
   const canFollow = ctx.features.isEnabled("creator_following_enabled");
 
   return (
-    <div className="grid gap-5">
+    <div className="flex flex-col gap-5">
       <Link href={`/t/${ctx.tenant.slug}/creators`} className="text-sm text-muted-foreground hover:underline">
         ← Creators
       </Link>
@@ -49,7 +49,7 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
         {creator.events.length === 0 ? (
           <p className="text-sm text-muted-foreground">No events yet.</p>
         ) : (
-          <ul className="grid gap-3">
+          <ul className="flex flex-col gap-3">
             {creator.events.map((e) => (
               <li key={e.id}>
                 <Link href={`/t/${ctx.tenant.slug}/e/${e.slug}`} className="block">

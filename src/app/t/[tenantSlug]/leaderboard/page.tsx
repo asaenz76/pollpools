@@ -39,7 +39,7 @@ export default async function LeaderboardPage() {
   const lb = await getGlobalLeaderboard(ctx.tenant.id);
 
   return (
-    <div className="grid gap-5">
+    <div className="flex flex-col gap-5">
       <Link href={`/t/${ctx.tenant.slug}`} className="text-sm text-muted-foreground hover:underline">
         ← {ctx.tenant.displayName}
       </Link>
@@ -58,7 +58,7 @@ export default async function LeaderboardPage() {
       ) : (
         <>
           {lb.ranked.length > 0 ? (
-            <ul className="grid gap-2">
+            <ul className="flex flex-col gap-2">
               {lb.ranked.map((r) => (
                 <Row key={r.userId} row={r} />
               ))}
@@ -73,7 +73,7 @@ export default async function LeaderboardPage() {
                   (fewer than {ctx.settings.minimumRankedPredictions} predictions)
                 </span>
               </h2>
-              <ul className="grid gap-2">
+              <ul className="flex flex-col gap-2">
                 {lb.unranked.map((r) => (
                   <Row key={r.userId} row={r} />
                 ))}

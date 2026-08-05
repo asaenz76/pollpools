@@ -30,7 +30,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
   const showDetails = profile.isSelf || (publicProfiles && profile.isPublic);
 
   return (
-    <div className="grid gap-5">
+    <div className="flex flex-col gap-5">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">{profile.displayName}</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">@{profile.handle}</p>
@@ -47,7 +47,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
       ) : (
         <>
           {profile.stats ? (
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+            <div className="grid min-w-0 grid-cols-3 gap-2 sm:grid-cols-6">
               <Stat label="Points" value={profile.stats.totalPoints} />
               <Stat label="Correct" value={profile.stats.correct} />
               <Stat label="Accuracy" value={`${Math.round(profile.stats.accuracy * 100)}%`} />
@@ -77,7 +77,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ handle
             {profile.history.length === 0 ? (
               <p className="text-sm text-muted-foreground">No settled predictions yet.</p>
             ) : (
-              <ul className="grid gap-2">
+              <ul className="flex flex-col gap-2">
                 {profile.history.map((h, i) => (
                   <li key={i}>
                     <Link

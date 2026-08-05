@@ -63,7 +63,7 @@ export function DraftSection({
   }
 
   return (
-    <section className="grid gap-4 rounded-lg border border-border bg-card p-4" aria-labelledby="draft-heading">
+    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4" aria-labelledby="draft-heading">
       <div className="flex items-center justify-between gap-3">
         <h2 id="draft-heading" className="text-lg font-semibold">
           Draft your competitor
@@ -117,7 +117,7 @@ export function DraftSection({
           <p className="mb-2 text-sm text-muted-foreground">
             Choose one competitor for the competition{paid ? ` · ${formatFee(data.feeMinorUnits, data.currencyCode)}` : ""}.
           </p>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {data.roster.map((r) => {
               const unavailable = data.mode === "exclusive" && r.taken;
               return (
@@ -157,7 +157,7 @@ export function DraftSection({
       {data.standings.length > 0 ? (
         <div>
           <h3 className="mb-2 text-sm font-medium text-muted-foreground">Draft standings</h3>
-          <ul className="grid gap-1.5">
+          <ul className="flex flex-col gap-1.5">
             {data.standings.slice(0, 10).map((row) => (
               <li key={row.userId} className="flex items-center gap-3 rounded-md border border-border px-3 py-2 text-sm">
                 <span className="w-6 text-center font-semibold tabular-nums text-muted-foreground">{row.rank ?? "—"}</span>
@@ -175,7 +175,7 @@ export function DraftSection({
       {data.prizes.length > 0 ? (
         <div>
           <h3 className="mb-2 text-sm font-medium text-muted-foreground">Competition prizes</h3>
-          <ul className="grid gap-1.5">
+          <ul className="flex flex-col gap-1.5">
             {data.prizes.map((p, i) => (
               <li key={i} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm">
                 <span className="min-w-0">

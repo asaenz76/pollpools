@@ -19,7 +19,7 @@ export default async function NotificationsPage() {
   const hasUnread = notifications.some((n) => !n.read);
 
   return (
-    <div className="grid gap-4">
+    <div className="flex flex-col gap-4">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Notifications</h1>
         <MarkAllReadButton hasUnread={hasUnread} />
@@ -33,7 +33,7 @@ export default async function NotificationsPage() {
           </CardHeader>
         </Card>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="flex flex-col gap-2">
           {notifications.map((n) => {
             const href = n.entityType === "event" && n.entityId ? `/t/${ctx.tenant.slug}/feed` : null;
             const inner = (

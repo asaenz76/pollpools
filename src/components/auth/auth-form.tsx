@@ -28,16 +28,16 @@ export function AuthForm({ mode, slug }: { mode: Mode; slug: string }) {
   const resetSent = mode === "reset" && !state.error && state !== initial;
 
   return (
-    <form action={formAction} className="grid gap-4">
+    <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="slug" value={slug} />
 
-      <div className="grid gap-1.5">
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">Email</Label>
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </div>
 
       {needsPassword ? (
-        <div className="grid gap-1.5">
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"

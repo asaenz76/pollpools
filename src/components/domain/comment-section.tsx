@@ -41,13 +41,13 @@ export function CommentSection({
   }
 
   return (
-    <section aria-labelledby="comments-heading" className="grid gap-3">
+    <section aria-labelledby="comments-heading" className="flex flex-col gap-3">
       <h3 id="comments-heading" className="text-sm font-medium text-muted-foreground">
         Comments
       </h3>
 
       {signedIn ? (
-        <div className="grid gap-2">
+        <div className="flex flex-col gap-2">
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -69,7 +69,7 @@ export function CommentSection({
         </Link>
       )}
 
-      <ul className="grid gap-2">
+      <ul className="flex flex-col gap-2">
         {comments.length === 0 ? (
           <li className="text-sm text-muted-foreground">No comments yet.</li>
         ) : (

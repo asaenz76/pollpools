@@ -12,7 +12,7 @@ export default async function CreatorsPage() {
   const creators = await listCreators(ctx.tenant.id);
 
   return (
-    <div className="grid gap-4">
+    <div className="flex flex-col gap-4">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Creators</h1>
         <p className="mt-1 text-sm text-muted-foreground">Follow creators to get their new events.</p>
@@ -26,7 +26,7 @@ export default async function CreatorsPage() {
           </CardHeader>
         </Card>
       ) : (
-        <ul className="grid gap-3">
+        <ul className="flex flex-col gap-3">
           {creators.map((c) => (
             <li key={c.id}>
               <Link href={`/t/${ctx.tenant.slug}/creators/${c.slug}`} className="block">

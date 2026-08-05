@@ -113,7 +113,7 @@ export function PredictionMarket(props: PredictionMarketProps) {
         </div>
       ) : null}
 
-      <ul className="grid gap-2">
+      <ul className="flex flex-col gap-2">
         {props.options.map((o) => {
           const r = votesById.get(o.id);
           const percentage = r?.percentage ?? 0;

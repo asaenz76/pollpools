@@ -32,7 +32,7 @@ export default async function TenantHome() {
   };
 
   return (
-    <div className="grid gap-6">
+    <div className="flex flex-col gap-6">
       <section>
         <h1 className="text-2xl font-semibold tracking-tight">{tenant.displayName}</h1>
         {tenant.tagline ? <p className="mt-1 text-muted-foreground">{tenant.tagline}</p> : null}
@@ -70,7 +70,7 @@ export default async function TenantHome() {
           <h2 id="competitions-heading" className="mb-3 text-sm font-medium text-muted-foreground">
             Competitions
           </h2>
-          <ul className="grid gap-3">
+          <ul className="flex flex-col gap-3">
             {competitions.map((c) => (
               <li key={c.id}>
                 <Link href={`/t/${tenant.slug}/c/${c.slug}`} className="block">
@@ -103,7 +103,7 @@ export default async function TenantHome() {
             </CardHeader>
           </Card>
         ) : (
-          <ul className="grid gap-3">
+          <ul className="flex flex-col gap-3">
             {events.map((e) => {
               const lock = getLockState({
                 marketStatus: e.status === "open" ? "open" : "locked",

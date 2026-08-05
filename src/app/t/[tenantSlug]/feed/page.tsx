@@ -22,7 +22,7 @@ export default async function FeedPage() {
   const items = await getFeed(ctx.tenant.id, ctx.tenant.slug);
 
   return (
-    <div className="grid gap-4">
+    <div className="flex flex-col gap-4">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Feed</h1>
         <p className="mt-1 text-sm text-muted-foreground">What&apos;s happening in {ctx.tenant.displayName}.</p>
@@ -36,7 +36,7 @@ export default async function FeedPage() {
           </CardHeader>
         </Card>
       ) : (
-        <ul className="grid gap-2">
+        <ul className="flex flex-col gap-2">
           {items.map((it) => {
             const inner = (
               <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-3">

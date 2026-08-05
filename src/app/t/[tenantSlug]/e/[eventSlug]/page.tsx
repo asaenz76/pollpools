@@ -37,7 +37,7 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
       : null;
 
   return (
-    <article className="grid gap-5">
+    <article className="flex flex-col gap-5">
       <Link href={`/t/${ctx.tenant.slug}`} className="text-sm text-muted-foreground hover:underline">
         ← {ctx.tenant.displayName}
       </Link>
@@ -76,7 +76,7 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
           No prediction markets on this event yet.
         </p>
       ) : (
-        <div className="grid gap-4">
+        <div className="flex flex-col gap-4">
           {event.markets.map((m) => (
             <PredictionMarket
               key={m.id}

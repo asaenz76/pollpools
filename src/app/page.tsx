@@ -40,7 +40,7 @@ export default async function PlatformHome() {
         </h2>
 
         {tenants && tenants.length > 0 ? (
-          <ul className="grid gap-3">
+          <ul className="flex flex-col gap-3">
             {tenants.map((t) => (
               <li key={t.slug}>
                 <Link href={`/t/${t.slug}`} className="block">

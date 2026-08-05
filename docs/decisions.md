@@ -75,6 +75,22 @@ locks, not app logic. Payments are provider-agnostic with a mock/test adapter on
 its own leaderboard table, never mixed with prediction leaderboards. Copy avoids
 ownership/betting language and keeps the "drafting is optional" notice visible.
 
+### ADR-007 — Mobile-first, zero horizontal bleed
+The app must fit perfectly at **320px** with **no page-level horizontal scroll**.
+Layout conventions to prevent bleed:
+- **Vertical stacks use `flex flex-col gap-*`, not `grid gap-*`.** A bare `grid`
+  creates `auto` tracks that size to child content, so a wide child (long title,
+  a nested stat grid) pushes the page wider. Flex columns constrain children to
+  the container width.
+- **Multi-column grids always declare an explicit base column** (`grid-cols-1`
+  … `sm:grid-cols-2`) and use `min-w-0` where a grid/flex child must shrink.
+- **Long text truncates** (`min-w-0 truncate`) inside flex rows; the sibling
+  stays `shrink-0`.
+- **Genuinely wide content** (the bracket) scrolls inside its own
+  `overflow-x-auto` container — never the page body.
+Verified programmatically at 320px (`document.scrollWidth === clientWidth`) across
+all routes.
+
 ## Phase plan
 
 1. **Foundation** — scaffold, tenancy schema, RLS, auth, tenant resolver, theme ✅
