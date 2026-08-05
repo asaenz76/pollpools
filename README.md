@@ -112,6 +112,7 @@ See [`docs/`](docs/): [architecture](docs/architecture.md),
 [prediction engine](docs/prediction-engine.md),
 [competition formats](docs/competition-formats.md),
 [settlement & scoring](docs/settlement.md),
+[competitor draft](docs/competitor-draft.md),
 [role/permission matrix](docs/role-permission-matrix.md),
 [security checklist](docs/security-checklist.md),
 [decisions & assumptions](docs/decisions.md).

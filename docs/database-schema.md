@@ -22,8 +22,16 @@ Migrations live in `supabase/migrations/` and are applied in order by
 | `0009_bracket_functions.sql` | `create_bracket`, `advance_bracket` (+ internal propagation) |
 | `0010_settlement_core.sql` | event_results, settlements, settlement_grades, user_statistics, competition_statistics, leaderboard_snapshots, achievements, user_achievements |
 | `0011_settlement_functions.sql` | `settle_event`, `regrade_event` + recompute/achievement/leaderboard helpers |
+| `0012_draft_settings.sql` | competition_draft_settings, draft_scoring_rules (+ `app.owns_competition`) |
+| `0013_draft_assignments.sql` | competitor_draft_assignments, draft_payments (exclusivity + one-per-user unique indexes) |
+| `0014_draft_scoring_tables.sql` | event_competitor_results, competitor_competition_stats, draft_leaderboard_snapshots |
+| `0015_draft_prizes.sql` | competition_prizes, prize_awards |
+| `0016_draft_functions.sql` | `draft_competitor`, `confirm_draft_payment`, `expire_draft_reservations`, `cancel_draft_assignment` |
+| `0017_draft_settlement.sql` | draft scoring helpers + settlement trigger + `record_event_positions`, `award_competition_prizes` |
+| `0018_draft_roster.sql` | `draft_roster` availability aggregate |
 
-Later phases add migrations for social and monetization.
+Later phases add migrations for social and monetization. See
+[competitor-draft.md](competitor-draft.md).
 
 ### Phase 2 tables (prediction domain)
 

@@ -31,6 +31,13 @@ Status legend: ✅ implemented · ⏳ later phase.
   immutable and stats recomputed from the active set (reversible regrade).
 - ✅ Settlement authorization: super admin / service role / creator with the
   `settlement_enabled` grant only; `advance_bracket` service-role only.
+- ✅ Draft exclusivity/one-per-user via partial unique indexes + advisory lock
+  (concurrency-tested: exactly one wins); assignments created only via
+  `draft_competitor` (no direct client insert).
+- ✅ Draft fees/currency read only from server config; `confirm_draft_payment`
+  service-role only, signature-verified, replay-safe (`(provider, reference)` unique).
+- ✅ Draft availability exposed via aggregate (`draft_roster`) — no leak of who
+  drafted whom; prize awards idempotent.
 - ⏳ Subscription webhook signature verify + replay protection (Phase 7).
 
 ## Data protection

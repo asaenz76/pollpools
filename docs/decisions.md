@@ -62,12 +62,26 @@ only via `youtube-nocookie.com`). Development relaxes `unsafe-eval` (React dev
 build) and `ws:` (HMR) and drops `upgrade-insecure-requests`. HSTS, nosniff,
 `X-Frame-Options: DENY`, and a locked-down `Permissions-Policy` are always on.
 
+### ADR-006 — Competitor Draft is additive & independent (Phase 4.5)
+Draft participation is a separate system from Open Predictions and must never
+affect prediction scoring. Rather than modify Phase 4's `settle_event`/`regrade_event`,
+draft scoring hooks in via an **AFTER UPDATE trigger on `settlements`** that fires
+when any settlement becomes active — so Phase 4 code is unchanged and all Phase 1–4
+tests still pass. Draft standings are recomputed from active `event_competitor_results`
+(same reversible-derived-cache pattern as prediction stats), so regrade corrects
+them automatically. Exclusivity is enforced by partial unique indexes + advisory
+locks, not app logic. Payments are provider-agnostic with a mock/test adapter only
+(no provider hard-coded); fees/currency always come from server config. Draft has
+its own leaderboard table, never mixed with prediction leaderboards. Copy avoids
+ownership/betting language and keeps the "drafting is optional" notice visible.
+
 ## Phase plan
 
 1. **Foundation** — scaffold, tenancy schema, RLS, auth, tenant resolver, theme ✅
 2. Core prediction engine — competitions, events, markets, predictions, sentiment
 3. Competition formats — standalone, season, tournament, bracket
-4. Settlement & scoring — idempotent settlement, stats, streaks, leaderboards, achievements
+4. Settlement & scoring — idempotent settlement, stats, streaks, leaderboards, achievements ✅
+4.5. Competitor Draft Engine — optional draft (free/paid), scoring, prizes, separate leaderboard ✅
 5. Social — feed, profiles, following, notifications, sharing
 6. Creator product — onboarding, dashboard, creation flows, verification
 7. Monetization — premium, creator support, sponsorships (mock provider)

@@ -199,6 +199,83 @@ export const FEED_ACTIVITY_TYPE = [
 ] as const;
 export type FeedActivityType = (typeof FEED_ACTIVITY_TYPE)[number];
 
+// ── Competitor Draft (Phase 4.5) ─────────────────────────────────────────────
+export const DRAFT_MODE = ["open", "exclusive"] as const;
+export type DraftMode = (typeof DRAFT_MODE)[number];
+
+export const DRAFT_ACCESS_TYPE = ["free", "paid", "invite_only", "admin_assigned"] as const;
+export type DraftAccessType = (typeof DRAFT_ACCESS_TYPE)[number];
+
+export const DRAFT_STATUS = [
+  "draft",
+  "scheduled",
+  "open",
+  "closed",
+  "active",
+  "completed",
+  "canceled",
+] as const;
+export type DraftStatus = (typeof DRAFT_STATUS)[number];
+
+export const DRAFT_VISIBILITY = ["public", "followers_only", "invite_only"] as const;
+export type DraftVisibility = (typeof DRAFT_VISIBILITY)[number];
+
+export const DRAFT_ASSIGNMENT_STATUS = [
+  "reserved",
+  "pending_payment",
+  "confirmed",
+  "active",
+  "completed",
+  "canceled",
+  "expired",
+] as const;
+export type DraftAssignmentStatus = (typeof DRAFT_ASSIGNMENT_STATUS)[number];
+
+export const DRAFT_ASSIGNMENT_SOURCE = [
+  "user_selected",
+  "creator_assigned",
+  "super_admin_assigned",
+  "random_assignment",
+] as const;
+export type DraftAssignmentSource = (typeof DRAFT_ASSIGNMENT_SOURCE)[number];
+
+export const DRAFT_PAYMENT_STATUS = [
+  "not_required",
+  "pending",
+  "paid",
+  "failed",
+  "refunded",
+  "canceled",
+] as const;
+export type DraftPaymentStatus = (typeof DRAFT_PAYMENT_STATUS)[number];
+
+export const DRAFT_SCORING_TYPE = ["competition_points"] as const;
+export type DraftScoringType = (typeof DRAFT_SCORING_TYPE)[number];
+
+export const PRIZE_CATEGORY = [
+  "recognition",
+  "digital",
+  "physical",
+  "sponsor",
+  "premium_access",
+] as const;
+export type PrizeCategory = (typeof PRIZE_CATEGORY)[number];
+
+export const FULFILLMENT_OWNER_TYPE = ["platform", "creator", "sponsor"] as const;
+export type FulfillmentOwnerType = (typeof FULFILLMENT_OWNER_TYPE)[number];
+
+export const FULFILLMENT_STATUS = [
+  "not_started",
+  "pending",
+  "in_progress",
+  "fulfilled",
+  "canceled",
+] as const;
+export type FulfillmentStatus = (typeof FULFILLMENT_STATUS)[number];
+
+export const PRIZE_AWARD_STATUS = ["awarded", "reversed", "superseded", "fulfilled", "canceled"] as const;
+export type PrizeAwardStatus = (typeof PRIZE_AWARD_STATUS)[number];
+
 export const NOTIFICATION_TYPE = [
   "new_creator_event",
   "prediction_opening",

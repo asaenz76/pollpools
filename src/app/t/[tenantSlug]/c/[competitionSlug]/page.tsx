@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTenantContext } from "@/lib/tenant/context";
+import { getSessionUser } from "@/lib/auth/session";
 import { getCompetitionBySlug } from "@/features/competitions/get-competition";
+import { getDraftSection } from "@/features/draft/get-draft";
 import { BracketView } from "@/components/domain/bracket-view";
+import { DraftSection } from "@/components/domain/draft-section";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +29,9 @@ export default async function CompetitionPage({
   const competition = await getCompetitionBySlug(ctx.tenant.id, competitionSlug);
   if (!competition) notFound();
 
+  const user = await getSessionUser();
+  const draft = await getDraftSection(ctx.tenant.id, competition.id, user?.id ?? null);
+
   return (
     <article className="grid gap-5">
       <Link href={`/t/${ctx.tenant.slug}`} className="text-sm text-muted-foreground hover:underline">
@@ -44,6 +50,15 @@ export default async function CompetitionPage({
           <p className="mt-3 text-sm text-muted-foreground">{competition.description}</p>
         ) : null}
       </header>
+
+      {draft ? (
+        <DraftSection
+          data={draft}
+          competitionId={competition.id}
+          signedIn={Boolean(user)}
+          signInHref={`/t/${ctx.tenant.slug}/sign-in`}
+        />
+      ) : null}
 
       {competition.bracket ? (
         <BracketView

@@ -26,6 +26,11 @@ Enforced in two layers: **RLS policies** (DB) + **server-side role guards**
 | Subscription products / sponsorships | ❌ | ❌ | ✅ |
 | View audit logs | ❌ | ❌ | ✅ (+ tenant admin, own tenant) |
 | Cross-tenant private data | ❌ | ❌ | ✅ (scoped, audited) |
+| **Draft** — enable/configure draft on a competition | ❌ | ✅ (own competition) | ✅ |
+| **Draft** — add prizes / manage creator-fulfilled prizes | ❌ | ✅ (own) | ✅ |
+| **Draft** — draft one competitor (via `draft_competitor`) | ✅ | ✅ | ✅ |
+| **Draft** — alter confirmed assignment after close | ❌ | ❌ (super-admin review) | ✅ |
+| **Draft** — override/cancel assignments, correct scoring, manage fulfillment | ❌ | ❌ | ✅ |
 
 ## Hard rules (never overridable)
 

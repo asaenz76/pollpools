@@ -24,3 +24,17 @@ export const SMALL_PARTICIPATION_THRESHOLD = 10;
  */
 export const MIN_BRACKET_COMPETITORS = 2;
 export const MAX_BRACKET_COMPETITORS = 32;
+
+/** Competitor Draft (Phase 4.5). */
+export const DRAFT_RESERVATION_MINUTES = 10;
+
+/**
+ * Product rule kept visible on every draft surface: drafting is optional and
+ * never gates free predictions. Use this exact copy so messaging stays consistent.
+ */
+export const DRAFT_OPTIONAL_NOTICE =
+  "Drafting a competitor is optional. Everyone can still make free predictions.";
+
+/** Shown for paid drafts to make clear the fee buys access, not an advantage. */
+export const DRAFT_PAID_NOTICE =
+  "The draft fee gives you one competitor for this competition. It does not affect prediction scoring or improve your chances in free predictions.";

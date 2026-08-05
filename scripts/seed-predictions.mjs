@@ -89,6 +89,39 @@ async function main() {
     }
   }
 
+  // ── Enable Competitor Draft on Season 1 (free, exclusive) ──────────────────
+  const { data: creatorRow } = await db.from("creators").select("owner_user_id").eq("id", creatorId).single();
+  const ownerId = creatorRow.owner_user_id;
+  if (season?.id) {
+    await db.from("competition_draft_settings").upsert(
+      { tenant_id: tenantId, competition_id: season.id, is_enabled: true, mode: "exclusive", access_type: "free", status: "open", closes_at: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(), created_by: ownerId },
+      { onConflict: "competition_id", ignoreDuplicates: true },
+    );
+    await db.from("draft_scoring_rules").upsert(
+      { tenant_id: tenantId, competition_id: season.id, scoring_type: "competition_points", config: { position_points: { 1: 10, 2: 8, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1 } } },
+      { onConflict: "competition_id", ignoreDuplicates: true },
+    );
+    // Three non-monetary prizes.
+    const { count: prizeCount } = await db.from("competition_prizes").select("*", { count: "exact", head: true }).eq("competition_id", season.id);
+    if (!prizeCount) {
+      await db.from("competition_prizes").insert([
+        { tenant_id: tenantId, competition_id: season.id, title: "Season Champion", description: "Hall of Fame + champion badge", category: "recognition", placement_from: 1, placement_to: 1, fulfillment_owner_type: "platform" },
+        { tenant_id: tenantId, competition_id: season.id, title: "Trophy Cabinet Item", description: "Digital trophy for your profile", category: "digital", placement_from: 1, placement_to: 3, fulfillment_owner_type: "platform" },
+        { tenant_id: tenantId, competition_id: season.id, title: "3D-Printed Trophy", description: "Physical trophy, shipped", category: "physical", placement_from: 1, placement_to: 1, fulfillment_owner_type: "creator", requires_shipping: true },
+      ]);
+    }
+    // A few fans draft competitors (direct insert for seed; real drafts use draft_competitor).
+    const draftPicks = [["red-rocket", 0], ["blue-bolt", 1], ["green-flash", 2]];
+    for (const [slug, fanIdx] of draftPicks) {
+      const uid = fans[fanIdx];
+      if (!uid) continue;
+      await db.from("competitor_draft_assignments").upsert(
+        { tenant_id: tenantId, competition_id: season.id, competitor_id: compBySlug[slug], user_id: uid, status: "confirmed", assignment_source: "user_selected", payment_status: "not_required", exclusive_slot: true, reserved_at: new Date().toISOString(), confirmed_at: new Date().toISOString(), idempotency_key: `seed-draft-${season.id}-${uid}` },
+        { onConflict: "idempotency_key", ignoreDuplicates: true },
+      );
+    }
+  }
+
   // Settle race-0 with Red Rocket as the winner (service role is authorized).
   if (pastEvent.status !== "settled") {
     const winner = compBySlug["red-rocket"];

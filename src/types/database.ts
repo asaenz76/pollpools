@@ -308,6 +308,182 @@ export type Database = {
           },
         ]
       }
+      competition_draft_settings: {
+        Row: {
+          access_type: Database["public"]["Enums"]["draft_access_type"]
+          allow_changes_before_close: boolean
+          closes_at: string | null
+          competition_id: string
+          created_at: string
+          created_by: string
+          currency_code: string | null
+          draft_fee_minor_units: number | null
+          id: string
+          is_enabled: boolean
+          max_assignments_per_user: number
+          mode: Database["public"]["Enums"]["draft_mode"]
+          opens_at: string | null
+          status: Database["public"]["Enums"]["draft_status"]
+          tenant_id: string
+          updated_at: string
+          visibility: Database["public"]["Enums"]["draft_visibility"]
+        }
+        Insert: {
+          access_type?: Database["public"]["Enums"]["draft_access_type"]
+          allow_changes_before_close?: boolean
+          closes_at?: string | null
+          competition_id: string
+          created_at?: string
+          created_by: string
+          currency_code?: string | null
+          draft_fee_minor_units?: number | null
+          id?: string
+          is_enabled?: boolean
+          max_assignments_per_user?: number
+          mode?: Database["public"]["Enums"]["draft_mode"]
+          opens_at?: string | null
+          status?: Database["public"]["Enums"]["draft_status"]
+          tenant_id: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["draft_visibility"]
+        }
+        Update: {
+          access_type?: Database["public"]["Enums"]["draft_access_type"]
+          allow_changes_before_close?: boolean
+          closes_at?: string | null
+          competition_id?: string
+          created_at?: string
+          created_by?: string
+          currency_code?: string | null
+          draft_fee_minor_units?: number | null
+          id?: string
+          is_enabled?: boolean
+          max_assignments_per_user?: number
+          mode?: Database["public"]["Enums"]["draft_mode"]
+          opens_at?: string | null
+          status?: Database["public"]["Enums"]["draft_status"]
+          tenant_id?: string
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["draft_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_draft_settings_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: true
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_draft_settings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_draft_settings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_prizes: {
+        Row: {
+          age_restrictions: Json
+          category: Database["public"]["Enums"]["prize_category"]
+          competition_id: string
+          created_at: string
+          description: string | null
+          draft_settings_id: string | null
+          eligibility_rule: Json
+          fulfillment_notes: string | null
+          fulfillment_owner_id: string | null
+          fulfillment_owner_type: Database["public"]["Enums"]["fulfillment_owner_type"]
+          fulfillment_status: Database["public"]["Enums"]["fulfillment_status"]
+          geographic_restrictions: Json
+          id: string
+          image_url: string | null
+          placement_from: number | null
+          placement_to: number | null
+          requires_shipping: boolean
+          sponsor_id: string | null
+          tenant_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          age_restrictions?: Json
+          category: Database["public"]["Enums"]["prize_category"]
+          competition_id: string
+          created_at?: string
+          description?: string | null
+          draft_settings_id?: string | null
+          eligibility_rule?: Json
+          fulfillment_notes?: string | null
+          fulfillment_owner_id?: string | null
+          fulfillment_owner_type?: Database["public"]["Enums"]["fulfillment_owner_type"]
+          fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
+          geographic_restrictions?: Json
+          id?: string
+          image_url?: string | null
+          placement_from?: number | null
+          placement_to?: number | null
+          requires_shipping?: boolean
+          sponsor_id?: string | null
+          tenant_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          age_restrictions?: Json
+          category?: Database["public"]["Enums"]["prize_category"]
+          competition_id?: string
+          created_at?: string
+          description?: string | null
+          draft_settings_id?: string | null
+          eligibility_rule?: Json
+          fulfillment_notes?: string | null
+          fulfillment_owner_id?: string | null
+          fulfillment_owner_type?: Database["public"]["Enums"]["fulfillment_owner_type"]
+          fulfillment_status?: Database["public"]["Enums"]["fulfillment_status"]
+          geographic_restrictions?: Json
+          id?: string
+          image_url?: string | null
+          placement_from?: number | null
+          placement_to?: number | null
+          requires_shipping?: boolean
+          sponsor_id?: string | null
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_prizes_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_prizes_draft_settings_id_fkey"
+            columns: ["draft_settings_id"]
+            isOneToOne: false
+            referencedRelation: "competition_draft_settings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_prizes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_stages: {
         Row: {
           competition_id: string
@@ -493,6 +669,172 @@ export type Database = {
           },
         ]
       }
+      competitor_competition_stats: {
+        Row: {
+          best_position: number | null
+          competition_id: string
+          competitor_id: string
+          events_completed: number
+          podiums: number
+          tenant_id: string
+          top_finishes: number
+          total_points: number
+          updated_at: string
+          wins: number
+        }
+        Insert: {
+          best_position?: number | null
+          competition_id: string
+          competitor_id: string
+          events_completed?: number
+          podiums?: number
+          tenant_id: string
+          top_finishes?: number
+          total_points?: number
+          updated_at?: string
+          wins?: number
+        }
+        Update: {
+          best_position?: number | null
+          competition_id?: string
+          competitor_id?: string
+          events_completed?: number
+          podiums?: number
+          tenant_id?: string
+          top_finishes?: number
+          total_points?: number
+          updated_at?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_competition_stats_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_competition_stats_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_competition_stats_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitor_draft_assignments: {
+        Row: {
+          activated_at: string | null
+          assignment_source: Database["public"]["Enums"]["draft_assignment_source"]
+          canceled_at: string | null
+          cancellation_reason: string | null
+          competition_id: string
+          competitor_id: string
+          completed_at: string | null
+          confirmed_at: string | null
+          created_at: string
+          exclusive_slot: boolean
+          id: string
+          idempotency_key: string
+          metadata: Json
+          payment_reference_id: string | null
+          payment_status: Database["public"]["Enums"]["draft_payment_status"]
+          reservation_expires_at: string | null
+          reserved_at: string | null
+          status: Database["public"]["Enums"]["draft_assignment_status"]
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          assignment_source?: Database["public"]["Enums"]["draft_assignment_source"]
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          competition_id: string
+          competitor_id: string
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          exclusive_slot?: boolean
+          id?: string
+          idempotency_key: string
+          metadata?: Json
+          payment_reference_id?: string | null
+          payment_status?: Database["public"]["Enums"]["draft_payment_status"]
+          reservation_expires_at?: string | null
+          reserved_at?: string | null
+          status: Database["public"]["Enums"]["draft_assignment_status"]
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          assignment_source?: Database["public"]["Enums"]["draft_assignment_source"]
+          canceled_at?: string | null
+          cancellation_reason?: string | null
+          competition_id?: string
+          competitor_id?: string
+          completed_at?: string | null
+          confirmed_at?: string | null
+          created_at?: string
+          exclusive_slot?: boolean
+          id?: string
+          idempotency_key?: string
+          metadata?: Json
+          payment_reference_id?: string | null
+          payment_status?: Database["public"]["Enums"]["draft_payment_status"]
+          reservation_expires_at?: string | null
+          reserved_at?: string | null
+          status?: Database["public"]["Enums"]["draft_assignment_status"]
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitor_draft_assignments_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_draft_assignments_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_draft_assignments_payment_reference_id_fkey"
+            columns: ["payment_reference_id"]
+            isOneToOne: false
+            referencedRelation: "draft_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_draft_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitor_draft_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competitors: {
         Row: {
           color: string | null
@@ -657,6 +999,257 @@ export type Database = {
           },
           {
             foreignKeyName: "creators_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draft_leaderboard_snapshots: {
+        Row: {
+          assignment_id: string
+          competition_id: string
+          competition_points: number
+          competitor_id: string
+          computed_at: string
+          confirmed_at: string | null
+          events_completed: number
+          id: string
+          podiums: number
+          rank: number | null
+          tenant_id: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          assignment_id: string
+          competition_id: string
+          competition_points?: number
+          competitor_id: string
+          computed_at?: string
+          confirmed_at?: string | null
+          events_completed?: number
+          id?: string
+          podiums?: number
+          rank?: number | null
+          tenant_id: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          assignment_id?: string
+          competition_id?: string
+          competition_points?: number
+          competitor_id?: string
+          computed_at?: string
+          confirmed_at?: string | null
+          events_completed?: number
+          id?: string
+          podiums?: number
+          rank?: number | null
+          tenant_id?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_leaderboard_snapshots_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_draft_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_leaderboard_snapshots_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_leaderboard_snapshots_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_leaderboard_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_leaderboard_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draft_payments: {
+        Row: {
+          amount_minor_units: number
+          competition_id: string
+          confirmed_at: string | null
+          created_at: string
+          currency_code: string
+          id: string
+          provider: string
+          provider_reference: string
+          status: Database["public"]["Enums"]["draft_payment_status"]
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_minor_units: number
+          competition_id: string
+          confirmed_at?: string | null
+          created_at?: string
+          currency_code: string
+          id?: string
+          provider?: string
+          provider_reference: string
+          status?: Database["public"]["Enums"]["draft_payment_status"]
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_minor_units?: number
+          competition_id?: string
+          confirmed_at?: string | null
+          created_at?: string
+          currency_code?: string
+          id?: string
+          provider?: string
+          provider_reference?: string
+          status?: Database["public"]["Enums"]["draft_payment_status"]
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_payments_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_payments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draft_scoring_rules: {
+        Row: {
+          competition_id: string
+          config: Json
+          created_at: string
+          id: string
+          scoring_type: Database["public"]["Enums"]["draft_scoring_type"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          config?: Json
+          created_at?: string
+          id?: string
+          scoring_type?: Database["public"]["Enums"]["draft_scoring_type"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          config?: Json
+          created_at?: string
+          id?: string
+          scoring_type?: Database["public"]["Enums"]["draft_scoring_type"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_scoring_rules_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: true
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_scoring_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_competitor_results: {
+        Row: {
+          competitor_id: string
+          created_at: string
+          event_id: string
+          finishing_position: number | null
+          grading_version: number
+          id: string
+          points: number
+          tenant_id: string
+        }
+        Insert: {
+          competitor_id: string
+          created_at?: string
+          event_id: string
+          finishing_position?: number | null
+          grading_version: number
+          id?: string
+          points?: number
+          tenant_id: string
+        }
+        Update: {
+          competitor_id?: string
+          created_at?: string
+          event_id?: string
+          finishing_position?: number | null
+          grading_version?: number
+          id?: string
+          points?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_competitor_results_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_competitor_results_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_competitor_results_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1323,6 +1916,80 @@ export type Database = {
           },
           {
             foreignKeyName: "predictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prize_awards: {
+        Row: {
+          awarded_at: string
+          competition_prize_id: string
+          created_at: string
+          draft_assignment_id: string
+          fulfilled_at: string | null
+          fulfillment_reference: string | null
+          id: string
+          idempotency_key: string
+          notes: string | null
+          status: Database["public"]["Enums"]["prize_award_status"]
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          competition_prize_id: string
+          created_at?: string
+          draft_assignment_id: string
+          fulfilled_at?: string | null
+          fulfillment_reference?: string | null
+          id?: string
+          idempotency_key: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["prize_award_status"]
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          competition_prize_id?: string
+          created_at?: string
+          draft_assignment_id?: string
+          fulfilled_at?: string | null
+          fulfillment_reference?: string | null
+          id?: string
+          idempotency_key?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["prize_award_status"]
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prize_awards_competition_prize_id_fkey"
+            columns: ["competition_prize_id"]
+            isOneToOne: false
+            referencedRelation: "competition_prizes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prize_awards_draft_assignment_id_fkey"
+            columns: ["draft_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "competitor_draft_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prize_awards_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prize_awards_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -2044,10 +2711,42 @@ export type Database = {
         Args: { p_event_id: string; p_winner_competitor_id: string }
         Returns: undefined
       }
+      award_competition_prizes: {
+        Args: { p_competition_id: string }
+        Returns: number
+      }
+      cancel_draft_assignment: {
+        Args: { p_assignment_id: string; p_reason: string }
+        Returns: Json
+      }
+      confirm_draft_payment: {
+        Args: { p_provider_reference: string }
+        Returns: Json
+      }
       create_bracket: {
         Args: { p_competition_id: string; p_structure: Json }
         Returns: undefined
       }
+      draft_competitor: {
+        Args: {
+          p_competition_id: string
+          p_competitor_id: string
+          p_idempotency_key: string
+        }
+        Returns: Json
+      }
+      draft_roster: {
+        Args: { p_competition_id: string }
+        Returns: {
+          color: string
+          competitor_id: string
+          drafters: number
+          image_url: string
+          name: string
+          taken: boolean
+        }[]
+      }
+      expire_draft_reservations: { Args: never; Returns: number }
       lock_due_markets: { Args: never; Returns: number }
       market_sentiment: {
         Args: { p_market_id: string }
@@ -2058,6 +2757,10 @@ export type Database = {
           total: number
           votes: number
         }[]
+      }
+      record_event_positions: {
+        Args: { p_event_id: string; p_positions: Json }
+        Returns: Json
       }
       regrade_event: {
         Args: {
@@ -2105,6 +2808,38 @@ export type Database = {
         | "verified"
         | "rejected"
         | "suspended"
+      draft_access_type: "free" | "paid" | "invite_only" | "admin_assigned"
+      draft_assignment_source:
+        | "user_selected"
+        | "creator_assigned"
+        | "super_admin_assigned"
+        | "random_assignment"
+      draft_assignment_status:
+        | "reserved"
+        | "pending_payment"
+        | "confirmed"
+        | "active"
+        | "completed"
+        | "canceled"
+        | "expired"
+      draft_mode: "open" | "exclusive"
+      draft_payment_status:
+        | "not_required"
+        | "pending"
+        | "paid"
+        | "failed"
+        | "refunded"
+        | "canceled"
+      draft_scoring_type: "competition_points"
+      draft_status:
+        | "draft"
+        | "scheduled"
+        | "open"
+        | "closed"
+        | "active"
+        | "completed"
+        | "canceled"
+      draft_visibility: "public" | "followers_only" | "invite_only"
       event_status:
         | "draft"
         | "scheduled"
@@ -2126,6 +2861,13 @@ export type Database = {
         | "user_leaderboard_move"
         | "creator_published_result"
         | "sponsored_event_published"
+      fulfillment_owner_type: "platform" | "creator" | "sponsor"
+      fulfillment_status:
+        | "not_started"
+        | "pending"
+        | "in_progress"
+        | "fulfilled"
+        | "canceled"
       global_role: "super_admin" | "creator" | "user"
       leaderboard_scope: "global" | "creator" | "competition" | "season"
       market_status:
@@ -2156,6 +2898,18 @@ export type Database = {
         | "bracket_advancement"
       option_status: "active" | "withdrawn" | "voided" | "winner" | "loser"
       prediction_status: "active" | "locked" | "correct" | "incorrect" | "void"
+      prize_award_status:
+        | "awarded"
+        | "reversed"
+        | "superseded"
+        | "fulfilled"
+        | "canceled"
+      prize_category:
+        | "recognition"
+        | "digital"
+        | "physical"
+        | "sponsor"
+        | "premium_access"
       result_source_type:
         | "creator_manual"
         | "super_admin_manual"
@@ -2335,6 +3089,42 @@ export const Constants = {
         "rejected",
         "suspended",
       ],
+      draft_access_type: ["free", "paid", "invite_only", "admin_assigned"],
+      draft_assignment_source: [
+        "user_selected",
+        "creator_assigned",
+        "super_admin_assigned",
+        "random_assignment",
+      ],
+      draft_assignment_status: [
+        "reserved",
+        "pending_payment",
+        "confirmed",
+        "active",
+        "completed",
+        "canceled",
+        "expired",
+      ],
+      draft_mode: ["open", "exclusive"],
+      draft_payment_status: [
+        "not_required",
+        "pending",
+        "paid",
+        "failed",
+        "refunded",
+        "canceled",
+      ],
+      draft_scoring_type: ["competition_points"],
+      draft_status: [
+        "draft",
+        "scheduled",
+        "open",
+        "closed",
+        "active",
+        "completed",
+        "canceled",
+      ],
+      draft_visibility: ["public", "followers_only", "invite_only"],
       event_status: [
         "draft",
         "scheduled",
@@ -2357,6 +3147,14 @@ export const Constants = {
         "user_leaderboard_move",
         "creator_published_result",
         "sponsored_event_published",
+      ],
+      fulfillment_owner_type: ["platform", "creator", "sponsor"],
+      fulfillment_status: [
+        "not_started",
+        "pending",
+        "in_progress",
+        "fulfilled",
+        "canceled",
       ],
       global_role: ["super_admin", "creator", "user"],
       leaderboard_scope: ["global", "creator", "competition", "season"],
@@ -2390,6 +3188,20 @@ export const Constants = {
       ],
       option_status: ["active", "withdrawn", "voided", "winner", "loser"],
       prediction_status: ["active", "locked", "correct", "incorrect", "void"],
+      prize_award_status: [
+        "awarded",
+        "reversed",
+        "superseded",
+        "fulfilled",
+        "canceled",
+      ],
+      prize_category: [
+        "recognition",
+        "digital",
+        "physical",
+        "sponsor",
+        "premium_access",
+      ],
       result_source_type: [
         "creator_manual",
         "super_admin_manual",
