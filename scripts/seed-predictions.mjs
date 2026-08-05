@@ -1,6 +1,6 @@
-// Adds sample predictions to the demo race so community sentiment is visible.
-// Demo-only: inserts directly via the service role. Real predictions always go
-// through submit_prediction. Usage: node scripts/seed-predictions.mjs
+// Adds sample predictions + one fully-settled past race so community sentiment,
+// settled-result UI, statistics, achievements, and the leaderboard are all
+// populated. Demo-only. Usage: node scripts/seed-predictions.mjs
 import { config } from "dotenv";
 config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
@@ -9,57 +9,103 @@ const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABA
   auth: { persistSession: false },
 });
 
+async function ensureUser(email) {
+  const created = await db.auth.admin.createUser({ email, password: "Password123!", email_confirm: true });
+  if (!created.error) return created.data.user.id;
+  const { data } = await db.from("users").select("id").eq("email", email).maybeSingle();
+  if (!data) throw created.error;
+  return data.id;
+}
+
 async function main() {
   const { data: tenant } = await db.from("tenants").select("id").eq("slug", "marbles").single();
-  const { data: event } = await db
-    .from("events")
-    .select("id")
-    .eq("tenant_id", tenant.id)
-    .eq("slug", "race-1")
-    .single();
-  const { data: market } = await db.from("markets").select("id").eq("event_id", event.id).single();
-  const { data: options } = await db
-    .from("market_options")
-    .select("id, label, display_order")
-    .eq("market_id", market.id)
-    .order("display_order");
+  const tenantId = tenant.id;
+  const { data: creator } = await db.from("creators").select("id").eq("tenant_id", tenantId).eq("slug", "marble-league-hq").single();
+  const creatorId = creator.id;
 
-  // Distribution across options (by display order): 3,2,1,1,0.
+  // ── Sample predictions on the open race-1 (community sentiment) ────────────
+  const { data: event } = await db.from("events").select("id").eq("tenant_id", tenantId).eq("slug", "race-1").single();
+  const { data: market } = await db.from("markets").select("id").eq("event_id", event.id).single();
+  const { data: options } = await db.from("market_options").select("id, display_order").eq("market_id", market.id).order("display_order");
+
   const weights = [3, 2, 1, 1, 0];
-  let n = 0;
+  const fans = [];
+  const FAN_NAMES = ["Ava", "Ben", "Cleo", "Dax", "Esme", "Finn", "Gwen"];
   for (let oi = 0; oi < options.length; oi++) {
     for (let k = 0; k < (weights[oi] ?? 0); k++) {
       const email = `demo-fan-${oi}-${k}@marblegp.test`;
-      let userId;
-      const created = await db.auth.admin.createUser({ email, password: "Password123!", email_confirm: true });
-      if (created.error) {
-        const { data: u } = await db.from("users").select("id").eq("email", email).maybeSingle();
-        if (!u) throw created.error;
-        userId = u.id;
-      } else {
-        userId = created.data.user.id;
-      }
-      await db
-        .from("tenant_memberships")
-        .upsert({ tenant_id: tenant.id, user_id: userId, role: "member" }, { onConflict: "tenant_id,user_id", ignoreDuplicates: true });
-      await db
-        .from("predictions")
-        .upsert(
-          {
-            tenant_id: tenant.id,
-            market_id: market.id,
-            user_id: userId,
-            option_id: options[oi].id,
-            original_option_id: options[oi].id,
-            idempotency_key: `seed-${market.id}-${userId}`,
-            status: "active",
-          },
-          { onConflict: "market_id,user_id", ignoreDuplicates: true },
-        );
-      n++;
+      const uid = await ensureUser(email);
+      const n = fans.length;
+      fans.push(uid);
+      await db.from("tenant_memberships").upsert({ tenant_id: tenantId, user_id: uid, role: "member" }, { onConflict: "tenant_id,user_id", ignoreDuplicates: true });
+      await db.from("profiles").upsert(
+        { tenant_id: tenantId, user_id: uid, handle: `fan_${n}`, display_name: FAN_NAMES[n] ?? `Fan ${n}` },
+        { onConflict: "tenant_id,user_id", ignoreDuplicates: true },
+      );
+      await db.from("predictions").upsert(
+        { tenant_id: tenantId, market_id: market.id, user_id: uid, option_id: options[oi].id, original_option_id: options[oi].id, idempotency_key: `seed-${market.id}-${uid}`, status: "active" },
+        { onConflict: "market_id,user_id", ignoreDuplicates: true },
+      );
     }
   }
-  console.log(`✅ Seeded ${n} sample predictions on /t/marbles/e/race-1`);
+
+  // ── A fully-settled past race (race-0) → stats + leaderboard + achievements ─
+  const { data: comps } = await db.from("competitors").select("id, slug, name").eq("tenant_id", tenantId);
+  const compBySlug = Object.fromEntries(comps.map((c) => [c.slug, c.id]));
+  const nameBySlug = Object.fromEntries(comps.map((c) => [c.slug, c.name]));
+  const { data: season } = await db.from("competitions").select("id").eq("tenant_id", tenantId).eq("slug", "season-1").maybeSingle();
+
+  const { data: pastEvent } = await db
+    .from("events")
+    .upsert(
+      { tenant_id: tenantId, competition_id: season?.id ?? null, creator_id: creatorId, title: "Marble Grand Prix — Race 0 (Preseason)", slug: "race-0", description: "The preseason exhibition — already run and settled.", status: "open", starts_at: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(), locks_at: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(), youtube_url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ", result_source: "creator_manual" },
+      { onConflict: "tenant_id,slug" },
+    )
+    .select("id, status")
+    .single();
+
+  let pastMarketId = (await db.from("markets").select("id").eq("event_id", pastEvent.id).maybeSingle()).data?.id;
+  if (!pastMarketId) {
+    const marbleSlugs = ["red-rocket", "blue-bolt", "green-flash", "sunny-yellow", "purple-comet"];
+    const { data: pm } = await db.from("markets").insert({ tenant_id: tenantId, event_id: pastEvent.id, question: "Which marble won?", status: "open" }).select("id").single();
+    pastMarketId = pm.id;
+    await db.from("market_options").insert(
+      marbleSlugs.map((slug, i) => ({ tenant_id: tenantId, market_id: pastMarketId, competitor_id: compBySlug[slug], label: nameBySlug[slug], color: null, display_order: i, status: "active" })),
+    );
+  }
+
+  // Everyone predicts on race-0 (spread across options), then settle it.
+  const { data: pastOptions } = await db.from("market_options").select("id, competitor_id, display_order").eq("market_id", pastMarketId).order("display_order");
+  const distribution = [3, 2, 1, 1, 0];
+  let fi = 0;
+  for (let oi = 0; oi < pastOptions.length; oi++) {
+    for (let k = 0; k < (distribution[oi] ?? 0); k++) {
+      const uid = fans[fi % fans.length];
+      fi++;
+      await db.from("predictions").upsert(
+        { tenant_id: tenantId, market_id: pastMarketId, user_id: uid, option_id: pastOptions[oi].id, original_option_id: pastOptions[oi].id, idempotency_key: `seed0-${pastMarketId}-${uid}`, status: "active" },
+        { onConflict: "market_id,user_id", ignoreDuplicates: true },
+      );
+    }
+  }
+
+  // Settle race-0 with Red Rocket as the winner (service role is authorized).
+  if (pastEvent.status !== "settled") {
+    const winner = compBySlug["red-rocket"];
+    const { error } = await db.rpc("settle_event", {
+      p_event_id: pastEvent.id,
+      p_resolution: "settled",
+      p_winning_competitor_id: winner,
+      p_notes: "Red Rocket takes the preseason exhibition.",
+      p_result_url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+      p_idempotency_key: `seed-settle-${pastEvent.id}`,
+    });
+    if (error) throw error;
+  }
+
+  console.log(`✅ Seeded sample predictions + settled race-0 (leaderboard populated).`);
+  console.log(`   Settled event: /t/marbles/e/race-0`);
+  console.log(`   Leaderboard:   /t/marbles/leaderboard`);
 }
 
 main().catch((e) => {

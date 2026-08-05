@@ -20,9 +20,10 @@ Migrations live in `supabase/migrations/` and are applied in order by
 | `0007_prediction_functions.sql` | `submit_prediction`, `market_sentiment`, `lock_due_markets` |
 | `0008_brackets.sql` | `bracket_rounds`, `bracket_slots` + RLS (each slot is a matchup node) |
 | `0009_bracket_functions.sql` | `create_bracket`, `advance_bracket` (+ internal propagation) |
+| `0010_settlement_core.sql` | event_results, settlements, settlement_grades, user_statistics, competition_statistics, leaderboard_snapshots, achievements, user_achievements |
+| `0011_settlement_functions.sql` | `settle_event`, `regrade_event` + recompute/achievement/leaderboard helpers |
 
-Later phases add migrations for settlement, statistics, leaderboards,
-achievements, social, and monetization.
+Later phases add migrations for social and monetization.
 
 ### Phase 2 tables (prediction domain)
 

@@ -24,6 +24,10 @@ export type EventMarket = {
   sentiment: Sentiment;
   userOptionId: string | null;
   lockState: LockState;
+  settled: boolean;
+  winningOptionId: string | null;
+  /** The signed-in user's graded outcome for this market, if settled. */
+  userOutcome: "correct" | "incorrect" | "void" | null;
 };
 
 export type EventDetail = {
@@ -69,10 +73,13 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
   for (const m of marketRows ?? []) {
     const { data: optionRows } = await supabase
       .from("market_options")
-      .select("id, label, color, image_url, competitor_id, display_order")
+      .select("id, label, color, image_url, competitor_id, display_order, status")
       .eq("market_id", m.id)
-      .eq("status", "active")
+      .in("status", ["active", "winner", "loser", "voided"])
       .order("display_order");
+
+    const winningOptionId = (optionRows ?? []).find((o) => o.status === "winner")?.id ?? null;
+    const settled = m.status === "settled" || m.status === "voided" || m.status === "canceled";
 
     const { data: sentimentRows } = await supabase.rpc("market_sentiment", { p_market_id: m.id });
 
@@ -89,14 +96,18 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
     );
 
     let userOptionId: string | null = null;
+    let userOutcome: EventMarket["userOutcome"] = null;
     if (user) {
       const { data: pred } = await supabase
         .from("predictions")
-        .select("option_id")
+        .select("option_id, status")
         .eq("market_id", m.id)
         .eq("user_id", user.id)
         .maybeSingle();
       userOptionId = pred?.option_id ?? null;
+      if (pred?.status === "correct" || pred?.status === "incorrect" || pred?.status === "void") {
+        userOutcome = pred.status;
+      }
     }
 
     const lockState = getLockState({
@@ -122,6 +133,9 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
       sentiment,
       userOptionId,
       lockState,
+      settled,
+      winningOptionId,
+      userOutcome,
     });
   }
 

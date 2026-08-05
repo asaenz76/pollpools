@@ -79,6 +79,9 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
               smallParticipationDisplay={ctx.settings.smallParticipationDisplay}
               smallThreshold={SMALL_PARTICIPATION_THRESHOLD}
               signInHref={signInHref}
+              settled={m.settled}
+              winningOptionId={m.winningOptionId}
+              userOutcome={m.userOutcome}
             />
           ))}
         </div>

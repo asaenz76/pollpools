@@ -26,7 +26,11 @@ Status legend: ✅ implemented · ⏳ later phase.
 - ✅ One-prediction-per-market unique constraint + idempotency keys + advisory
   lock; predictions written only via `submit_prediction` (no direct write policy).
 - ✅ Server-time lock enforced in-DB (client clock never trusted).
-- ⏳ Idempotent settlement `(event_id, grading_version)` + row locks (Phase 4).
+- ✅ Idempotent, versioned settlement: `(event_id, grading_version)` unique, one
+  active per event (partial unique index), row-lock, idempotency key; grades are
+  immutable and stats recomputed from the active set (reversible regrade).
+- ✅ Settlement authorization: super admin / service role / creator with the
+  `settlement_enabled` grant only; `advance_bracket` service-role only.
 - ⏳ Subscription webhook signature verify + replay protection (Phase 7).
 
 ## Data protection

@@ -34,6 +34,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      achievements: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          name: string
+          rule: Json
+          tenant_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          name: string
+          rule: Json
+          tenant_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          name?: string
+          rule?: Json
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achievements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -317,6 +358,61 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competition_statistics: {
+        Row: {
+          competition_id: string
+          correct_predictions: number
+          first_graded_at: string | null
+          incorrect_predictions: number
+          tenant_id: string
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          correct_predictions?: number
+          first_graded_at?: string | null
+          incorrect_predictions?: number
+          tenant_id: string
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          correct_predictions?: number
+          first_graded_at?: string | null
+          incorrect_predictions?: number
+          tenant_id?: string
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_statistics_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_statistics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_statistics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -620,6 +716,77 @@ export type Database = {
           },
         ]
       }
+      event_results: {
+        Row: {
+          created_at: string
+          event_id: string
+          grading_version: number
+          id: string
+          notes: string | null
+          resolution: string
+          result_url: string | null
+          source: Database["public"]["Enums"]["result_source_type"]
+          submitted_by: string | null
+          tenant_id: string
+          winning_competitor_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          grading_version: number
+          id?: string
+          notes?: string | null
+          resolution: string
+          result_url?: string | null
+          source?: Database["public"]["Enums"]["result_source_type"]
+          submitted_by?: string | null
+          tenant_id: string
+          winning_competitor_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          grading_version?: number
+          id?: string
+          notes?: string | null
+          resolution?: string
+          result_url?: string | null
+          source?: Database["public"]["Enums"]["result_source_type"]
+          submitted_by?: string | null
+          tenant_id?: string
+          winning_competitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_results_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_results_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_results_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_results_winning_competitor_id_fkey"
+            columns: ["winning_competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           competition_id: string | null
@@ -758,6 +925,66 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaderboard_snapshots: {
+        Row: {
+          accuracy: number
+          computed_at: string
+          correct_predictions: number
+          id: string
+          period: string
+          rank: number | null
+          ranked: boolean
+          scope: Database["public"]["Enums"]["leaderboard_scope"]
+          scope_id: string | null
+          tenant_id: string
+          total_points: number
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number
+          computed_at?: string
+          correct_predictions?: number
+          id?: string
+          period?: string
+          rank?: number | null
+          ranked?: boolean
+          scope: Database["public"]["Enums"]["leaderboard_scope"]
+          scope_id?: string | null
+          tenant_id: string
+          total_points?: number
+          user_id: string
+        }
+        Update: {
+          accuracy?: number
+          computed_at?: string
+          correct_predictions?: number
+          id?: string
+          period?: string
+          rank?: number | null
+          ranked?: boolean
+          scope?: Database["public"]["Enums"]["leaderboard_scope"]
+          scope_id?: string | null
+          tenant_id?: string
+          total_points?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaderboard_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaderboard_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1198,6 +1425,172 @@ export type Database = {
           },
         ]
       }
+      settlement_grades: {
+        Row: {
+          created_at: string
+          event_id: string
+          grading_version: number
+          id: string
+          market_id: string
+          option_id: string
+          outcome: string
+          points: number
+          prediction_id: string
+          settlement_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          grading_version: number
+          id?: string
+          market_id: string
+          option_id: string
+          outcome: string
+          points?: number
+          prediction_id: string
+          settlement_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          grading_version?: number
+          id?: string
+          market_id?: string
+          option_id?: string
+          outcome?: string
+          points?: number
+          prediction_id?: string
+          settlement_id?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlement_grades_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_grades_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_grades_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_grades_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_grades_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "settlements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_grades_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlement_grades_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      settlements: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          event_id: string
+          grading_version: number
+          id: string
+          initiated_by: string | null
+          reason: string | null
+          result_id: string | null
+          reversed_at: string | null
+          status: Database["public"]["Enums"]["settlement_status"]
+          tenant_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          event_id: string
+          grading_version: number
+          id?: string
+          initiated_by?: string | null
+          reason?: string | null
+          result_id?: string | null
+          reversed_at?: string | null
+          status?: Database["public"]["Enums"]["settlement_status"]
+          tenant_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          event_id?: string
+          grading_version?: number
+          id?: string
+          initiated_by?: string | null
+          reason?: string | null
+          result_id?: string | null
+          reversed_at?: string | null
+          status?: Database["public"]["Enums"]["settlement_status"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlements_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "event_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "settlements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_jobs: {
         Row: {
           attempts: number
@@ -1467,6 +1860,58 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          context: Json
+          granted_at: string
+          id: string
+          revoked_at: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          achievement_id: string
+          context?: Json
+          granted_at?: string
+          id?: string
+          revoked_at?: string | null
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          achievement_id?: string
+          context?: Json
+          granted_at?: string
+          id?: string
+          revoked_at?: string | null
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1499,6 +1944,63 @@ export type Database = {
           },
           {
             foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_statistics: {
+        Row: {
+          best_streak: number
+          correct_predictions: number
+          current_streak: number
+          first_graded_at: string | null
+          incorrect_predictions: number
+          last_graded_at: string | null
+          tenant_id: string
+          total_points: number
+          total_predictions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          best_streak?: number
+          correct_predictions?: number
+          current_streak?: number
+          first_graded_at?: string | null
+          incorrect_predictions?: number
+          last_graded_at?: string | null
+          tenant_id: string
+          total_points?: number
+          total_predictions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          best_streak?: number
+          correct_predictions?: number
+          current_streak?: number
+          first_graded_at?: string | null
+          incorrect_predictions?: number
+          last_graded_at?: string | null
+          tenant_id?: string
+          total_points?: number
+          total_predictions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_statistics_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_statistics_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -1556,6 +2058,27 @@ export type Database = {
           total: number
           votes: number
         }[]
+      }
+      regrade_event: {
+        Args: {
+          p_event_id: string
+          p_idempotency_key: string
+          p_reason: string
+          p_resolution: string
+          p_winning_competitor_id: string
+        }
+        Returns: Json
+      }
+      settle_event: {
+        Args: {
+          p_event_id: string
+          p_idempotency_key: string
+          p_notes: string
+          p_resolution: string
+          p_result_url: string
+          p_winning_competitor_id: string
+        }
+        Returns: Json
       }
       submit_prediction: {
         Args: {

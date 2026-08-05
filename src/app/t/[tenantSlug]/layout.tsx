@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { getTenantContext } from "@/lib/tenant/context";
 import { getSessionUser } from "@/lib/auth/session";
 import { signOutAction } from "@/lib/auth/actions";
+import { Trophy } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button, buttonVariants } from "@/components/ui/button";
 
@@ -22,6 +23,13 @@ export default async function TenantLayout({ children }: { children: ReactNode }
             {tenant.displayName}
           </Link>
           <div className="flex items-center gap-1">
+            <Link
+              href={`/t/${tenant.slug}/leaderboard`}
+              aria-label="Leaderboard"
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+            >
+              <Trophy />
+            </Link>
             <ThemeToggle />
             {user ? (
               <form action={signOutAction}>

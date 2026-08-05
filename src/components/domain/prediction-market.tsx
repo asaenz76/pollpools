@@ -25,6 +25,9 @@ export type PredictionMarketProps = {
   smallParticipationDisplay: boolean;
   smallThreshold: number;
   signInHref: string;
+  settled: boolean;
+  winningOptionId: string | null;
+  userOutcome: "correct" | "incorrect" | "void" | null;
 };
 
 export function PredictionMarket(props: PredictionMarketProps) {
@@ -78,23 +81,46 @@ export function PredictionMarket(props: PredictionMarketProps) {
         <span
           className={cn(
             "shrink-0 rounded-full border px-2.5 py-0.5 text-xs",
-            lock.isOpen ? "text-foreground" : "text-muted-foreground",
+            props.settled ? "text-muted-foreground" : lock.isOpen ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          {lock.isOpen
-            ? lock.effectiveLocksAt
-              ? `Locks in ${formatCountdown(lock.msUntilLock)}`
-              : "Open"
-            : "Locked"}
+          {props.settled
+            ? "Settled"
+            : lock.isOpen
+              ? lock.effectiveLocksAt
+                ? `Locks in ${formatCountdown(lock.msUntilLock)}`
+                : "Open"
+              : "Locked"}
         </span>
       </div>
+
+      {props.settled && props.userOutcome ? (
+        <div
+          className={cn(
+            "mb-3 rounded-md border px-3 py-2 text-sm font-medium",
+            props.userOutcome === "correct"
+              ? "border-positive/40 text-positive"
+              : props.userOutcome === "incorrect"
+                ? "border-negative/40 text-negative"
+                : "border-border text-muted-foreground",
+          )}
+        >
+          {props.userOutcome === "correct"
+            ? "You called it right."
+            : props.userOutcome === "incorrect"
+              ? "Not this time."
+              : "This market was voided."}
+        </div>
+      ) : null}
 
       <ul className="grid gap-2">
         {props.options.map((o) => {
           const r = votesById.get(o.id);
           const percentage = r?.percentage ?? 0;
           const isPicked = selected === o.id;
-          const interactive = props.signedIn && lock.isOpen && !pending;
+          const isWinner = props.settled && props.winningOptionId === o.id;
+          const isPickedLoser = props.settled && isPicked && !isWinner && props.userOutcome === "incorrect";
+          const interactive = props.signedIn && lock.isOpen && !pending && !props.settled;
           return (
             <li key={o.id}>
               <button
@@ -104,7 +130,13 @@ export function PredictionMarket(props: PredictionMarketProps) {
                 aria-pressed={isPicked}
                 className={cn(
                   "relative w-full overflow-hidden rounded-md border px-3 py-3 text-left transition-colors",
-                  isPicked ? "border-primary" : "border-border",
+                  isWinner
+                    ? "border-positive"
+                    : isPickedLoser
+                      ? "border-negative"
+                      : isPicked
+                        ? "border-primary"
+                        : "border-border",
                   interactive ? "hover:bg-muted cursor-pointer" : "cursor-default",
                 )}
               >
@@ -116,7 +148,11 @@ export function PredictionMarket(props: PredictionMarketProps) {
                 />
                 <span className="relative flex items-center justify-between gap-3">
                   <span className="flex items-center gap-2 font-medium">
-                    {isPicked ? <Check className="size-4 text-primary" /> : null}
+                    {isWinner ? (
+                      <Check className="size-4 text-positive" />
+                    ) : isPicked ? (
+                      <Check className={cn("size-4", isPickedLoser ? "text-negative" : "text-primary")} />
+                    ) : null}
                     {o.label}
                   </span>
                   <span className="text-sm text-muted-foreground">
@@ -150,7 +186,7 @@ export function PredictionMarket(props: PredictionMarketProps) {
         ) : null}
       </div>
 
-      {!props.signedIn ? (
+      {!props.signedIn && !props.settled && lock.isOpen ? (
         <Link href={props.signInHref} className={cn(buttonVariants({ variant: "primary", size: "sm" }), "mt-3 w-full")}>
           Sign in to predict
         </Link>
