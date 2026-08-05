@@ -88,6 +88,185 @@ export type Database = {
           },
         ]
       }
+      bracket_rounds: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          name: string
+          round_number: number
+          size: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          name: string
+          round_number: number
+          size: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          round_number?: number
+          size?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_rounds_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_rounds_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bracket_slots: {
+        Row: {
+          bye_competitor_id: string | null
+          competition_id: string
+          competitor_a_id: string | null
+          competitor_b_id: string | null
+          created_at: string
+          event_id: string | null
+          id: string
+          is_bye: boolean
+          match_index: number
+          position: number
+          round_id: string
+          source_a_id: string | null
+          source_b_id: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          winner_competitor_id: string | null
+        }
+        Insert: {
+          bye_competitor_id?: string | null
+          competition_id: string
+          competitor_a_id?: string | null
+          competitor_b_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_bye?: boolean
+          match_index: number
+          position: number
+          round_id: string
+          source_a_id?: string | null
+          source_b_id?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          winner_competitor_id?: string | null
+        }
+        Update: {
+          bye_competitor_id?: string | null
+          competition_id?: string
+          competitor_a_id?: string | null
+          competitor_b_id?: string | null
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          is_bye?: boolean
+          match_index?: number
+          position?: number
+          round_id?: string
+          source_a_id?: string | null
+          source_b_id?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          winner_competitor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bracket_slots_bye_competitor_id_fkey"
+            columns: ["bye_competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_competitor_a_id_fkey"
+            columns: ["competitor_a_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_competitor_b_id_fkey"
+            columns: ["competitor_b_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_source_a_id_fkey"
+            columns: ["source_a_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_source_b_id_fkey"
+            columns: ["source_b_id"]
+            isOneToOne: false
+            referencedRelation: "bracket_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bracket_slots_winner_competitor_id_fkey"
+            columns: ["winner_competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_stages: {
         Row: {
           competition_id: string
@@ -1359,6 +1538,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      advance_bracket: {
+        Args: { p_event_id: string; p_winner_competitor_id: string }
+        Returns: undefined
+      }
+      create_bracket: {
+        Args: { p_competition_id: string; p_structure: Json }
+        Returns: undefined
+      }
       lock_due_markets: { Args: never; Returns: number }
       market_sentiment: {
         Args: { p_market_id: string }

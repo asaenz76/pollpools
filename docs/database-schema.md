@@ -18,6 +18,8 @@ Migrations live in `supabase/migrations/` and are applied in order by
 | `0005_prediction_core.sql` | scoring_rules, competitions, competition_stages, competitors, events, event_competitors, markets, market_options, predictions, prediction_revisions |
 | `0006_prediction_rls.sql` | ownership helpers + RLS for all Phase 2 tables (public content readable; predictions owner-only) |
 | `0007_prediction_functions.sql` | `submit_prediction`, `market_sentiment`, `lock_due_markets` |
+| `0008_brackets.sql` | `bracket_rounds`, `bracket_slots` + RLS (each slot is a matchup node) |
+| `0009_bracket_functions.sql` | `create_bracket`, `advance_bracket` (+ internal propagation) |
 
 Later phases add migrations for settlement, statistics, leaderboards,
 achievements, social, and monetization.

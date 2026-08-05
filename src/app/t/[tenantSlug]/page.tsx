@@ -3,6 +3,7 @@ import { getTenantContext } from "@/lib/tenant/context";
 import { getSessionUser } from "@/lib/auth/session";
 import { ensureMembership } from "@/lib/tenant/membership";
 import { listEvents } from "@/features/events/get-event";
+import { listCompetitions } from "@/features/competitions/get-competition";
 import { getLockState, formatCountdown } from "@/lib/domain/locking";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
@@ -20,8 +21,15 @@ export default async function TenantHome() {
     await ensureMembership({ tenantId: tenant.id, userId: user.id, email: user.email });
   }
 
-  const events = await listEvents(tenant.id);
+  const [events, competitions] = await Promise.all([listEvents(tenant.id), listCompetitions(tenant.id)]);
   const now = new Date();
+
+  const COMPETITION_TYPE_LABEL: Record<string, string> = {
+    STANDALONE_EVENT: "Event",
+    SEASON: "Season",
+    TOURNAMENT: "Tournament",
+    BRACKET: "Bracket",
+  };
 
   return (
     <div className="grid gap-6">
@@ -56,6 +64,32 @@ export default async function TenantHome() {
           </CardContent>
         </Card>
       )}
+
+      {competitions.length > 0 ? (
+        <section aria-labelledby="competitions-heading">
+          <h2 id="competitions-heading" className="mb-3 text-sm font-medium text-muted-foreground">
+            Competitions
+          </h2>
+          <ul className="grid gap-3">
+            {competitions.map((c) => (
+              <li key={c.id}>
+                <Link href={`/t/${tenant.slug}/c/${c.slug}`} className="block">
+                  <Card className="transition-colors hover:bg-muted">
+                    <CardHeader>
+                      <div className="flex items-center justify-between gap-3">
+                        <CardTitle className="text-base">{c.title}</CardTitle>
+                        <span className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
+                          {COMPETITION_TYPE_LABEL[c.type] ?? c.type}
+                        </span>
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section aria-labelledby="events-heading">
         <h2 id="events-heading" className="mb-3 text-sm font-medium text-muted-foreground">
