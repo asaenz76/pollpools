@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+/*
+ * Prediction Engine design tokens (spec §24).
+ * ~95% grayscale. Blue = interaction only. Green = positive/correct.
+ * Red = negative/error/destructive. Orange = streaks. Medals = rankings only.
+ * Dark mode is class-based (next-themes attribute="class").
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #fafafa;
+  --card: #ffffff;
+  --foreground: #111111;
+  --muted: #f2f2f2;
+  --muted-foreground: #737373;
+  --border: #e8e8e8;
+  --input: #e8e8e8;
+  --ring: #4f46e5;
+
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+
+  --positive: #22c55e;
+  --positive-foreground: #ffffff;
+  --negative: #ef4444;
+  --negative-foreground: #ffffff;
+  --streak: #fb923c;
+
+  --medal-gold: #d4af37;
+  --medal-silver: #9ca3af;
+  --medal-bronze: #b45309;
+
+  --radius: 0.875rem;
+}
+
+.dark {
+  --background: #0f1115;
+  --card: #181a20;
+  --foreground: #f5f5f5;
+  --muted: #1f232b;
+  --muted-foreground: #a1a1aa;
+  --border: #2a2d35;
+  --input: #2a2d35;
+  --ring: #6366f1;
+
+  --primary: #6366f1;
+  --primary-foreground: #ffffff;
+
+  --positive: #22c55e;
+  --negative: #ef4444;
+  --streak: #fb923c;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-positive: var(--positive);
+  --color-positive-foreground: var(--positive-foreground);
+  --color-negative: var(--negative);
+  --color-negative-foreground: var(--negative-foreground);
+  --color-streak: var(--streak);
+
+  --color-medal-gold: var(--medal-gold);
+  --color-medal-silver: var(--medal-silver);
+  --color-medal-bronze: var(--medal-bronze);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.25rem);
+  --radius-sm: calc(var(--radius) - 0.5rem);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

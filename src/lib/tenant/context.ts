@@ -1,0 +1,134 @@
+import "server-only";
+
+import { cache } from "react";
+import { headers } from "next/headers";
+import { createServerSupabase } from "@/lib/supabase/server";
+import { FeatureFlagService } from "@/lib/tenant/feature-flags";
+import { TENANT_HEADER } from "@/lib/supabase/middleware";
+import type { SentimentVisibility, TenantStatus } from "@/types/enums";
+
+export type Tenant = {
+  id: string;
+  slug: string;
+  displayName: string;
+  tagline: string | null;
+  description: string | null;
+  status: TenantStatus;
+  defaultLocale: string;
+  defaultTimezone: string;
+  logoUrl: string | null;
+  iconUrl: string | null;
+  theme: Record<string, unknown>;
+};
+
+export type TenantSettings = {
+  sentimentVisibility: SentimentVisibility;
+  smallParticipationDisplay: boolean;
+  minimumRankedPredictions: number;
+  platformShareBps: number;
+  creatorShareBps: number;
+  legalLinks: unknown[];
+  footerLinks: unknown[];
+};
+
+export type TenantContext = {
+  tenant: Tenant;
+  settings: TenantSettings;
+  features: FeatureFlagService;
+};
+
+const DEFAULT_SETTINGS: TenantSettings = {
+  sentimentVisibility: "always",
+  smallParticipationDisplay: true,
+  minimumRankedPredictions: 5,
+  platformShareBps: 2000,
+  creatorShareBps: 8000,
+  legalLinks: [],
+  footerLinks: [],
+};
+
+/**
+ * Load the request's tenant context, memoized for the render pass. Returns null
+ * on the platform surface (apex host, no tenant path). Reads the tenant identity
+ * from middleware-stamped headers — never from client-controllable input.
+ */
+export const getTenantContext = cache(async (): Promise<TenantContext | null> => {
+  const h = await headers();
+  const kind = h.get(TENANT_HEADER.kind);
+  const value = h.get(TENANT_HEADER.value);
+  if (!kind || !value) return null;
+
+  const supabase = await createServerSupabase();
+
+  // Resolve tenant id from slug or verified custom domain.
+  let tenantId: string | null = null;
+  if (kind === "slug") {
+    const { data } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("slug", value)
+      .eq("status", "active")
+      .maybeSingle();
+    tenantId = data?.id ?? null;
+  } else {
+    const { data } = await supabase
+      .from("tenant_domains")
+      .select("tenant_id, tenants!inner(status)")
+      .eq("domain", value)
+      .eq("verified", true)
+      .maybeSingle();
+    tenantId = data?.tenant_id ?? null;
+  }
+
+  if (!tenantId) return null;
+
+  const [{ data: tenantRow }, { data: settingsRow }, { data: flagRows }] = await Promise.all([
+    supabase
+      .from("tenants")
+      .select(
+        "id, slug, display_name, tagline, description, status, default_locale, default_timezone, logo_url, icon_url, theme",
+      )
+      .eq("id", tenantId)
+      .single(),
+    supabase
+      .from("tenant_settings")
+      .select(
+        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links",
+      )
+      .eq("tenant_id", tenantId)
+      .maybeSingle(),
+    supabase.from("tenant_feature_flags").select("flag, enabled").eq("tenant_id", tenantId),
+  ]);
+
+  if (!tenantRow) return null;
+
+  const tenant: Tenant = {
+    id: tenantRow.id,
+    slug: tenantRow.slug,
+    displayName: tenantRow.display_name,
+    tagline: tenantRow.tagline,
+    description: tenantRow.description,
+    status: tenantRow.status as TenantStatus,
+    defaultLocale: tenantRow.default_locale,
+    defaultTimezone: tenantRow.default_timezone,
+    logoUrl: tenantRow.logo_url,
+    iconUrl: tenantRow.icon_url,
+    theme: (tenantRow.theme as Record<string, unknown>) ?? {},
+  };
+
+  const settings: TenantSettings = settingsRow
+    ? {
+        sentimentVisibility: settingsRow.sentiment_visibility as SentimentVisibility,
+        smallParticipationDisplay: settingsRow.small_participation_display,
+        minimumRankedPredictions: settingsRow.minimum_ranked_predictions,
+        platformShareBps: settingsRow.platform_share_bps,
+        creatorShareBps: settingsRow.creator_share_bps,
+        legalLinks: (settingsRow.legal_links as unknown[]) ?? [],
+        footerLinks: (settingsRow.footer_links as unknown[]) ?? [],
+      }
+    : DEFAULT_SETTINGS;
+
+  const features = FeatureFlagService.fromRows(flagRows ?? []);
+
+  return { tenant, settings, features };
+});
