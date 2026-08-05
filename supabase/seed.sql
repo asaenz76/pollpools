@@ -34,7 +34,7 @@ values
   ('00000000-0000-4000-a000-000000000001', 'global_leaderboard_enabled', true),
   ('00000000-0000-4000-a000-000000000001', 'creator_leaderboards_enabled', true),
   ('00000000-0000-4000-a000-000000000001', 'season_leaderboards_enabled', true),
-  ('00000000-0000-4000-a000-000000000001', 'platform_premium_enabled', false),
+  ('00000000-0000-4000-a000-000000000001', 'platform_premium_enabled', true),
   ('00000000-0000-4000-a000-000000000001', 'creator_support_enabled', true),
   ('00000000-0000-4000-a000-000000000001', 'sponsorships_enabled', false),
   ('00000000-0000-4000-a000-000000000001', 'youtube_embeds_enabled', true),

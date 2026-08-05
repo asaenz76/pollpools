@@ -91,6 +91,28 @@ Layout conventions to prevent bleed:
 Verified programmatically at 320px (`document.scrollWidth === clientWidth`) across
 all routes.
 
+### ADR-008 — Provider-neutral billing; webhooks are the only grant path
+Monetization is optional and provider-agnostic. A `BillingProvider` interface
+(`src/lib/billing/`) is the sole boundary; provider SDK types never leak past it.
+V1 ships **Lemon Squeezy**, **mock** (fully signed, drives the whole pipeline in
+dev/test), and **manual** adapters — swapping is a config + one-file change.
+Entitlements and earnings are created **only** by signature-verified webhooks via
+one function (`apply_billing_event`); a redirect never grants anything. Webhooks
+are idempotent on `(provider, provider_event_id)` (replay → 200 no-op; bad sig →
+401), and a cross-tenant event is rejected (`CROSS_TENANT_EVENT`). Prices,
+currencies, and variant ids are always resolved server-side from
+`billing_products` — client values are ignored. Lemon Squeezy has no split
+payments, so creator revenue is tracked internally in an **immutable
+`creator_earnings` ledger**; refunds append negative compensating rows (never
+mutate), and a balance is the sum of the active set (same reversible-derived
+pattern as stats/draft standings). Payouts are **manual**: earnings are marked
+paid only when a payout is marked paid; the payout functions are super-admin /
+service-role only. Paid Competitor Draft stays gated behind
+`PAID_DRAFT_CHECKOUT_ENABLED` **and** an approved `provider_product_approvals`
+row. No wallet, stored value, or outcome-linked payout exists anywhere; payments
+never touch scoring, settlement, draft standings, or sentiment. See
+[`monetization.md`](monetization.md).
+
 ## Phase plan
 
 1. **Foundation** — scaffold, tenancy schema, RLS, auth, tenant resolver, theme ✅
@@ -100,7 +122,10 @@ all routes.
 4.5. Competitor Draft Engine — optional draft (free/paid), scoring, prizes, separate leaderboard ✅
 5. Social — feed, profiles, following, notifications, sharing ✅
 6. Creator product — onboarding, dashboard, creation flows, result submission ✅
-7. Monetization — premium, creator support, sponsorships (mock provider)
+7. Monetization — premium, creator support, sponsorships; provider-neutral billing ✅
 8. Admin & ops — tenant mgmt, moderation, settlement controls, audit, health
+   (includes the deferred admin billing screens: provider status, products,
+   provider mappings, approvals, orders, subscriptions, refunds, failed webhooks,
+   reconciliation, earnings, payout queue, paid-draft enablement)
 9. Reference marble tenant — full end-to-end seed
 10. QA & launch — a11y, responsive, security review, e2e, docs

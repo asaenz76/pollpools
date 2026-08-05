@@ -5,7 +5,6 @@ import {
   generateBracket,
   resolveBracket,
   finalMatch,
-  type Bracket,
 } from "@/lib/domain/bracket";
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `c${i + 1}`);

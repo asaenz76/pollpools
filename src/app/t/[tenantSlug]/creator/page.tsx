@@ -103,6 +103,7 @@ export default async function CreatorStudioPage() {
         <Link href={`${base}/new`} className={buttonVariants({ variant: "primary", size: "sm" })}>Create</Link>
         <Link href={`${base}/competitors`} className={buttonVariants({ variant: "outline", size: "sm" })}>Competitors</Link>
         <Link href={`${base}/analytics`} className={buttonVariants({ variant: "outline", size: "sm" })}>Analytics</Link>
+        <Link href={`${base}/revenue`} className={buttonVariants({ variant: "outline", size: "sm" })}>Revenue</Link>
         <Link href={`${base}/profile`} className={buttonVariants({ variant: "outline", size: "sm" })}>Edit profile</Link>
       </div>
 

@@ -129,6 +129,603 @@ export type Database = {
           },
         ]
       }
+      billing_checkouts: {
+        Row: {
+          billing_product_id: string
+          checkout_url: string | null
+          completed_at: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          idempotency_key: string
+          metadata: Json
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_checkout_id: string | null
+          status: Database["public"]["Enums"]["billing_checkout_status"]
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_product_id: string
+          checkout_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          idempotency_key: string
+          metadata?: Json
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_checkout_id?: string | null
+          status?: Database["public"]["Enums"]["billing_checkout_status"]
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_product_id?: string
+          checkout_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          idempotency_key?: string
+          metadata?: Json
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          provider_checkout_id?: string | null
+          status?: Database["public"]["Enums"]["billing_checkout_status"]
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_checkouts_billing_product_id_fkey"
+            columns: ["billing_product_id"]
+            isOneToOne: false
+            referencedRelation: "billing_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_checkouts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_checkouts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          metadata: Json
+          name: string | null
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          metadata?: Json
+          name?: string | null
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          metadata?: Json
+          name?: string | null
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_customers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_customers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_entitlements: {
+        Row: {
+          competition_id: string | null
+          created_at: string
+          creator_id: string | null
+          ends_at: string | null
+          entitlement_type: Database["public"]["Enums"]["billing_entitlement_type"]
+          id: string
+          metadata: Json
+          revoked_at: string | null
+          source_id: string
+          source_type: Database["public"]["Enums"]["entitlement_source_type"]
+          starts_at: string
+          status: Database["public"]["Enums"]["entitlement_status"]
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          competition_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          ends_at?: string | null
+          entitlement_type: Database["public"]["Enums"]["billing_entitlement_type"]
+          id?: string
+          metadata?: Json
+          revoked_at?: string | null
+          source_id: string
+          source_type: Database["public"]["Enums"]["entitlement_source_type"]
+          starts_at?: string
+          status?: Database["public"]["Enums"]["entitlement_status"]
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          ends_at?: string | null
+          entitlement_type?: Database["public"]["Enums"]["billing_entitlement_type"]
+          id?: string
+          metadata?: Json
+          revoked_at?: string | null
+          source_id?: string
+          source_type?: Database["public"]["Enums"]["entitlement_source_type"]
+          starts_at?: string
+          status?: Database["public"]["Enums"]["entitlement_status"]
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_entitlements_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_entitlements_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_entitlements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_entitlements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_orders: {
+        Row: {
+          billing_checkout_id: string | null
+          billing_product_id: string
+          created_at: string
+          currency_code: string
+          id: string
+          metadata: Json
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id: string | null
+          provider_order_id: string
+          purchased_at: string
+          refunded_minor_units: number
+          status: Database["public"]["Enums"]["billing_order_status"]
+          subtotal_minor_units: number
+          tax_minor_units: number
+          tenant_id: string
+          total_minor_units: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_checkout_id?: string | null
+          billing_product_id: string
+          created_at?: string
+          currency_code: string
+          id?: string
+          metadata?: Json
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id?: string | null
+          provider_order_id: string
+          purchased_at: string
+          refunded_minor_units?: number
+          status: Database["public"]["Enums"]["billing_order_status"]
+          subtotal_minor_units: number
+          tax_minor_units?: number
+          tenant_id: string
+          total_minor_units: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_checkout_id?: string | null
+          billing_product_id?: string
+          created_at?: string
+          currency_code?: string
+          id?: string
+          metadata?: Json
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id?: string | null
+          provider_order_id?: string
+          purchased_at?: string
+          refunded_minor_units?: number
+          status?: Database["public"]["Enums"]["billing_order_status"]
+          subtotal_minor_units?: number
+          tax_minor_units?: number
+          tenant_id?: string
+          total_minor_units?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_orders_billing_checkout_id_fkey"
+            columns: ["billing_checkout_id"]
+            isOneToOne: false
+            referencedRelation: "billing_checkouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_orders_billing_product_id_fkey"
+            columns: ["billing_product_id"]
+            isOneToOne: false
+            referencedRelation: "billing_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_orders_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_products: {
+        Row: {
+          billing_interval:
+            | Database["public"]["Enums"]["billing_interval_type"]
+            | null
+          competition_id: string | null
+          created_at: string
+          creator_id: string | null
+          currency_code: string
+          description: string | null
+          id: string
+          metadata: Json
+          name: string
+          price_minor_units: number
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_product_id: string | null
+          provider_variant_id: string | null
+          status: Database["public"]["Enums"]["billing_product_status"]
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_interval?:
+            | Database["public"]["Enums"]["billing_interval_type"]
+            | null
+          competition_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          currency_code: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          price_minor_units: number
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_product_id?: string | null
+          provider_variant_id?: string | null
+          status?: Database["public"]["Enums"]["billing_product_status"]
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_interval?:
+            | Database["public"]["Enums"]["billing_interval_type"]
+            | null
+          competition_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          currency_code?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          price_minor_units?: number
+          product_type?: Database["public"]["Enums"]["billing_product_type"]
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          provider_product_id?: string | null
+          provider_variant_id?: string | null
+          status?: Database["public"]["Enums"]["billing_product_status"]
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_products_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_products_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_refunds: {
+        Row: {
+          amount_minor_units: number
+          billing_order_id: string
+          created_at: string
+          currency_code: string
+          id: string
+          idempotency_key: string
+          initiated_by: string | null
+          processed_at: string | null
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_refund_id: string | null
+          reason: string | null
+          status: Database["public"]["Enums"]["billing_refund_status"]
+          tenant_id: string
+        }
+        Insert: {
+          amount_minor_units: number
+          billing_order_id: string
+          created_at?: string
+          currency_code: string
+          id?: string
+          idempotency_key: string
+          initiated_by?: string | null
+          processed_at?: string | null
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_refund_id?: string | null
+          reason?: string | null
+          status: Database["public"]["Enums"]["billing_refund_status"]
+          tenant_id: string
+        }
+        Update: {
+          amount_minor_units?: number
+          billing_order_id?: string
+          created_at?: string
+          currency_code?: string
+          id?: string
+          idempotency_key?: string
+          initiated_by?: string | null
+          processed_at?: string | null
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          provider_refund_id?: string | null
+          reason?: string | null
+          status?: Database["public"]["Enums"]["billing_refund_status"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_refunds_billing_order_id_fkey"
+            columns: ["billing_order_id"]
+            isOneToOne: false
+            referencedRelation: "billing_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_refunds_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_refunds_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_subscriptions: {
+        Row: {
+          billing_product_id: string
+          cancel_at_period_end: boolean
+          canceled_at: string | null
+          created_at: string
+          creator_id: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          ended_at: string | null
+          id: string
+          metadata: Json
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id: string | null
+          provider_subscription_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          tenant_id: string
+          trial_ends_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing_product_id: string
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          creator_id?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id?: string | null
+          provider_subscription_id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          tenant_id: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing_product_id?: string
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          creator_id?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          provider_customer_id?: string | null
+          provider_subscription_id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          tenant_id?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_subscriptions_billing_product_id_fkey"
+            columns: ["billing_product_id"]
+            isOneToOne: false
+            referencedRelation: "billing_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_subscriptions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_webhook_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          event_type: string
+          failure_reason: string | null
+          id: string
+          payload_hash: string
+          processed_at: string | null
+          processing_status: Database["public"]["Enums"]["webhook_processing_status"]
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_event_id: string
+          raw_payload: Json
+          signature_verified: boolean
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          event_type: string
+          failure_reason?: string | null
+          id?: string
+          payload_hash: string
+          processed_at?: string | null
+          processing_status?: Database["public"]["Enums"]["webhook_processing_status"]
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          provider_event_id: string
+          raw_payload: Json
+          signature_verified: boolean
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          event_type?: string
+          failure_reason?: string | null
+          id?: string
+          payload_hash?: string
+          processed_at?: string | null
+          processing_status?: Database["public"]["Enums"]["webhook_processing_status"]
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          provider_event_id?: string
+          raw_payload?: Json
+          signature_verified?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bracket_rounds: {
         Row: {
           competition_id: string
@@ -994,6 +1591,105 @@ export type Database = {
           },
         ]
       }
+      creator_earnings: {
+        Row: {
+          available_at: string | null
+          billing_order_id: string
+          billing_subscription_id: string | null
+          created_at: string
+          creator_id: string
+          creator_share_minor_units: number
+          currency_code: string
+          earning_type: Database["public"]["Enums"]["creator_earning_type"]
+          gross_minor_units: number
+          id: string
+          idempotency_key: string
+          net_revenue_minor_units: number
+          platform_share_minor_units: number
+          provider_fee_minor_units: number
+          reversed_by_id: string | null
+          status: Database["public"]["Enums"]["creator_earning_status"]
+          tax_minor_units: number
+          tenant_id: string
+        }
+        Insert: {
+          available_at?: string | null
+          billing_order_id: string
+          billing_subscription_id?: string | null
+          created_at?: string
+          creator_id: string
+          creator_share_minor_units: number
+          currency_code: string
+          earning_type: Database["public"]["Enums"]["creator_earning_type"]
+          gross_minor_units: number
+          id?: string
+          idempotency_key: string
+          net_revenue_minor_units: number
+          platform_share_minor_units: number
+          provider_fee_minor_units?: number
+          reversed_by_id?: string | null
+          status?: Database["public"]["Enums"]["creator_earning_status"]
+          tax_minor_units?: number
+          tenant_id: string
+        }
+        Update: {
+          available_at?: string | null
+          billing_order_id?: string
+          billing_subscription_id?: string | null
+          created_at?: string
+          creator_id?: string
+          creator_share_minor_units?: number
+          currency_code?: string
+          earning_type?: Database["public"]["Enums"]["creator_earning_type"]
+          gross_minor_units?: number
+          id?: string
+          idempotency_key?: string
+          net_revenue_minor_units?: number
+          platform_share_minor_units?: number
+          provider_fee_minor_units?: number
+          reversed_by_id?: string | null
+          status?: Database["public"]["Enums"]["creator_earning_status"]
+          tax_minor_units?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_earnings_billing_order_id_fkey"
+            columns: ["billing_order_id"]
+            isOneToOne: false
+            referencedRelation: "billing_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_earnings_billing_subscription_id_fkey"
+            columns: ["billing_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "billing_subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_earnings_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_earnings_reversed_by_id_fkey"
+            columns: ["reversed_by_id"]
+            isOneToOne: false
+            referencedRelation: "creator_earnings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_earnings_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_follows: {
         Row: {
           created_at: string
@@ -1036,6 +1732,195 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_payout_allocations: {
+        Row: {
+          amount_minor_units: number
+          created_at: string
+          earning_id: string
+          id: string
+          payout_request_id: string
+          tenant_id: string
+        }
+        Insert: {
+          amount_minor_units: number
+          created_at?: string
+          earning_id: string
+          id?: string
+          payout_request_id: string
+          tenant_id: string
+        }
+        Update: {
+          amount_minor_units?: number
+          created_at?: string
+          earning_id?: string
+          id?: string
+          payout_request_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_payout_allocations_earning_id_fkey"
+            columns: ["earning_id"]
+            isOneToOne: true
+            referencedRelation: "creator_earnings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_payout_allocations_payout_request_id_fkey"
+            columns: ["payout_request_id"]
+            isOneToOne: false
+            referencedRelation: "creator_payout_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_payout_allocations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_payout_requests: {
+        Row: {
+          amount_minor_units: number
+          created_at: string
+          creator_id: string
+          currency_code: string
+          external_reference: string | null
+          id: string
+          idempotency_key: string
+          notes: string | null
+          paid_at: string | null
+          payout_destination_masked: string | null
+          payout_method: string | null
+          requested_at: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["creator_payout_status"]
+          tenant_id: string
+        }
+        Insert: {
+          amount_minor_units: number
+          created_at?: string
+          creator_id: string
+          currency_code: string
+          external_reference?: string | null
+          id?: string
+          idempotency_key: string
+          notes?: string | null
+          paid_at?: string | null
+          payout_destination_masked?: string | null
+          payout_method?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["creator_payout_status"]
+          tenant_id: string
+        }
+        Update: {
+          amount_minor_units?: number
+          created_at?: string
+          creator_id?: string
+          currency_code?: string
+          external_reference?: string | null
+          id?: string
+          idempotency_key?: string
+          notes?: string | null
+          paid_at?: string | null
+          payout_destination_masked?: string | null
+          payout_method?: string | null
+          requested_at?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["creator_payout_status"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_payout_requests_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_payout_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_payout_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_revenue_rules: {
+        Row: {
+          created_at: string
+          created_by: string
+          creator_id: string
+          creator_share_basis_points: number
+          effective_from: string
+          effective_to: string | null
+          id: string
+          platform_share_basis_points: number
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          creator_id: string
+          creator_share_basis_points: number
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          platform_share_basis_points: number
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          creator_id?: string
+          creator_share_basis_points?: number
+          effective_from?: string
+          effective_to?: string | null
+          id?: string
+          platform_share_basis_points?: number
+          product_type?: Database["public"]["Enums"]["billing_product_type"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_revenue_rules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_revenue_rules_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_revenue_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -2335,6 +3220,63 @@ export type Database = {
           },
         ]
       }
+      provider_product_approvals: {
+        Row: {
+          approval_reference: string | null
+          approval_status: Database["public"]["Enums"]["provider_approval_status"]
+          approved_at: string | null
+          created_at: string
+          evidence_url: string | null
+          id: string
+          notes: string | null
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          reviewed_by: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          approval_reference?: string | null
+          approval_status?: Database["public"]["Enums"]["provider_approval_status"]
+          approved_at?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          notes?: string | null
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+          provider: Database["public"]["Enums"]["billing_provider_type"]
+          reviewed_by?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          approval_reference?: string | null
+          approval_status?: Database["public"]["Enums"]["provider_approval_status"]
+          approved_at?: string | null
+          created_at?: string
+          evidence_url?: string | null
+          id?: string
+          notes?: string | null
+          product_type?: Database["public"]["Enums"]["billing_product_type"]
+          provider?: Database["public"]["Enums"]["billing_provider_type"]
+          reviewed_by?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_product_approvals_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_product_approvals_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scoring_rules: {
         Row: {
           config: Json
@@ -2535,6 +3477,116 @@ export type Database = {
           },
           {
             foreignKeyName: "settlements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sponsorships: {
+        Row: {
+          amount_invoiced_minor_units: number | null
+          amount_received_minor_units: number | null
+          campaign_title: string | null
+          competition_id: string | null
+          contract_value_minor_units: number | null
+          created_at: string
+          creator_id: string | null
+          creator_share_basis_points: number | null
+          currency_code: string | null
+          ends_at: string | null
+          event_id: string | null
+          external_invoice_reference: string | null
+          id: string
+          invoice_status: Database["public"]["Enums"]["sponsorship_invoice_status"]
+          logo_url: string | null
+          metadata: Json
+          placement: string | null
+          platform_share_basis_points: number | null
+          received_at: string | null
+          sponsor_name: string
+          starts_at: string | null
+          status: Database["public"]["Enums"]["sponsorship_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_invoiced_minor_units?: number | null
+          amount_received_minor_units?: number | null
+          campaign_title?: string | null
+          competition_id?: string | null
+          contract_value_minor_units?: number | null
+          created_at?: string
+          creator_id?: string | null
+          creator_share_basis_points?: number | null
+          currency_code?: string | null
+          ends_at?: string | null
+          event_id?: string | null
+          external_invoice_reference?: string | null
+          id?: string
+          invoice_status?: Database["public"]["Enums"]["sponsorship_invoice_status"]
+          logo_url?: string | null
+          metadata?: Json
+          placement?: string | null
+          platform_share_basis_points?: number | null
+          received_at?: string | null
+          sponsor_name: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["sponsorship_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_invoiced_minor_units?: number | null
+          amount_received_minor_units?: number | null
+          campaign_title?: string | null
+          competition_id?: string | null
+          contract_value_minor_units?: number | null
+          created_at?: string
+          creator_id?: string | null
+          creator_share_basis_points?: number | null
+          currency_code?: string | null
+          ends_at?: string | null
+          event_id?: string | null
+          external_invoice_reference?: string | null
+          id?: string
+          invoice_status?: Database["public"]["Enums"]["sponsorship_invoice_status"]
+          logo_url?: string | null
+          metadata?: Json
+          placement?: string | null
+          platform_share_basis_points?: number | null
+          received_at?: string | null
+          sponsor_name?: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["sponsorship_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sponsorships_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsorships_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsorships_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sponsorships_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -2995,6 +4047,11 @@ export type Database = {
         Args: { p_event_id: string; p_winner_competitor_id: string }
         Returns: undefined
       }
+      apply_billing_event: {
+        Args: { p_event: Json; p_webhook_id: string }
+        Returns: undefined
+      }
+      approve_creator_payout: { Args: { p_payout_id: string }; Returns: Json }
       award_competition_prizes: {
         Args: { p_competition_id: string }
         Returns: number
@@ -3005,6 +4062,16 @@ export type Database = {
       }
       confirm_draft_payment: {
         Args: { p_provider_reference: string }
+        Returns: Json
+      }
+      create_billing_checkout: {
+        Args: {
+          p_billing_product_id: string
+          p_competition_id: string
+          p_creator_id: string
+          p_draft_reservation_id: string
+          p_idempotency_key: string
+        }
         Returns: Json
       }
       create_bracket: {
@@ -3048,6 +4115,10 @@ export type Database = {
       }
       expire_draft_reservations: { Args: never; Returns: number }
       lock_due_markets: { Args: never; Returns: number }
+      mark_creator_payout_paid: {
+        Args: { p_external_reference: string; p_payout_id: string }
+        Returns: undefined
+      }
       market_sentiment: {
         Args: { p_market_id: string }
         Returns: {
@@ -3082,6 +4153,19 @@ export type Database = {
         }
         Returns: Json
       }
+      reject_creator_payout: {
+        Args: { p_payout_id: string; p_reason: string }
+        Returns: undefined
+      }
+      set_billing_checkout_url: {
+        Args: {
+          p_checkout_id: string
+          p_expires_at: string
+          p_provider_checkout_id: string
+          p_url: string
+        }
+        Returns: undefined
+      }
       settle_event: {
         Args: {
           p_event_id: string
@@ -3104,6 +4188,31 @@ export type Database = {
       }
     }
     Enums: {
+      billing_checkout_status:
+        | "pending"
+        | "open"
+        | "completed"
+        | "expired"
+        | "failed"
+      billing_entitlement_type:
+        | "platform_premium"
+        | "creator_supporter"
+        | "paid_draft_access"
+        | "premium_reward_period"
+      billing_interval_type: "one_time" | "monthly" | "yearly"
+      billing_order_status:
+        | "paid"
+        | "pending"
+        | "partially_refunded"
+        | "refunded"
+        | "failed"
+      billing_product_status: "active" | "inactive" | "archived"
+      billing_product_type:
+        | "platform_premium"
+        | "creator_support"
+        | "paid_competitor_draft"
+      billing_provider_type: "lemon_squeezy" | "mock" | "manual" | "future"
+      billing_refund_status: "pending" | "succeeded" | "failed"
       competition_status:
         | "draft"
         | "scheduled"
@@ -3112,6 +4221,24 @@ export type Database = {
         | "canceled"
         | "archived"
       competition_type: "STANDALONE_EVENT" | "SEASON" | "TOURNAMENT" | "BRACKET"
+      creator_earning_status:
+        | "pending"
+        | "available"
+        | "held"
+        | "reversed"
+        | "paid"
+      creator_earning_type:
+        | "support_subscription"
+        | "paid_draft"
+        | "adjustment"
+        | "reversal"
+      creator_payout_status:
+        | "requested"
+        | "under_review"
+        | "approved"
+        | "rejected"
+        | "paid"
+        | "canceled"
       creator_verification_status:
         | "unsubmitted"
         | "pending"
@@ -3150,6 +4277,12 @@ export type Database = {
         | "completed"
         | "canceled"
       draft_visibility: "public" | "followers_only" | "invite_only"
+      entitlement_source_type:
+        | "subscription"
+        | "order"
+        | "prize_award"
+        | "admin_grant"
+      entitlement_status: "active" | "expired" | "revoked"
       event_status:
         | "draft"
         | "scheduled"
@@ -3230,6 +4363,7 @@ export type Database = {
         | "physical"
         | "sponsor"
         | "premium_access"
+      provider_approval_status: "pending" | "approved" | "rejected" | "revoked"
       result_source_type:
         | "creator_manual"
         | "super_admin_manual"
@@ -3243,6 +4377,13 @@ export type Database = {
         | "reversed"
         | "superseded"
         | "failed"
+      sponsorship_invoice_status:
+        | "none"
+        | "draft"
+        | "sent"
+        | "partial"
+        | "paid"
+        | "void"
       sponsorship_status: "draft" | "active" | "completed" | "canceled"
       stage_kind:
         | "qualifier"
@@ -3263,6 +4404,7 @@ export type Database = {
         | "incomplete"
       tenant_status: "active" | "suspended" | "archived"
       user_status: "active" | "suspended" | "deleted"
+      webhook_processing_status: "received" | "processed" | "failed" | "skipped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3393,6 +4535,35 @@ export const Constants = {
   },
   public: {
     Enums: {
+      billing_checkout_status: [
+        "pending",
+        "open",
+        "completed",
+        "expired",
+        "failed",
+      ],
+      billing_entitlement_type: [
+        "platform_premium",
+        "creator_supporter",
+        "paid_draft_access",
+        "premium_reward_period",
+      ],
+      billing_interval_type: ["one_time", "monthly", "yearly"],
+      billing_order_status: [
+        "paid",
+        "pending",
+        "partially_refunded",
+        "refunded",
+        "failed",
+      ],
+      billing_product_status: ["active", "inactive", "archived"],
+      billing_product_type: [
+        "platform_premium",
+        "creator_support",
+        "paid_competitor_draft",
+      ],
+      billing_provider_type: ["lemon_squeezy", "mock", "manual", "future"],
+      billing_refund_status: ["pending", "succeeded", "failed"],
       competition_status: [
         "draft",
         "scheduled",
@@ -3402,6 +4573,27 @@ export const Constants = {
         "archived",
       ],
       competition_type: ["STANDALONE_EVENT", "SEASON", "TOURNAMENT", "BRACKET"],
+      creator_earning_status: [
+        "pending",
+        "available",
+        "held",
+        "reversed",
+        "paid",
+      ],
+      creator_earning_type: [
+        "support_subscription",
+        "paid_draft",
+        "adjustment",
+        "reversal",
+      ],
+      creator_payout_status: [
+        "requested",
+        "under_review",
+        "approved",
+        "rejected",
+        "paid",
+        "canceled",
+      ],
       creator_verification_status: [
         "unsubmitted",
         "pending",
@@ -3445,6 +4637,13 @@ export const Constants = {
         "canceled",
       ],
       draft_visibility: ["public", "followers_only", "invite_only"],
+      entitlement_source_type: [
+        "subscription",
+        "order",
+        "prize_award",
+        "admin_grant",
+      ],
+      entitlement_status: ["active", "expired", "revoked"],
       event_status: [
         "draft",
         "scheduled",
@@ -3532,6 +4731,7 @@ export const Constants = {
         "sponsor",
         "premium_access",
       ],
+      provider_approval_status: ["pending", "approved", "rejected", "revoked"],
       result_source_type: [
         "creator_manual",
         "super_admin_manual",
@@ -3546,6 +4746,14 @@ export const Constants = {
         "reversed",
         "superseded",
         "failed",
+      ],
+      sponsorship_invoice_status: [
+        "none",
+        "draft",
+        "sent",
+        "partial",
+        "paid",
+        "void",
       ],
       sponsorship_status: ["draft", "active", "completed", "canceled"],
       stage_kind: [
@@ -3569,6 +4777,7 @@ export const Constants = {
       ],
       tenant_status: ["active", "suspended", "archived"],
       user_status: ["active", "suspended", "deleted"],
+      webhook_processing_status: ["received", "processed", "failed", "skipped"],
     },
   },
 } as const

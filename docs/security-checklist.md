@@ -38,7 +38,19 @@ Status legend: ✅ implemented · ⏳ later phase.
   service-role only, signature-verified, replay-safe (`(provider, reference)` unique).
 - ✅ Draft availability exposed via aggregate (`draft_roster`) — no leak of who
   drafted whom; prize awards idempotent.
-- ⏳ Subscription webhook signature verify + replay protection (Phase 7).
+- ✅ Billing webhook signature verify (HMAC-SHA256, raw body, constant-time) +
+  replay protection (`(provider, provider_event_id)` unique); invalid → 401,
+  duplicate → 200 no-op.
+- ✅ Entitlements/earnings granted **only** by verified webhooks via
+  `apply_billing_event` — never a redirect or client call.
+- ✅ Checkout prices/currencies/variant-ids resolved server-side from
+  `billing_products`; client-supplied amounts ignored.
+- ✅ Cross-tenant billing events rejected (`CROSS_TENANT_EVENT`, 42501).
+- ✅ Immutable creator-earnings ledger; refunds reverse via compensating rows;
+  earnings marked paid only when a payout is marked paid; payout functions are
+  super-admin / service-role only.
+- ✅ Paid Competitor Draft gated by `PAID_DRAFT_CHECKOUT_ENABLED` **and** an
+  approved `provider_product_approvals` row; provider API keys server-only.
 
 ## Data protection
 - ✅ Soft-deletable users so historical predictions are preserved.

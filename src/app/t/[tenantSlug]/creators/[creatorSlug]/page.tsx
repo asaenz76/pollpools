@@ -3,8 +3,10 @@ import { notFound } from "next/navigation";
 import { getTenantContext } from "@/lib/tenant/context";
 import { getSessionUser } from "@/lib/auth/session";
 import { getCreatorProfile } from "@/features/social/get-creators";
+import { getCreatorSupportProduct, getEntitlements, formatMoney } from "@/features/billing/get-billing";
 import { FollowButton } from "@/components/domain/follow-button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckoutButton } from "@/components/billing/buttons";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +19,12 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
   if (!creator) notFound();
 
   const canFollow = ctx.features.isEnabled("creator_following_enabled");
+  const supportEnabled = ctx.features.isEnabled("creator_support_enabled");
+  const [supportProduct, entitlements] = await Promise.all([
+    supportEnabled ? getCreatorSupportProduct(ctx.tenant.id, creator.id) : Promise.resolve(null),
+    getEntitlements(ctx.tenant.id),
+  ]);
+  const isSupporter = entitlements.supportedCreatorIds.includes(creator.id);
 
   return (
     <div className="flex flex-col gap-5">
@@ -41,6 +49,34 @@ export default async function CreatorProfilePage({ params }: { params: Promise<{
           />
         ) : null}
       </header>
+
+      {supportEnabled && supportProduct ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Support {creator.displayName}</CardTitle>
+            <CardDescription>
+              {isSupporter
+                ? "You're a supporter. Thank you!"
+                : "Support does not affect prediction or draft scoring, or unlock any advantage."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isSupporter ? (
+              <span className="rounded-full border border-positive/40 px-3 py-1 text-xs text-positive">Supporter</span>
+            ) : user ? (
+              <CheckoutButton
+                productId={supportProduct.id}
+                tenantSlug={ctx.tenant.slug}
+                creatorId={creator.id}
+                variant="outline"
+                label={`Support — ${formatMoney(supportProduct.priceMinorUnits, supportProduct.currencyCode)}/mo`}
+              />
+            ) : (
+              <Link href={`/t/${ctx.tenant.slug}/sign-in`} className="text-sm text-primary hover:underline">Sign in to support</Link>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <section aria-labelledby="creator-events">
         <h2 id="creator-events" className="mb-3 text-sm font-medium text-muted-foreground">

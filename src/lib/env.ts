@@ -27,6 +27,26 @@ const serverSchema = z.object({
   SUBSCRIPTION_PROVIDER: z.string().default("mock"),
   SUBSCRIPTION_WEBHOOK_SECRET: z.string().min(1),
   APP_SIGNING_SECRET: z.string().min(1),
+
+  // ── Billing (Phase 7) ──────────────────────────────────────────────────────
+  BILLING_PROVIDER: z.enum(["lemon_squeezy", "mock", "manual"]).default("mock"),
+  // Production gate: paid Competitor Draft checkout stays OFF unless explicitly on.
+  PAID_DRAFT_CHECKOUT_ENABLED: z
+    .string()
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
+  // Mock/webhook secret used by the mock provider + internal signing.
+  BILLING_WEBHOOK_SECRET: z.string().min(1).default("local-billing-webhook-secret-change-me"),
+  LEMON_SQUEEZY_API_KEY: z.string().optional(),
+  LEMON_SQUEEZY_STORE_ID: z.string().optional(),
+  LEMON_SQUEEZY_WEBHOOK_SECRET: z.string().optional(),
+  LEMON_SQUEEZY_TEST_MODE: z
+    .string()
+    .default("true")
+    .transform((v) => v !== "false"),
+  LEMON_SQUEEZY_PLATFORM_PREMIUM_VARIANT_ID: z.string().optional(),
+  LEMON_SQUEEZY_CREATOR_SUPPORT_VARIANT_ID: z.string().optional(),
+  LEMON_SQUEEZY_PAID_DRAFT_VARIANT_ID: z.string().optional(),
 });
 
 let cachedServerEnv: z.infer<typeof serverSchema> | null = null;
@@ -41,6 +61,16 @@ export function serverEnv(): z.infer<typeof serverSchema> {
       SUBSCRIPTION_PROVIDER: process.env.SUBSCRIPTION_PROVIDER,
       SUBSCRIPTION_WEBHOOK_SECRET: process.env.SUBSCRIPTION_WEBHOOK_SECRET,
       APP_SIGNING_SECRET: process.env.APP_SIGNING_SECRET,
+      BILLING_PROVIDER: process.env.BILLING_PROVIDER,
+      PAID_DRAFT_CHECKOUT_ENABLED: process.env.PAID_DRAFT_CHECKOUT_ENABLED,
+      BILLING_WEBHOOK_SECRET: process.env.BILLING_WEBHOOK_SECRET,
+      LEMON_SQUEEZY_API_KEY: process.env.LEMON_SQUEEZY_API_KEY,
+      LEMON_SQUEEZY_STORE_ID: process.env.LEMON_SQUEEZY_STORE_ID,
+      LEMON_SQUEEZY_WEBHOOK_SECRET: process.env.LEMON_SQUEEZY_WEBHOOK_SECRET,
+      LEMON_SQUEEZY_TEST_MODE: process.env.LEMON_SQUEEZY_TEST_MODE,
+      LEMON_SQUEEZY_PLATFORM_PREMIUM_VARIANT_ID: process.env.LEMON_SQUEEZY_PLATFORM_PREMIUM_VARIANT_ID,
+      LEMON_SQUEEZY_CREATOR_SUPPORT_VARIANT_ID: process.env.LEMON_SQUEEZY_CREATOR_SUPPORT_VARIANT_ID,
+      LEMON_SQUEEZY_PAID_DRAFT_VARIANT_ID: process.env.LEMON_SQUEEZY_PAID_DRAFT_VARIANT_ID,
     });
   }
   return cachedServerEnv;

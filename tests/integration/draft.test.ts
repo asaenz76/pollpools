@@ -15,7 +15,7 @@ d("competitor draft engine", () => {
   let creatorId: string;
   let ownerId: string;
   let compIds: string[] = [];
-  let members: { id: string; client: SupabaseClient<Database> }[] = [];
+  const members: { id: string; client: SupabaseClient<Database> }[] = [];
   let keyN = 0;
   const key = () => `dr-${s}-${keyN++}-abcdefgh`;
 

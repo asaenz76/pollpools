@@ -109,6 +109,20 @@ async function main() {
     .single();
   const creatorId = creator.id;
 
+  // Billing products (mock provider): Platform Premium + Creator Support.
+  const { count: premiumCount } = await db.from("billing_products").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("product_type", "platform_premium");
+  if (!premiumCount) {
+    await db.from("billing_products").insert({ tenant_id: tenantId, product_type: "platform_premium", name: "Marble Grand Prix Premium", description: "Advanced analytics, full history, premium profile.", provider: "mock", provider_variant_id: "mock_premium", status: "active", currency_code: "USD", price_minor_units: 499, billing_interval: "monthly" });
+  }
+  const { count: supportCount } = await db.from("billing_products").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId).eq("product_type", "creator_support").eq("creator_id", creatorId);
+  if (!supportCount) {
+    await db.from("billing_products").insert({ tenant_id: tenantId, product_type: "creator_support", name: "Support Marble League HQ", description: "Supporter badge + creator updates.", provider: "mock", provider_variant_id: "mock_support", status: "active", currency_code: "USD", price_minor_units: 300, billing_interval: "monthly", creator_id: creatorId });
+  }
+  const { count: ruleCount } = await db.from("creator_revenue_rules").select("*", { count: "exact", head: true }).eq("creator_id", creatorId).eq("product_type", "creator_support");
+  if (!ruleCount) {
+    await db.from("creator_revenue_rules").insert({ tenant_id: tenantId, creator_id: creatorId, product_type: "creator_support", creator_share_basis_points: 8000, platform_share_basis_points: 2000, effective_from: new Date().toISOString(), created_by: ownerId });
+  }
+
   // Competitors.
   const competitorIds = {};
   for (const m of MARBLES) {

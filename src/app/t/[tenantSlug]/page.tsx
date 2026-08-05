@@ -52,6 +52,14 @@ export default async function TenantHome() {
             <Link href={`/t/${tenant.slug}/creators`} className={buttonVariants({ variant: "outline", size: "sm" })}>
               Browse creators
             </Link>
+            {features.isEnabled("platform_premium_enabled") ? (
+              <Link href={`/t/${tenant.slug}/premium`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                Premium
+              </Link>
+            ) : null}
+            <Link href={`/t/${tenant.slug}/billing`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Billing
+            </Link>
           </CardContent>
         </Card>
       ) : (
