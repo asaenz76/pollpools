@@ -114,6 +114,7 @@ See [`docs/`](docs/): [architecture](docs/architecture.md),
 [settlement & scoring](docs/settlement.md),
 [competitor draft](docs/competitor-draft.md),
 [social experience](docs/social.md),
+[creator product](docs/creator-product.md),
 [role/permission matrix](docs/role-permission-matrix.md),
 [security checklist](docs/security-checklist.md),
 [decisions & assumptions](docs/decisions.md).
@@ -122,7 +123,8 @@ See [`docs/`](docs/): [architecture](docs/architecture.md),
 
 Built phase-by-phase (see `docs/decisions.md` for the plan). Complete so far:
 **Phase 1** (foundation: tenancy, RLS, auth), **Phase 2** (prediction engine),
-**Phase 3** (competition formats: seasons/tournaments/brackets), **Phase 4**
-(idempotent settlement, stats, streaks, leaderboards, achievements), **Phase 4.5**
-(Competitor Draft Engine), and **Phase 5** (social: feed, notifications, following,
-profiles, likes/comments) — all typechecked, linted, and covered by 119 tests.
+**Phase 3** (competition formats), **Phase 4** (idempotent settlement, stats,
+streaks, leaderboards, achievements), **Phase 4.5** (Competitor Draft Engine),
+**Phase 5** (social: feed, notifications, following, profiles, likes/comments),
+and **Phase 6** (Creator Studio: onboarding, create flows, result submission) —
+all typechecked, linted, and covered by 125 tests, with zero horizontal bleed at 320px.

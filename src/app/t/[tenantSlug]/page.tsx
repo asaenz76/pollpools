@@ -43,10 +43,16 @@ export default async function TenantHome() {
         <Card>
           <CardHeader>
             <CardTitle>You&apos;re in</CardTitle>
-            <CardDescription>
-              You&apos;re signed in to {tenant.displayName}. Competitions and predictions arrive next.
-            </CardDescription>
+            <CardDescription>Predict on events below, or run your own competitions.</CardDescription>
           </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Link href={`/t/${tenant.slug}/creator`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Creator Studio
+            </Link>
+            <Link href={`/t/${tenant.slug}/creators`} className={buttonVariants({ variant: "outline", size: "sm" })}>
+              Browse creators
+            </Link>
+          </CardContent>
         </Card>
       ) : (
         <Card>

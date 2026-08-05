@@ -3011,6 +3011,22 @@ export type Database = {
         Args: { p_competition_id: string; p_structure: Json }
         Returns: undefined
       }
+      create_event_with_market: {
+        Args: {
+          p_competition_id: string
+          p_competitor_ids: string[]
+          p_creator_id: string
+          p_description: string
+          p_locks_at: string
+          p_market_question: string
+          p_publish: boolean
+          p_slug: string
+          p_starts_at: string
+          p_title: string
+          p_youtube_url: string
+        }
+        Returns: Json
+      }
       draft_competitor: {
         Args: {
           p_competition_id: string

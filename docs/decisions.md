@@ -98,8 +98,8 @@ all routes.
 3. Competition formats — standalone, season, tournament, bracket
 4. Settlement & scoring — idempotent settlement, stats, streaks, leaderboards, achievements ✅
 4.5. Competitor Draft Engine — optional draft (free/paid), scoring, prizes, separate leaderboard ✅
-5. Social — feed, profiles, following, notifications, sharing
-6. Creator product — onboarding, dashboard, creation flows, verification
+5. Social — feed, profiles, following, notifications, sharing ✅
+6. Creator product — onboarding, dashboard, creation flows, result submission ✅
 7. Monetization — premium, creator support, sponsorships (mock provider)
 8. Admin & ops — tenant mgmt, moderation, settlement controls, audit, health
 9. Reference marble tenant — full end-to-end seed

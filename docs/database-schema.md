@@ -33,6 +33,7 @@ Migrations live in `supabase/migrations/` and are applied in order by
 | `0019_social_tables.sql` | creator_follows, feed_activities, notifications, likes, comments |
 | `0020_social_triggers.sql` | notification/feed emit helpers + triggers |
 | `0021_public_history.sql` | `public_user_history` for public profiles |
+| `0022_creator_functions.sql` | `create_event_with_market` (atomic event + market + options) |
 
 Later phases add migrations for monetization. See [competitor-draft.md](competitor-draft.md), [social.md](social.md).
 

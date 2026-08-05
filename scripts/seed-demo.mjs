@@ -102,7 +102,7 @@ async function main() {
   const { data: creator } = await db
     .from("creators")
     .upsert(
-      { tenant_id: tenantId, owner_user_id: ownerId, display_name: "Marble League HQ", slug: "marble-league-hq", description: "Official marble racing on Marble Grand Prix.", verification_status: "verified", supporter_subscriptions_enabled: true },
+      { tenant_id: tenantId, owner_user_id: ownerId, display_name: "Marble League HQ", slug: "marble-league-hq", description: "Official marble racing on Marble Grand Prix.", verification_status: "verified", supporter_subscriptions_enabled: true, settlement_enabled: true },
       { onConflict: "tenant_id,slug" },
     )
     .select("id")
