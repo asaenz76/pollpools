@@ -250,7 +250,7 @@ export function EventForm({
       <Field label="Event title"><Input value={title} onChange={(e) => setTitle(e.target.value)} required minLength={2} /></Field>
       <Field label="Description (optional)"><Input value={description} onChange={(e) => setDesc(e.target.value)} /></Field>
       <Field label="Locks at (optional)"><Input type="datetime-local" value={locksAt} onChange={(e) => setLocksAt(e.target.value)} /></Field>
-      <Field label="YouTube URL (optional)"><Input value={youtubeUrl} onChange={(e) => setYoutube(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" /></Field>
+      <Field label="Live YouTube URL"><Input value={youtubeUrl} onChange={(e) => setYoutube(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" required /></Field>
       <Field label="Market question"><Input value={question} onChange={(e) => setQuestion(e.target.value)} /></Field>
       <div className="flex flex-col gap-1.5">
         <Label>Competitors ({selected.size} selected)</Label>

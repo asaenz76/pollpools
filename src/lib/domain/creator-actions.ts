@@ -4,6 +4,7 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createBracket } from "@/lib/domain/competitions";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
+import { parseYouTubeId } from "@/lib/domain/youtube";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -138,7 +139,11 @@ const eventSchema = z.object({
   description: z.string().trim().max(1000).optional(),
   startsAt: z.string().optional(),
   locksAt: z.string().optional(),
-  youtubeUrl: z.string().url().optional().or(z.literal("")),
+  youtubeUrl: z
+    .string()
+    .trim()
+    .min(1, "The Live YouTube URL is required")
+    .refine((u) => parseYouTubeId(u) !== null, "Enter a valid YouTube URL"),
   competitorIds: z.array(uuid).min(2, "Select at least 2 competitors"),
   marketQuestion: z.string().trim().max(200).optional(),
   publish: z.boolean().default(true),
@@ -157,7 +162,7 @@ export async function createEventAction(input: z.infer<typeof eventSchema>): Pro
     p_description: parsed.data.description ?? null,
     p_starts_at: parsed.data.startsAt || null,
     p_locks_at: parsed.data.locksAt || null,
-    p_youtube_url: parsed.data.youtubeUrl || null,
+    p_youtube_url: parsed.data.youtubeUrl,
     p_competitor_ids: parsed.data.competitorIds,
     p_market_question: parsed.data.marketQuestion || null,
     p_publish: parsed.data.publish,

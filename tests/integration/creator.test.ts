@@ -26,7 +26,7 @@ d("creator: create_event_with_market", () => {
       p_description: null,
       p_starts_at: null,
       p_locks_at: null,
-      p_youtube_url: null,
+      p_youtube_url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
       p_competitor_ids: opts.competitorIds,
       p_market_question: null,
       p_publish: opts.publish ?? true,
@@ -72,6 +72,26 @@ d("creator: create_event_with_market", () => {
 
     const { count } = await admin.from("event_competitors").select("*", { count: "exact", head: true }).eq("event_id", eventId);
     expect(count).toBe(3);
+  });
+
+  it("requires a Live YouTube URL", async () => {
+    const { error } = await owner.rpc("create_event_with_market", {
+      p_creator_id: creatorId, p_competition_id: null, p_title: "No URL", p_slug: `nourl-${s}`,
+      p_description: null, p_starts_at: null, p_locks_at: null, p_youtube_url: "  ",
+      p_competitor_ids: competitorIds.slice(0, 2), p_market_question: null, p_publish: true,
+    } as never);
+    expect(error?.message).toContain("YOUTUBE_REQUIRED");
+  });
+
+  it("the Live YouTube URL can be edited but not cleared", async () => {
+    const { data } = await createEvent(owner, { title: "Editable URL", slug: `editurl-${s}`, competitorIds: competitorIds.slice(0, 2) });
+    const eventId = data!.event_id;
+    // Editing to a new URL is allowed.
+    const edit = await admin.from("events").update({ youtube_url: "https://youtu.be/dQw4w9WgXcQ" }).eq("id", eventId);
+    expect(edit.error).toBeNull();
+    // Clearing it is blocked by the guard.
+    const clear = await admin.from("events").update({ youtube_url: null }).eq("id", eventId);
+    expect(clear.error).not.toBeNull();
   });
 
   it("rejects fewer than two competitors", async () => {
