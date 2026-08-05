@@ -23,7 +23,9 @@ Status legend: ✅ implemented · ⏳ later phase.
 ## Integrity & idempotency
 - ✅ `idempotency_records` ledger (service-role only), `(scope, key)` unique.
 - ✅ `audit_logs` append-only + `app.write_audit` (SECURITY DEFINER).
-- ⏳ One-prediction-per-market unique constraint + idempotency keys (Phase 2).
+- ✅ One-prediction-per-market unique constraint + idempotency keys + advisory
+  lock; predictions written only via `submit_prediction` (no direct write policy).
+- ✅ Server-time lock enforced in-DB (client clock never trusted).
 - ⏳ Idempotent settlement `(event_id, grading_version)` + row locks (Phase 4).
 - ⏳ Subscription webhook signature verify + replay protection (Phase 7).
 

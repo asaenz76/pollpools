@@ -109,6 +109,7 @@ docs/                      architecture, isolation, schema, security, decisions
 See [`docs/`](docs/): [architecture](docs/architecture.md),
 [tenant isolation](docs/tenant-isolation.md),
 [database schema](docs/database-schema.md),
+[prediction engine](docs/prediction-engine.md),
 [role/permission matrix](docs/role-permission-matrix.md),
 [security checklist](docs/security-checklist.md),
 [decisions & assumptions](docs/decisions.md).

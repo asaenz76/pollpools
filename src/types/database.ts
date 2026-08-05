@@ -88,6 +88,193 @@ export type Database = {
           },
         ]
       }
+      competition_stages: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["stage_kind"]
+          metadata: Json
+          name: string
+          sequence: number
+          status: Database["public"]["Enums"]["competition_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["stage_kind"]
+          metadata?: Json
+          name: string
+          sequence?: number
+          status?: Database["public"]["Enums"]["competition_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["stage_kind"]
+          metadata?: Json
+          name?: string
+          sequence?: number
+          status?: Database["public"]["Enums"]["competition_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_stages_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_stages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          ends_at: string | null
+          id: string
+          metadata: Json
+          scoring_rule_id: string | null
+          slug: string
+          starts_at: string | null
+          status: Database["public"]["Enums"]["competition_status"]
+          tenant_id: string
+          title: string
+          type: Database["public"]["Enums"]["competition_type"]
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          metadata?: Json
+          scoring_rule_id?: string | null
+          slug: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["competition_status"]
+          tenant_id: string
+          title: string
+          type: Database["public"]["Enums"]["competition_type"]
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          metadata?: Json
+          scoring_rule_id?: string | null
+          slug?: string
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["competition_status"]
+          tenant_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["competition_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitions_scoring_rule_id_fkey"
+            columns: ["scoring_rule_id"]
+            isOneToOne: false
+            referencedRelation: "scoring_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitors: {
+        Row: {
+          color: string | null
+          created_at: string
+          creator_id: string | null
+          id: string
+          image_url: string | null
+          metadata: Json
+          name: string
+          slug: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          image_url?: string | null
+          metadata?: Json
+          name: string
+          slug?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          creator_id?: string | null
+          id?: string
+          image_url?: string | null
+          metadata?: Json
+          name?: string
+          slug?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitors_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_channels: {
         Row: {
           created_at: string
@@ -202,6 +389,159 @@ export type Database = {
           },
         ]
       }
+      event_competitors: {
+        Row: {
+          competitor_id: string
+          created_at: string
+          event_id: string
+          id: string
+          metadata: Json
+          seed: number | null
+          tenant_id: string
+        }
+        Insert: {
+          competitor_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          metadata?: Json
+          seed?: number | null
+          tenant_id: string
+        }
+        Update: {
+          competitor_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          metadata?: Json
+          seed?: number | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_competitors_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_competitors_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_competitors_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          competition_id: string | null
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          external_url: string | null
+          id: string
+          locks_at: string | null
+          metadata: Json
+          result_source: Database["public"]["Enums"]["result_source_type"]
+          settlement_status:
+            | Database["public"]["Enums"]["settlement_status"]
+            | null
+          slug: string
+          stage_id: string | null
+          starts_at: string | null
+          status: Database["public"]["Enums"]["event_status"]
+          tenant_id: string
+          title: string
+          updated_at: string
+          youtube_url: string | null
+        }
+        Insert: {
+          competition_id?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          external_url?: string | null
+          id?: string
+          locks_at?: string | null
+          metadata?: Json
+          result_source?: Database["public"]["Enums"]["result_source_type"]
+          settlement_status?:
+            | Database["public"]["Enums"]["settlement_status"]
+            | null
+          slug: string
+          stage_id?: string | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["event_status"]
+          tenant_id: string
+          title: string
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Update: {
+          competition_id?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          external_url?: string | null
+          id?: string
+          locks_at?: string | null
+          metadata?: Json
+          result_source?: Database["public"]["Enums"]["result_source_type"]
+          settlement_status?:
+            | Database["public"]["Enums"]["settlement_status"]
+            | null
+          slug?: string
+          stage_id?: string | null
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["event_status"]
+          tenant_id?: string
+          title?: string
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "competition_stages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_records: {
         Row: {
           created_at: string
@@ -236,6 +576,127 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "idempotency_records_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_options: {
+        Row: {
+          color: string | null
+          competitor_id: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string | null
+          label: string
+          market_id: string
+          metadata: Json
+          status: Database["public"]["Enums"]["option_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          competitor_id?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          label: string
+          market_id: string
+          metadata?: Json
+          status?: Database["public"]["Enums"]["option_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          competitor_id?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          label?: string
+          market_id?: string
+          metadata?: Json
+          status?: Database["public"]["Enums"]["option_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_options_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_options_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "market_options_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      markets: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          locks_at: string | null
+          question: string
+          sentiment_visibility: Database["public"]["Enums"]["sentiment_visibility"]
+          status: Database["public"]["Enums"]["market_status"]
+          tenant_id: string
+          type: Database["public"]["Enums"]["market_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          locks_at?: string | null
+          question: string
+          sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
+          status?: Database["public"]["Enums"]["market_status"]
+          tenant_id: string
+          type?: Database["public"]["Enums"]["market_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          locks_at?: string | null
+          question?: string
+          sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
+          status?: Database["public"]["Enums"]["market_status"]
+          tenant_id?: string
+          type?: Database["public"]["Enums"]["market_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "markets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "markets_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -310,6 +771,159 @@ export type Database = {
           },
         ]
       }
+      prediction_revisions: {
+        Row: {
+          created_at: string
+          id: string
+          market_id: string
+          option_id: string
+          prediction_id: string
+          source: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          market_id: string
+          option_id: string
+          prediction_id: string
+          source?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          market_id?: string
+          option_id?: string
+          prediction_id?: string
+          source?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_revisions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_revisions_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_revisions_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "predictions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_revisions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_revisions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      predictions: {
+        Row: {
+          id: string
+          idempotency_key: string
+          last_changed_at: string
+          locked_at: string | null
+          market_id: string
+          metadata: Json
+          option_id: string
+          original_option_id: string
+          source: string
+          status: Database["public"]["Enums"]["prediction_status"]
+          submitted_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          idempotency_key: string
+          last_changed_at?: string
+          locked_at?: string | null
+          market_id: string
+          metadata?: Json
+          option_id: string
+          original_option_id: string
+          source?: string
+          status?: Database["public"]["Enums"]["prediction_status"]
+          submitted_at?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          idempotency_key?: string
+          last_changed_at?: string
+          locked_at?: string | null
+          market_id?: string
+          metadata?: Json
+          option_id?: string
+          original_option_id?: string
+          source?: string
+          status?: Database["public"]["Enums"]["prediction_status"]
+          submitted_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictions_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_original_option_id_fkey"
+            columns: ["original_option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -360,6 +974,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scoring_rules: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          key: string
+          name: string
+          tenant_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          key: string
+          name: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          key?: string
+          name?: string
+          tenant_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scoring_rules_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -704,7 +1359,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      lock_due_markets: { Args: never; Returns: number }
+      market_sentiment: {
+        Args: { p_market_id: string }
+        Returns: {
+          display_order: number
+          label: string
+          option_id: string
+          total: number
+          votes: number
+        }[]
+      }
+      submit_prediction: {
+        Args: {
+          p_idempotency_key: string
+          p_market_id: string
+          p_option_id: string
+          p_source?: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       competition_status:

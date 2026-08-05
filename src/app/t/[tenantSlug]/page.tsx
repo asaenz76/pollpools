@@ -2,6 +2,8 @@ import Link from "next/link";
 import { getTenantContext } from "@/lib/tenant/context";
 import { getSessionUser } from "@/lib/auth/session";
 import { ensureMembership } from "@/lib/tenant/membership";
+import { listEvents } from "@/features/events/get-event";
+import { getLockState, formatCountdown } from "@/lib/domain/locking";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -17,6 +19,9 @@ export default async function TenantHome() {
   if (user) {
     await ensureMembership({ tenantId: tenant.id, userId: user.id, email: user.email });
   }
+
+  const events = await listEvents(tenant.id);
+  const now = new Date();
 
   return (
     <div className="grid gap-6">
@@ -51,6 +56,51 @@ export default async function TenantHome() {
           </CardContent>
         </Card>
       )}
+
+      <section aria-labelledby="events-heading">
+        <h2 id="events-heading" className="mb-3 text-sm font-medium text-muted-foreground">
+          Events
+        </h2>
+        {events.length === 0 ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>No events yet</CardTitle>
+              <CardDescription>Check back soon — new races are on the way.</CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <ul className="grid gap-3">
+            {events.map((e) => {
+              const lock = getLockState({
+                marketStatus: e.status === "open" ? "open" : "locked",
+                marketLocksAt: e.locksAt,
+                now,
+              });
+              return (
+                <li key={e.id}>
+                  <Link href={`/t/${tenant.slug}/e/${e.slug}`} className="block">
+                    <Card className="transition-colors hover:bg-muted">
+                      <CardHeader>
+                        <div className="flex items-center justify-between gap-3">
+                          <CardTitle className="text-base">{e.title}</CardTitle>
+                          <span className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
+                            {lock.isOpen
+                              ? lock.effectiveLocksAt
+                                ? `Locks in ${formatCountdown(lock.msUntilLock)}`
+                                : "Open"
+                              : "Locked"}
+                          </span>
+                        </div>
+                        {e.creator ? <CardDescription>by {e.creator}</CardDescription> : null}
+                      </CardHeader>
+                    </Card>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <section aria-label="Enabled features">
         <div className="flex flex-wrap gap-2 text-xs">

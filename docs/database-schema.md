@@ -15,9 +15,22 @@ Migrations live in `supabase/migrations/` and are applied in order by
 | `0002_audit_ops.sql` | `audit_logs` (+ `app.write_audit`), `idempotency_records`, `system_jobs`, `moderation_reports` |
 | `0003_rls_core.sql` | RLS helper functions, enable RLS everywhere, deny-by-default policies, creator privileged-column guard |
 | `0004_grants.sql` | table-level grants for `anon` / `authenticated` / `service_role` (+ default privileges) |
+| `0005_prediction_core.sql` | scoring_rules, competitions, competition_stages, competitors, events, event_competitors, markets, market_options, predictions, prediction_revisions |
+| `0006_prediction_rls.sql` | ownership helpers + RLS for all Phase 2 tables (public content readable; predictions owner-only) |
+| `0007_prediction_functions.sql` | `submit_prediction`, `market_sentiment`, `lock_due_markets` |
 
-Later phases add migrations for competitions, events, markets, predictions,
-settlement, statistics, leaderboards, achievements, social, and monetization.
+Later phases add migrations for settlement, statistics, leaderboards,
+achievements, social, and monetization.
+
+### Phase 2 tables (prediction domain)
+
+`scoring_rules` (configurable; V1 default only) · `competitions` (generic, `type`
+discriminates) · `competition_stages` · `competitors` (vertical-neutral) ·
+`events` (`event_status` machine, `locks_at`) · `event_competitors` · `markets`
+(`market_type`, `sentiment_visibility`) · `market_options` (optional competitor
+map) · `predictions` (unique `(market_id,user_id)`, unique `idempotency_key`) ·
+`prediction_revisions` (immutable edit trail). See
+[prediction-engine.md](prediction-engine.md).
 
 ## Phase 1 tables
 

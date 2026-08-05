@@ -14,7 +14,9 @@
 -- Helper functions. SECURITY DEFINER (owned by postgres) so they bypass RLS on
 -- the lookup tables and cannot recurse through the very policies that call them.
 -- ----------------------------------------------------------------------------
-grant usage on schema app to anon, authenticated;
+-- service_role needs USAGE on `app` because non-definer triggers (e.g. the
+-- creator privileged-column guard) call app.* helpers by name during its writes.
+grant usage on schema app to anon, authenticated, service_role;
 
 create or replace function app.is_super_admin()
 returns boolean
@@ -81,7 +83,7 @@ grant execute on function
   app.is_tenant_member(uuid),
   app.is_tenant_admin(uuid),
   app.owns_creator(uuid)
-to anon, authenticated;
+to anon, authenticated, service_role;
 
 -- Prevent creators from self-verifying or self-granting settlement rights.
 -- Only a super admin or the trusted service role may change these columns.
