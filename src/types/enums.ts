@@ -292,5 +292,15 @@ export const NOTIFICATION_TYPE = [
   "subscription_failed",
   "competition_starting",
   "bracket_advancement",
+  "draft_opened",
+  "draft_closing_soon",
+  "draft_confirmed",
+  "draft_reservation_expiring",
+  "draft_payment_confirmed",
+  "draft_payment_failed",
+  "draft_competitor_earned_points",
+  "draft_rank_changed",
+  "draft_competition_completed",
+  "prize_awarded",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPE)[number];

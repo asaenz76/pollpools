@@ -113,12 +113,16 @@ See [`docs/`](docs/): [architecture](docs/architecture.md),
 [competition formats](docs/competition-formats.md),
 [settlement & scoring](docs/settlement.md),
 [competitor draft](docs/competitor-draft.md),
+[social experience](docs/social.md),
 [role/permission matrix](docs/role-permission-matrix.md),
 [security checklist](docs/security-checklist.md),
 [decisions & assumptions](docs/decisions.md).
 
 ## Status
 
-Built phase-by-phase (see `docs/decisions.md` for the plan). **Phase 1
-(Foundation)** is complete: tenancy schema, RLS isolation, auth, tenant
-resolver, theme system, and the app shell — all typechecked, linted, and tested.
+Built phase-by-phase (see `docs/decisions.md` for the plan). Complete so far:
+**Phase 1** (foundation: tenancy, RLS, auth), **Phase 2** (prediction engine),
+**Phase 3** (competition formats: seasons/tournaments/brackets), **Phase 4**
+(idempotent settlement, stats, streaks, leaderboards, achievements), **Phase 4.5**
+(Competitor Draft Engine), and **Phase 5** (social: feed, notifications, following,
+profiles, likes/comments) — all typechecked, linted, and covered by 119 tests.

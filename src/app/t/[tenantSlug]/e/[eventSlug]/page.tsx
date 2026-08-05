@@ -4,6 +4,10 @@ import { getTenantContext } from "@/lib/tenant/context";
 import { getSessionUser } from "@/lib/auth/session";
 import { getEventBySlug } from "@/features/events/get-event";
 import { PredictionMarket } from "@/components/domain/prediction-market";
+import { getEventSocial } from "@/features/social/get-event-social";
+import { ShareButton } from "@/components/domain/share-button";
+import { LikeButton } from "@/components/domain/like-button";
+import { CommentSection } from "@/components/domain/comment-section";
 import { parseYouTubeId, youtubeEmbedUrl } from "@/lib/domain/youtube";
 import { SMALL_PARTICIPATION_THRESHOLD } from "@/lib/constants";
 
@@ -23,6 +27,14 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
   const videoId = ctx.features.isEnabled("youtube_embeds_enabled")
     ? parseYouTubeId(event.youtubeUrl)
     : null;
+
+  const likesEnabled = ctx.features.isEnabled("likes_enabled");
+  const commentsEnabled = ctx.features.isEnabled("comments_enabled");
+  const sharingEnabled = ctx.features.isEnabled("sharing_enabled");
+  const social =
+    likesEnabled || commentsEnabled
+      ? await getEventSocial(ctx.tenant.id, event.id, user?.id ?? null, { likes: likesEnabled, comments: commentsEnabled })
+      : null;
 
   return (
     <article className="grid gap-5">
@@ -86,6 +98,34 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
           ))}
         </div>
       )}
+
+      {(likesEnabled || sharingEnabled) && (
+        <div className="flex items-center gap-1 border-t border-border pt-3">
+          {likesEnabled && social ? (
+            <LikeButton
+              tenantId={ctx.tenant.id}
+              subjectType="event"
+              subjectId={event.id}
+              initialLiked={social.liked}
+              initialCount={social.likeCount}
+              signedIn={Boolean(user)}
+              signInHref={signInHref}
+            />
+          ) : null}
+          {sharingEnabled ? <ShareButton title={event.title} /> : null}
+        </div>
+      )}
+
+      {commentsEnabled && social ? (
+        <CommentSection
+          tenantId={ctx.tenant.id}
+          subjectType="event"
+          subjectId={event.id}
+          comments={social.comments}
+          signedIn={Boolean(user)}
+          signInHref={signInHref}
+        />
+      ) : null}
     </article>
   );
 }

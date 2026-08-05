@@ -308,6 +308,57 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          status: string
+          subject_id: string
+          subject_type: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          status?: string
+          subject_id: string
+          subject_type: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          status?: string
+          subject_id?: string
+          subject_type?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_draft_settings: {
         Row: {
           access_type: Database["public"]["Enums"]["draft_access_type"]
@@ -943,6 +994,52 @@ export type Database = {
           },
         ]
       }
+      creator_follows: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_follows_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_follows_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creators: {
         Row: {
           avatar_url: string | null
@@ -1481,6 +1578,91 @@ export type Database = {
           },
         ]
       }
+      feed_activities: {
+        Row: {
+          actor_creator_id: string | null
+          actor_user_id: string | null
+          competition_id: string | null
+          created_at: string
+          dedupe_key: string
+          event_id: string | null
+          id: string
+          metadata: Json
+          subject_user_id: string | null
+          tenant_id: string
+          type: Database["public"]["Enums"]["feed_activity_type"]
+        }
+        Insert: {
+          actor_creator_id?: string | null
+          actor_user_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          dedupe_key: string
+          event_id?: string | null
+          id?: string
+          metadata?: Json
+          subject_user_id?: string | null
+          tenant_id: string
+          type: Database["public"]["Enums"]["feed_activity_type"]
+        }
+        Update: {
+          actor_creator_id?: string | null
+          actor_user_id?: string | null
+          competition_id?: string | null
+          created_at?: string
+          dedupe_key?: string
+          event_id?: string | null
+          id?: string
+          metadata?: Json
+          subject_user_id?: string | null
+          tenant_id?: string
+          type?: Database["public"]["Enums"]["feed_activity_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_activities_actor_creator_id_fkey"
+            columns: ["actor_creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_activities_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_activities_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_activities_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_activities_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_activities_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idempotency_records: {
         Row: {
           created_at: string
@@ -1575,6 +1757,48 @@ export type Database = {
           },
           {
             foreignKeyName: "leaderboard_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      likes: {
+        Row: {
+          created_at: string
+          id: string
+          subject_id: string
+          subject_type: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          subject_id: string
+          subject_type: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          subject_id?: string
+          subject_type?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -1766,6 +1990,66 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          dedupe_key: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json
+          read_at: string | null
+          tenant_id: string
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          dedupe_key: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          read_at?: string | null
+          tenant_id: string
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          dedupe_key?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json
+          read_at?: string | null
+          tenant_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -2758,6 +3042,16 @@ export type Database = {
           votes: number
         }[]
       }
+      public_user_history: {
+        Args: { p_tenant: string; p_user: string }
+        Returns: {
+          event_slug: string
+          event_title: string
+          option_label: string
+          outcome: string
+          submitted_at: string
+        }[]
+      }
       record_event_positions: {
         Args: { p_event_id: string; p_positions: Json }
         Returns: Json
@@ -2896,6 +3190,16 @@ export type Database = {
         | "subscription_failed"
         | "competition_starting"
         | "bracket_advancement"
+        | "draft_opened"
+        | "draft_closing_soon"
+        | "draft_confirmed"
+        | "draft_reservation_expiring"
+        | "draft_payment_confirmed"
+        | "draft_payment_failed"
+        | "draft_competitor_earned_points"
+        | "draft_rank_changed"
+        | "draft_competition_completed"
+        | "prize_awarded"
       option_status: "active" | "withdrawn" | "voided" | "winner" | "loser"
       prediction_status: "active" | "locked" | "correct" | "incorrect" | "void"
       prize_award_status:
@@ -3185,6 +3489,16 @@ export const Constants = {
         "subscription_failed",
         "competition_starting",
         "bracket_advancement",
+        "draft_opened",
+        "draft_closing_soon",
+        "draft_confirmed",
+        "draft_reservation_expiring",
+        "draft_payment_confirmed",
+        "draft_payment_failed",
+        "draft_competitor_earned_points",
+        "draft_rank_changed",
+        "draft_competition_completed",
+        "prize_awarded",
       ],
       option_status: ["active", "withdrawn", "voided", "winner", "loser"],
       prediction_status: ["active", "locked", "correct", "incorrect", "void"],

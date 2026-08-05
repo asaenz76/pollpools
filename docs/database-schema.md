@@ -30,8 +30,11 @@ Migrations live in `supabase/migrations/` and are applied in order by
 | `0017_draft_settlement.sql` | draft scoring helpers + settlement trigger + `record_event_positions`, `award_competition_prizes` |
 | `0018_draft_roster.sql` | `draft_roster` availability aggregate |
 
-Later phases add migrations for social and monetization. See
-[competitor-draft.md](competitor-draft.md).
+| `0019_social_tables.sql` | creator_follows, feed_activities, notifications, likes, comments |
+| `0020_social_triggers.sql` | notification/feed emit helpers + triggers |
+| `0021_public_history.sql` | `public_user_history` for public profiles |
+
+Later phases add migrations for monetization. See [competitor-draft.md](competitor-draft.md), [social.md](social.md).
 
 ### Phase 2 tables (prediction domain)
 
