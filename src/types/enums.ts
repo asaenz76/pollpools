@@ -165,6 +165,14 @@ export const EVENT_MEDIA_TYPE = [
 ] as const;
 export type EventMediaType = (typeof EVENT_MEDIA_TYPE)[number];
 
+/** Billing product kinds (mirrors SQL `billing_product_type`). */
+export const BILLING_PRODUCT_TYPE = [
+  "platform_premium",
+  "creator_support",
+  "paid_competitor_draft",
+] as const;
+export type BillingProductType = (typeof BILLING_PRODUCT_TYPE)[number];
+
 export const SENTIMENT_VISIBILITY = [
   "always",
   "after_prediction",

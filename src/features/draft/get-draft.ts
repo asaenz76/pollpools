@@ -76,6 +76,7 @@ export async function getDraftSection(
     supabase
       .from("draft_leaderboard_snapshots")
       .select("rank, user_id, competitor_id, competition_points, wins")
+      .eq("tenant_id", tenantId) // defense-in-depth: this table is public-read (using(true))
       .eq("competition_id", competitionId)
       .order("rank", { ascending: true, nullsFirst: false })
       .limit(100),

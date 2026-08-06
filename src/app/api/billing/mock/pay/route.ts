@@ -5,6 +5,7 @@ import { MockBillingProvider } from "@/lib/billing/mock-provider";
 import { billingWebhookSecret } from "@/lib/billing/index";
 import { processBillingWebhook } from "@/lib/billing/webhook";
 import { publicEnv, serverEnv } from "@/lib/env";
+import { mockBillingUnavailable } from "@/lib/billing/mock-guard";
 
 /**
  * Mock hosted checkout completion (local/test only). Simulates the provider
@@ -17,7 +18,8 @@ import { publicEnv, serverEnv } from "@/lib/env";
  */
 export async function GET(request: NextRequest) {
   const home = `${publicEnv.NEXT_PUBLIC_APP_URL}/`;
-  if (serverEnv().BILLING_PROVIDER !== "mock") return new NextResponse("Not found", { status: 404 });
+  // Hard production guard first, then the provider gate.
+  if (mockBillingUnavailable() || serverEnv().BILLING_PROVIDER !== "mock") return new NextResponse("Not found", { status: 404 });
 
   const checkoutId = request.nextUrl.searchParams.get("checkout_id") ?? "";
   if (!z.string().uuid().safeParse(checkoutId).success) return NextResponse.redirect(home);

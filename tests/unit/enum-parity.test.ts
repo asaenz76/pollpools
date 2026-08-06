@@ -20,6 +20,33 @@ const sqlEnums = Constants.public.Enums as Record<string, readonly string[]>;
 // (pure app-level vocabularies). Keep this list tiny and justified.
 const NON_SQL_EXPORTS = new Set<string>([]);
 
+// SQL enums intentionally NOT mirrored in enums.ts because they are server-only
+// (billing/accounting/reconciliation/sponsorship internals accessed exclusively
+// via the generated database.ts types, never as hand-written domain vocabulary).
+// A NEW SQL enum must be either mirrored in enums.ts or added here WITH cause —
+// the reverse-parity test below fails otherwise, so nothing escapes review (F-09).
+const KNOWN_UNMIRRORED = new Set<string>([
+  "billing_checkout_status",
+  "billing_entitlement_type",
+  "billing_interval_type",
+  "billing_order_status",
+  "billing_product_status",
+  "billing_provider_type",
+  "billing_refund_status",
+  "creator_earning_status",
+  "creator_earning_type",
+  "creator_payout_status",
+  "entitlement_source_type",
+  "entitlement_status",
+  "fanout_status",
+  "provider_approval_status",
+  "reconciliation_mode",
+  "reconciliation_scope_type",
+  "reconciliation_status",
+  "sponsorship_invoice_status",
+  "webhook_processing_status",
+]);
+
 function isEnumArray(v: unknown): v is readonly string[] {
   return Array.isArray(v) && v.every((x) => typeof x === "string");
 }
@@ -40,6 +67,19 @@ describe("enum single source of truth (enums.ts ⇔ generated schema)", () => {
       const sql = sqlEnums[sqlName];
       expect(sql, `no SQL enum named ${sqlName} — is enums.ts out of sync?`).toBeDefined();
       expect([...values].sort()).toEqual([...sql!].sort());
+    });
+  }
+
+  // Reverse direction (F-09 hardening): every SQL enum must be either mirrored in
+  // enums.ts or explicitly allow-listed as server-only — a new one can't silently
+  // escape review.
+  const mirrored = new Set(exported.map(([name]) => name.toLowerCase()));
+  for (const sqlName of Object.keys(sqlEnums)) {
+    it(`SQL enum ${sqlName} is mirrored or explicitly allow-listed`, () => {
+      expect(
+        mirrored.has(sqlName) || KNOWN_UNMIRRORED.has(sqlName),
+        `SQL enum "${sqlName}" has no enums.ts mirror and is not in KNOWN_UNMIRRORED — mirror it or justify it there.`,
+      ).toBe(true);
     });
   }
 });
