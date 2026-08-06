@@ -32,7 +32,7 @@ function payload(job: SystemJob): ProjectionPayload {
 
 registerJobHandler(JOB_TYPES.RECOMPUTE_USER_STATS, async (job, ctx) => {
   const p = payload(job);
-  return applyProjection(ctx, "project_user_stats", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_user: p.user_id }, p.grading_version);
+  return applyProjection(ctx, "project_user_stats", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_user: p.user_id, p_settlement_id: p.settlement_id }, p.grading_version);
 });
 
 registerJobHandler(JOB_TYPES.EVALUATE_ACHIEVEMENTS, async (job, ctx) => {

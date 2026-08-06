@@ -442,3 +442,12 @@ document; this register is its actionable, status-tracked counterpart.
   asserting derived state; new async-settlement tests cover commit-before-projection, exactly-once enqueue,
   retry-no-duplicate, regrade-new-version, and stale-version-non-authoritative. 201 tests pass.
   **F-02/F-05/F-15/F-19 stay Open** until C→H complete (register rule 12).
+- **2026-08-05** — **§5C** (migration `0037`): incremental user statistics + streak projections.
+  Statistics derive only from active grades, recomputed per affected user. Streak ordering made
+  **deterministic + regrade-invariant** — event start → active-settlement activation → **event id**
+  (stable tiebreak, replacing the grade-created-at tiebreak that changed on regrade); documented in
+  `docs/settlement.md`. Added `voided_predictions` tracking (void never affects streaks), a public
+  `rebuild_user_statistics(tenant,user)` admin rebuild (reused by §5H reconciliation), and settlement-id
+  verification in `project_user_stats`. New `user-stats.test.ts` covers all 13 rule-13 scenarios
+  (affected-only, streak inc/reset/void, regrade both directions, stale no-op, duplicate + out-of-order,
+  rebuild==incremental, same-timestamp id tiebreak). 207 tests pass. F-02/05/15/19 stay Open.

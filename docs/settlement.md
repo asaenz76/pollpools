@@ -74,6 +74,41 @@ grants are idempotent). `evaluate_achievements` grants stats-driven achievements
 (first prediction, first correct, streak, count, accuracy) after each recompute.
 Champion achievements (season/creator) are granted on leaderboard finalization.
 
+## Asynchronous projections (§5)
+
+The synchronous settlement transaction is authoritative: it validates, locks,
+creates the grading version, resolves winning options, persists immutable grades,
+selects the active settlement, and commits. It does **not** recompute derived
+projections inline — instead it enqueues small, version-aware jobs **in the same
+transaction** (a transactional outbox), one per affected user (statistics +
+achievements) plus one each for leaderboard, draft standings, feed, and
+notifications. A durable worker (`src/lib/jobs`) drains them; a background-job
+failure never affects the committed settlement. Each projection checks the
+event's **active** settlement version and no-ops if the job is stale (superseded
+by a regrade), so an old version's job can never overwrite the active
+projections — order-independent, with no timing assumptions.
+
+### Streak ordering (deterministic, regrade-invariant)
+
+Streaks are sequence-dependent, so they are **recomputed** from the user's active
+grades in a stable chronological order — never by ±1/reset mutation. The ordering
+key, most significant first:
+
+1. **event start time** (`events.starts_at`) — the event's scheduled occurrence.
+   The schema records no separate "completed at", so start is the chronological
+   anchor; a vertical that records a real completion time (in metadata) could
+   layer it above this without changing the mechanism.
+2. **active settlement activation** (`settlements.activated_at`) — fallback when an
+   event has no start time.
+3. **event id** — a **stable, deterministic tiebreak** for identical timestamps.
+   This is regrade-invariant (unlike the previous grade-created-at tiebreak, which
+   changed on every regrade and could reorder same-timestamp events).
+
+Void/canceled outcomes are counted (`voided_predictions`) but never extend or
+break a streak. `rebuild_user_statistics(tenant, user)` runs the same
+deterministic logic as the incremental projection, so a full rebuild always
+equals the incremental result.
+
 ## Bracket advancement
 
 When a bracket matchup settles, `settle_event` calls `advance_bracket`, which

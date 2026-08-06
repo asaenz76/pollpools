@@ -3926,6 +3926,7 @@ export type Database = {
           total_predictions: number
           updated_at: string
           user_id: string
+          voided_predictions: number
         }
         Insert: {
           best_streak?: number
@@ -3939,6 +3940,7 @@ export type Database = {
           total_predictions?: number
           updated_at?: string
           user_id: string
+          voided_predictions?: number
         }
         Update: {
           best_streak?: number
@@ -3952,6 +3954,7 @@ export type Database = {
           total_predictions?: number
           updated_at?: string
           user_id?: string
+          voided_predictions?: number
         }
         Relationships: [
           {
@@ -4150,6 +4153,7 @@ export type Database = {
       project_user_stats: {
         Args: {
           p_event: string
+          p_settlement_id: string
           p_tenant: string
           p_user: string
           p_version: number
@@ -4165,6 +4169,10 @@ export type Database = {
           outcome: string
           submitted_at: string
         }[]
+      }
+      rebuild_user_statistics: {
+        Args: { p_tenant: string; p_user: string }
+        Returns: undefined
       }
       record_event_positions: {
         Args: { p_event_id: string; p_positions: Json }
