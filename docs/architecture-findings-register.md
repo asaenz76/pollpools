@@ -31,7 +31,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-01 | Dual payment stacks (FNV-1a draft vs HMAC billing) | 🔴 | §2 | Resolve | ✅ Resolved |
 | F-02 | Synchronous full-tenant recompute at settlement | 🔴 | §5, §6 | Resolve | Open |
 | F-03 | Market grading is single-winner-only | 🟠 | §3 | Resolve | ✅ Resolved |
-| F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | Open |
+| F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | ✅ Resolved |
 | F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | Open |
 | F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | Open |
 | F-07 | Closed enums force migration to extend | 🟠 | §3, §15 | Accept (mitigate) | 🟦 Accepted |
@@ -41,7 +41,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-11 | Hard-coded 80/20 revenue split fallback | 🟠 | §4, §14 | Resolve | ✅ Resolved |
 | F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | ✅ Resolved |
 | F-13 | YouTube welded into event creation | 🟠 | §7, §10 | Resolve | Open |
-| F-14 | Draft scoring position-only, winner-only baseline | 🟠 | §3, §4 | Resolve | Open |
+| F-14 | Draft scoring position-only, winner-only baseline | 🟠 | §3, §4 | Split | ◻ Config✅ / baseline→F-15 |
 | F-15 | Regrade drops recorded finishing positions | 🟠 | §5 | Resolve | Open |
 | F-16 | Public `using(true)` tables isolated by app filter | 🟡 | §16 | Accept (document) | Open |
 | F-17 | Read-time aggregation & event-page N+1 | 🟠 | §17 | Resolve | Open |
@@ -143,10 +143,14 @@ Database impact · Risk · Estimated effort · Status.**
   `ScoringRule` that already exists in TS. Scoring can't change without a migration.
 - **Planned solution.** Introduce a persisted `ScoringRule` (points, weighted, future) resolved
   from the Configuration Engine; the grader requests points from the configured rule.
-- **Files affected.** settlement RPC, `src/lib/domain/scoring.ts`, config tables, tests.
-- **Database impact.** Scoring rule read from config (existing `scoring_rules` table extended); additive.
-- **Risk.** Medium — default rule must reproduce current 1-point behavior for existing tenants.
-- **Effort.** M. **Status.** Open.
+- **Files affected.** `0034_configurable_scoring.sql`, `scoring_rules` (existing), tests.
+- **Database impact.** `app.resolve_scoring` resolves competition-rule → tenant-default → global-default;
+  `apply_grading` takes points from it. Additive.
+- **Risk.** Medium — default rule reproduces the current 1-point behavior for existing tenants.
+- **Status.** ✅ **Resolved** (§4, migration `0034`): grading points come from the resolved `scoring_rules`
+  config (the table already existed; it was simply unread). Points are stored on the immutable grade, so a
+  rule change is picked up by the next settlement/regrade. Integration-tested (a competition-scoped rule of
+  3 points grades a correct pick as 3).
 
 ### F-05 — Only global leaderboard scope implemented 🟠
 - **Description.** `creator` / `competition` / `season` leaderboard scopes and the
@@ -250,8 +254,14 @@ Database impact · Risk · Estimated effort · Status.**
   single `draft_scoring_type` value.
 - **Planned solution.** Fold draft scoring into the configurable ScoringRule model (F-04); allow
   additional draft scoring strategies via config.
-- **Files affected.** `0012_draft_settings.sql`/`0017_draft_settlement.sql` (+ migration), config, tests.
-- **Database impact.** Additive. **Risk.** Low–Medium. **Effort.** M. **Status.** Open.
+- **Files affected.** `draft_scoring_rules` (existing), tests.
+- **Database impact.** none. **Risk.** Low–Medium.
+- **Status.** **Split.** (a) *Scoring VALUES are already config-driven* — draft points come from
+  `draft_scoring_rules.config.position_points` (JSONB), not hard-coded — so the F-04-equivalent concern is
+  ✅ met. (b) *Additional draft scoring strategies* (`draft_scoring_type` has one value) are an **accepted
+  extension point**, added with a real consumer — consistent with the enum-governance policy
+  (`docs/configuration.md`), not fabricated now. (c) The *winner-only auto-baseline / regrade* concern is
+  tracked as **F-15** (§5/§6).
 
 ### F-15 — Regrade drops recorded finishing positions 🟠
 - **Description.** Manual podium data from `record_event_positions` isn't carried to the new grading
@@ -415,3 +425,8 @@ document; this register is its actionable, status-tracked counterpart.
   approach: a TS `MarketGrader` (interface + registry + `SINGLE_CHOICE_WINNER`) resolves winning options;
   the reversible SQL grades against them (competitor fallback preserved for bracket auto-advance).
   Unregistered market types raise, never silently void. 192 tests pass. §4 (config scoring) next.
+- **2026-08-05** — **F-04 Resolved; F-14 split** (§4, migration `0034`): prediction grading points now come
+  from the resolved `scoring_rules` config (competition → tenant → global), not a hard-coded 1. F-14: draft
+  scoring values are already config-driven (position_points); additional draft scoring strategies are an
+  accepted extension point; its baseline/regrade concern is tracked as F-15 (§5/§6). 193 tests pass.
+  **§3/§4 complete.**

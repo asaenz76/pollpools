@@ -50,7 +50,7 @@ d("settlement engine", () => {
   let keyN = 0;
   const key = () => `set-${s}-${keyN++}-abcdefgh`;
 
-  async function makeEvent(startsOffsetMs = -3_600_000) {
+  async function makeEvent(startsOffsetMs = -3_600_000, competitionId: string | null = null) {
     const suf = uniqueSuffix();
     const { data: comps } = await admin
       .from("competitors")
@@ -62,7 +62,7 @@ d("settlement engine", () => {
     const compA = comps![0]!.id, compB = comps![1]!.id;
     const { data: ev } = await admin
       .from("events")
-      .insert({ tenant_id: tenantId, creator_id: creatorId, title: "E", slug: `e-${suf}`, status: "open", starts_at: new Date(Date.now() + startsOffsetMs).toISOString(), locks_at: new Date(Date.now() + 3_600_000).toISOString() })
+      .insert({ tenant_id: tenantId, competition_id: competitionId, creator_id: creatorId, title: "E", slug: `e-${suf}`, status: "open", starts_at: new Date(Date.now() + startsOffsetMs).toISOString(), locks_at: new Date(Date.now() + 3_600_000).toISOString() })
       .select("id")
       .single();
     const { data: mkt } = await admin
@@ -134,6 +134,28 @@ d("settlement engine", () => {
   afterAll(async () => {
     await admin.from("tenants").delete().eq("id", tenantId);
     for (const id of [ownerId, u1, u2, u3, g1, g2]) if (id) await deleteUser(id);
+  });
+
+  it("takes scoring points from the configured rule, not a hard-coded 1 (F-04)", async () => {
+    // A competition-scoped scoring rule: a correct pick is worth 3 points.
+    const { data: rule } = await admin
+      .from("scoring_rules")
+      .insert({ tenant_id: tenantId, key: `triple-${uniqueSuffix()}`, name: "Triple", config: { correct: 3, incorrect: 0, void: 0 }, is_default: false })
+      .select("id").single();
+    const { data: comp } = await admin
+      .from("competitions")
+      .insert({ tenant_id: tenantId, creator_id: creatorId, type: "SEASON", title: "SC", slug: `sc-${uniqueSuffix()}`, status: "active", scoring_rule_id: rule!.id })
+      .select("id").single();
+
+    const e = await makeEvent(-3_600_000, comp!.id);
+    await predict(e.marketId, g1, e.optA);
+    await predict(e.marketId, g2, e.optB);
+    const { error } = await settleByOptionsRpc({ eventId: e.eventId, winner: e.compA, optionIds: [e.optA], key: key() });
+    expect(error).toBeNull();
+
+    const { data: grades } = await admin.from("settlement_grades").select("user_id, outcome, points").eq("event_id", e.eventId);
+    expect(grades!.find((g) => g.user_id === g1)).toMatchObject({ outcome: "correct", points: 3 });
+    expect(grades!.find((g) => g.user_id === g2)).toMatchObject({ outcome: "incorrect", points: 0 });
   });
 
   it("grades against a grader-resolved winning-option set (strategy path)", async () => {
