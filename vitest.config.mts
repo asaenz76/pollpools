@@ -20,7 +20,7 @@ export default defineConfig({
     // Integration tests drive a live DB with many sequential round-trips and job
     // draining, all against one shared database under file-parallel execution;
     // give them headroom so contention doesn't trip the default 5s timeout.
-    testTimeout: 20_000,
+    testTimeout: 30_000,
     // Integration fixtures (beforeAll/afterAll) create users + seed rows over many
     // DB round-trips; under file-parallel load against one shared DB the default
     // 10s hook budget can be exceeded, so give hooks the same headroom as tests.

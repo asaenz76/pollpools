@@ -145,12 +145,18 @@ async function main() {
   const { data: event } = await db
     .from("events")
     .upsert(
-      { tenant_id: tenantId, competition_id: seasonId, creator_id: creatorId, title: "Marble Grand Prix — Race 1", slug: "race-1", description: "The season opener. Eight marbles, one straight sprint to glory.", status: "open", starts_at: locksAt, locks_at: locksAt, youtube_url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ", result_source: "creator_manual" },
+      { tenant_id: tenantId, competition_id: seasonId, creator_id: creatorId, title: "Marble Grand Prix — Race 1", slug: "race-1", description: "The season opener. Eight marbles, one straight sprint to glory.", status: "open", starts_at: locksAt, locks_at: locksAt, result_source: "creator_manual" },
       { onConflict: "tenant_id,slug" },
     )
     .select("id")
     .single();
   const eventId = event.id;
+
+  // Optional event media via the generic model (Phase 7.6) — not the legacy youtube_url column.
+  const { data: existingMedia } = await db.from("event_media_links").select("id").eq("event_id", eventId).maybeSingle();
+  if (!existingMedia) {
+    await db.from("event_media_links").insert({ tenant_id: tenantId, event_id: eventId, provider: "youtube", media_type: "livestream", url: "https://www.youtube.com/watch?v=aqz-KE-bpKQ", is_primary: true, label: "Watch the race live" });
+  }
 
   for (const m of MARBLES) {
     await db.from("event_competitors").upsert({ tenant_id: tenantId, event_id: eventId, competitor_id: competitorIds[m.slug] }, { onConflict: "event_id,competitor_id", ignoreDuplicates: true });
