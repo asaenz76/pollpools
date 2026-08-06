@@ -285,6 +285,7 @@ export const NOTIFICATION_TYPE = [
   "event_result_published",
   "prediction_correct",
   "prediction_incorrect",
+  "prediction_updated",
   "achievement_earned",
   "streak_milestone",
   "leaderboard_milestone",

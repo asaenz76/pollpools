@@ -15,7 +15,8 @@ export {
   type WorkerResult,
 } from "./worker";
 
-export { JOB_TYPES, type ProjectionPayload } from "./types";
+export { JOB_TYPES, NOTIFICATION_FANOUT_BATCH_SIZE, type ProjectionPayload } from "./types";
 
 // Handler registrations (side-effect imports).
 import "./handlers/settlement";
+import "./handlers/event-publish";

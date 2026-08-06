@@ -81,10 +81,13 @@ d("social: notifications & feed", () => {
     await drainJobs(admin, tenantId);
     expect(await notifsFor(u1, "prediction_correct")).toHaveLength(1);
 
-    // Regrade to the other competitor → a new corrected "missed" notification.
+    // Regrade to the other competitor → a distinguishable CORRECTED notification
+    // ('prediction_updated'), not a fresh 'incorrect'; the original is preserved.
     await admin.rpc("regrade_event", { p_event_id: e.eventId, p_resolution: "settled", p_winning_competitor_id: e.compB, p_reason: "fix", p_idempotency_key: key() } as never);
     await drainJobs(admin, tenantId);
-    expect(await notifsFor(u1, "prediction_incorrect")).toHaveLength(1);
+    expect(await notifsFor(u1, "prediction_updated")).toHaveLength(1);
+    expect(await notifsFor(u1, "prediction_incorrect")).toHaveLength(0); // not told a plain "missed"
+    expect(await notifsFor(u1, "prediction_correct")).toHaveLength(1);   // original history preserved
   });
 
   it("earns an achievement notification on first correct prediction", async () => {

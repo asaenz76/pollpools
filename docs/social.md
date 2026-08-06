@@ -53,6 +53,56 @@ predictions (no pre-lock pick leak) and only when the profile is public.
 Mobile-first bottom navigation (`BottomNav`) for signed-in users: Home · Feed ·
 Ranks · Alerts (unread badge) · You (`/me` → own profile).
 
+## Asynchronous fan-out (§5F)
+
+Publishing an event, settling, granting an achievement, or refreshing a
+leaderboard never synchronously creates one row per recipient. The authoritative
+action commits and enqueues durable jobs in the same transaction (outbox); a
+fan-out failure never invalidates the authoritative action.
+
+**Feed model — canonical, read-time.** The feed is one canonical `feed_activities`
+row per activity, filtered at read time via the tenant stream. There are **no**
+per-recipient feed rows — only notifications need recipient-specific rows.
+
+**Event-publication notification fan-out** (F-19) is durable and **batched**:
+- `app.on_event_published` enqueues `projection.event_publish_feed` (one canonical
+  activity) and `projection.event_publish_fanout` (per-follower notifications).
+- The fan-out is tracked in `notification_fanouts` (cursor = last recipient id,
+  batch/recipient counts, status). The job processes bounded batches
+  (`NOTIFICATION_FANOUT_BATCH_SIZE`, default 100) ordered by follower user id — no
+  OFFSET, no loading all followers into memory. It is **resumable** (a retry
+  continues from the durable cursor) and **idempotent** (each notification has a
+  deterministic `dedupe_key` under a uniqueness constraint).
+- **Eligibility** is checked at batch time: a follower receives the notification
+  iff they followed *before* the fan-out was created and are still following when
+  their batch runs. Unfollow-before-batch excludes; follow-after does not receive.
+
+**Idempotency keys.** Notifications and feed activities carry deterministic keys
+(`event-published:{event}:{user}:{version}`, `pred:{prediction}:{version}`,
+`ach:{grant}`, `leaderboard-milestone:{scope}:{scope_id}:{user}:{milestone}`,
+`event_pub:{event}`, `settled:{event}:{version}`) so retries never duplicate.
+
+**Settlement notifications** are version-aware: a regrade emits a distinguishable
+**corrected** notification (`prediction_updated`) rather than a plain
+correct/incorrect, and the original delivered notification is preserved.
+
+**Achievement notifications** follow §5E policy: historical milestones notify once
+(re-grant is an UPDATE, so no duplicate); revocation does not notify.
+
+**Leaderboard-milestone notifications** fire only for configured thresholds
+(reached #1 / top 10 / top 100), gated on a successful scoped leaderboard
+projection, idempotent per milestone — ordinary rank movement never notifies.
+
+**Preferences.** `user_notification_preferences` (tenant-scoped, opt-out, default
+on) gates optional notifications per category (event published, locking soon,
+result, achievement, leaderboard milestone, creator/billing) plus in-app/email
+toggles. Critical billing/security notices are mandatory (not gated).
+
+**Provider boundary.** Jobs create normalized in-app notification rows
+(persistence). Delivery transport (email/push/…) belongs behind a future
+`NotificationProvider`; nothing hard-codes email into publication or settlement.
+`email_enabled` defaults off until that transport ships.
+
 ## Tests
 
 `social.test.ts` (integration): settlement notifies each predictor exactly once,

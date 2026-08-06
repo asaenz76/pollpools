@@ -46,7 +46,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-16 | Public `using(true)` tables isolated by app filter | 🟡 | §16 | Accept (document) | Open |
 | F-17 | Read-time aggregation & event-page N+1 | 🟠 | §17 | Resolve | Open |
 | F-18 | Feed has no keyset pagination | 🟡 | §17 | Resolve | Open |
-| F-19 | Synchronous per-follower notification fan-out | 🟠 | §5, §11 | Resolve | Open |
+| F-19 | Synchronous per-follower notification fan-out | 🟠 | §5, §11 | Resolve | ✅ Resolved |
 | F-20 | `market_sentiment` lacks `(market_id, status)` index | 🟡 | §17 | Resolve | Open |
 | F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | Open |
 | F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | Open |
@@ -307,8 +307,16 @@ Database impact · Risk · Estimated effort · Status.**
   publishing transaction — linear with follower count.
 - **Planned solution.** Queue notification fan-out as a durable job (§5) delivered via
   NotificationProvider (§11).
-- **Files affected.** `0020_social_triggers.sql` (+ migration), job worker, tests.
-- **Database impact.** Enqueue instead of inline insert; additive. **Risk.** Medium. **Effort.** M. **Status.** Open.
+- **Files affected.** `0041_notification_types.sql`, `0042_notification_fanout.sql`, `src/lib/jobs/*`,
+  `tests/integration/notification-fanout.test.ts`.
+- **Database impact.** `notification_fanouts` (durable cursor/progress), `user_notification_preferences`;
+  `on_event_published` enqueues instead of looping. Additive. **Risk.** Medium.
+- **Status.** ✅ **Resolved** (§5F, migrations `0041`/`0042`): event publication enqueues a canonical
+  feed job + a **batched, cursor-based, resumable** per-follower notification fan-out (no synchronous
+  loop remains). Idempotent (deterministic dedup keys), preference-aware, eligibility checked at batch
+  time (unfollow-before-batch excluded, follow-after not retroactive), dead-letter/state visible via
+  `notification_fanouts` + `system_jobs`. Settlement regrade emits a distinguishable corrected
+  notification. Documented in `docs/social.md`. Criteria (rule 16) tested. F-02/F-05 stay Open.
 
 ### F-20 — Missing `(market_id, status)` covering index 🟡
 - **Description.** `market_sentiment` filters predictions on `market_id` + `status <> 'void'` but
@@ -488,3 +496,15 @@ document; this register is its actionable, status-tracked counterpart.
   `rebuild_tenant_draft_standings`. Added an index on `system_jobs (payload settlement_id)` for the
   prerequisite lookup, and fixed a `user_stats_prereqs` overload ambiguity. New `draft-achievements.test.ts`.
   233 tests pass (stable ×2). **F-02, F-19 stay Open; F-05 stays Open until §5H.**
+- **2026-08-05** — **§5F: F-19 Resolved** (migrations `0041`/`0042`): asynchronous, batched notification
+  & feed fan-out. Event publication enqueues a canonical feed job + a durable, cursor-based, resumable
+  per-follower notification fan-out (`notification_fanouts`); the synchronous `on_event_published`
+  follower loop is gone. Idempotent (deterministic dedup keys), preference-aware
+  (`user_notification_preferences`, opt-out default-on), batch size configurable
+  (`NOTIFICATION_FANOUT_BATCH_SIZE=100`), eligibility at batch time. Settlement regrade emits a
+  distinguishable `prediction_updated` (corrected) notification; achievements notify once with no dup on
+  re-grant; leaderboard milestones (reached #1/top-10/top-100) fire only for configured thresholds gated
+  on the leaderboard projection. Feed model documented (canonical single row, read-time filter) +
+  provider boundary (in-app persistence vs future transport). Worker gained a `defer` outcome already;
+  added a tenant-scoped claim index + 20s integration test timeout for the raised job volume. New
+  `notification-fanout.test.ts` (6). 239 tests pass (stable ×4). **F-02 and F-05 stay Open until §5H.**

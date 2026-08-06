@@ -2808,6 +2808,74 @@ export type Database = {
           },
         ]
       }
+      notification_fanouts: {
+        Row: {
+          batches_processed: number
+          completed_at: string | null
+          created_at: string
+          dedup_key: string
+          error: string | null
+          failed_at: string | null
+          id: string
+          last_recipient_id: string | null
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          recipients_processed: number
+          source_id: string
+          source_type: string
+          source_version: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["fanout_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          batches_processed?: number
+          completed_at?: string | null
+          created_at?: string
+          dedup_key: string
+          error?: string | null
+          failed_at?: string | null
+          id?: string
+          last_recipient_id?: string | null
+          notification_type: Database["public"]["Enums"]["notification_type"]
+          recipients_processed?: number
+          source_id: string
+          source_type: string
+          source_version: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["fanout_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          batches_processed?: number
+          completed_at?: string | null
+          created_at?: string
+          dedup_key?: string
+          error?: string | null
+          failed_at?: string | null
+          id?: string
+          last_recipient_id?: string | null
+          notification_type?: Database["public"]["Enums"]["notification_type"]
+          recipients_processed?: number
+          source_id?: string
+          source_type?: string
+          source_version?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["fanout_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_fanouts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null
@@ -3883,6 +3951,63 @@ export type Database = {
           },
         ]
       }
+      user_notification_preferences: {
+        Row: {
+          achievement_earned: boolean
+          creator_billing: boolean
+          email_enabled: boolean
+          event_locking_soon: boolean
+          event_published: boolean
+          event_result: boolean
+          in_app_enabled: boolean
+          leaderboard_milestone: boolean
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_earned?: boolean
+          creator_billing?: boolean
+          email_enabled?: boolean
+          event_locking_soon?: boolean
+          event_published?: boolean
+          event_result?: boolean
+          in_app_enabled?: boolean
+          leaderboard_milestone?: boolean
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_earned?: boolean
+          creator_billing?: boolean
+          email_enabled?: boolean
+          event_locking_soon?: boolean
+          event_published?: boolean
+          event_result?: boolean
+          in_app_enabled?: boolean
+          leaderboard_milestone?: boolean
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_preferences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -4139,6 +4264,10 @@ export type Database = {
           votes: number
         }[]
       }
+      process_event_publish_fanout: {
+        Args: { p_batch_size?: number; p_fanout_id: string }
+        Returns: string
+      }
       project_achievements: {
         Args: {
           p_event: string
@@ -4157,6 +4286,10 @@ export type Database = {
           p_version: number
         }
         Returns: string
+      }
+      project_event_publish_feed: {
+        Args: { p_event: string; p_tenant: string }
+        Returns: undefined
       }
       project_leaderboard_scope: {
         Args: {
@@ -4380,6 +4513,13 @@ export type Database = {
         | "settled"
         | "canceled"
         | "voided"
+      fanout_status:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "canceled"
+        | "superseded"
       feed_activity_type:
         | "creator_published_event"
         | "user_submitted_prediction"
@@ -4434,6 +4574,7 @@ export type Database = {
         | "draft_rank_changed"
         | "draft_competition_completed"
         | "prize_awarded"
+        | "prediction_updated"
       option_status: "active" | "withdrawn" | "voided" | "winner" | "loser"
       prediction_status: "active" | "locked" | "correct" | "incorrect" | "void"
       prize_award_status:
@@ -4742,6 +4883,14 @@ export const Constants = {
         "canceled",
         "voided",
       ],
+      fanout_status: [
+        "pending",
+        "running",
+        "completed",
+        "failed",
+        "canceled",
+        "superseded",
+      ],
       feed_activity_type: [
         "creator_published_event",
         "user_submitted_prediction",
@@ -4799,6 +4948,7 @@ export const Constants = {
         "draft_rank_changed",
         "draft_competition_completed",
         "prize_awarded",
+        "prediction_updated",
       ],
       option_status: ["active", "withdrawn", "voided", "winner", "loser"],
       prediction_status: ["active", "locked", "correct", "incorrect", "void"],
