@@ -42,7 +42,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | ✅ Resolved |
 | F-13 | YouTube welded into event creation | 🟠 | §7, §10 | Resolve | Open |
 | F-14 | Draft scoring position-only, winner-only baseline | 🟠 | §3, §4 | Split | ◻ Config✅ / baseline→F-15 |
-| F-15 | Regrade drops recorded finishing positions | 🟠 | §5 | Resolve | Open |
+| F-15 | Regrade drops recorded finishing positions | 🟠 | §5 | Resolve | ✅ Resolved |
 | F-16 | Public `using(true)` tables isolated by app filter | 🟡 | §16 | Accept (document) | Open |
 | F-17 | Read-time aggregation & event-page N+1 | 🟠 | §17 | Resolve | Open |
 | F-18 | Feed has no keyset pagination | 🟡 | §17 | Resolve | Open |
@@ -268,8 +268,15 @@ Database impact · Risk · Estimated effort · Status.**
   version; draft standings silently collapse to winner-only after a regrade.
 - **Planned solution.** Carry recorded positions forward across grading versions (or recompute from
   a version-independent source) as part of the async settlement rework (§5).
-- **Files affected.** `0017_draft_settlement.sql` (+ migration), tests.
-- **Database impact.** Additive. **Risk.** Medium (correctness). **Effort.** S–M. **Status.** Open.
+- **Files affected.** `0040_draft_achievements.sql`, `tests/integration/draft-achievements.test.ts`.
+- **Database impact.** `event_competitor_results.recorded` flag; `settle_draft_for_event` carry-forward;
+  `competition_draft_settings.winner_only_fallback`. Additive. **Risk.** Medium (correctness).
+- **Status.** ✅ **Resolved** (§5E, migration `0040`): recorded finishing orders are distinguished from
+  winner-only baselines and **carried forward** across a winner-only regrade (never collapsing to
+  winner-only); a changed order is recorded anew for the new version; historical version rows are
+  retained. Missing positions with the fallback disabled **block** the projection rather than inventing
+  a degraded result. Draft-scoring rebuild is deterministic (== incremental). Version-aware stale jobs
+  cannot overwrite corrected standings. All criteria (rule 10) tested in `draft-achievements.test.ts`.
 
 ### F-16 — Public `using(true)` tables isolated by app filter 🟡
 - **Description.** likes/comments/leaderboards/stats/products use `using(true)`; cross-tenant
@@ -471,3 +478,13 @@ document; this register is its actionable, status-tracked counterpart.
   older version's dead stats job never blocks the current version. Worker gained a `defer` outcome.
   Tests added: retry→defer, dead-letter→blocked, later-success→applied, stale-prereq-doesn't-block,
   duplicate-harmless, normal-drain-no-defer. 222 tests pass.
+- **2026-08-05** — **§5E: F-15 Resolved** (migration `0040`): draft standings + achievements refinement.
+  Finishing positions gain a `recorded` flag (recorded order vs winner-only baseline); recorded orders
+  carry forward across a winner-only regrade (F-15 fix), a changed order is recorded anew, historical
+  version rows retained; missing positions with fallback disabled **block** (never invent a degraded
+  result). Achievements: version- + per-user-prerequisite-aware; reversible milestones (streak/accuracy)
+  revoked via `revoked_at` on regrade (audit preserved, no dup notification), historical milestones
+  preserved. Rebuilds: `rebuild_draft_competition` / `rebuild_user_achievements` /
+  `rebuild_tenant_draft_standings`. Added an index on `system_jobs (payload settlement_id)` for the
+  prerequisite lookup, and fixed a `user_stats_prereqs` overload ambiguity. New `draft-achievements.test.ts`.
+  233 tests pass (stable ×2). **F-02, F-19 stay Open; F-05 stays Open until §5H.**

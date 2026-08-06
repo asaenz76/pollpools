@@ -975,6 +975,7 @@ export type Database = {
           tenant_id: string
           updated_at: string
           visibility: Database["public"]["Enums"]["draft_visibility"]
+          winner_only_fallback: boolean
         }
         Insert: {
           access_type?: Database["public"]["Enums"]["draft_access_type"]
@@ -994,6 +995,7 @@ export type Database = {
           tenant_id: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["draft_visibility"]
+          winner_only_fallback?: boolean
         }
         Update: {
           access_type?: Database["public"]["Enums"]["draft_access_type"]
@@ -1013,6 +1015,7 @@ export type Database = {
           tenant_id?: string
           updated_at?: string
           visibility?: Database["public"]["Enums"]["draft_visibility"]
+          winner_only_fallback?: boolean
         }
         Relationships: [
           {
@@ -2116,6 +2119,7 @@ export type Database = {
           grading_version: number
           id: string
           points: number
+          recorded: boolean
           tenant_id: string
         }
         Insert: {
@@ -2126,6 +2130,7 @@ export type Database = {
           grading_version: number
           id?: string
           points?: number
+          recorded?: boolean
           tenant_id: string
         }
         Update: {
@@ -2136,6 +2141,7 @@ export type Database = {
           grading_version?: number
           id?: string
           points?: number
+          recorded?: boolean
           tenant_id?: string
         }
         Relationships: [
@@ -4136,15 +4142,21 @@ export type Database = {
       project_achievements: {
         Args: {
           p_event: string
+          p_settlement_id: string
           p_tenant: string
           p_user: string
           p_version: number
         }
-        Returns: boolean
+        Returns: string
       }
       project_draft_standings: {
-        Args: { p_event: string; p_tenant: string; p_version: number }
-        Returns: boolean
+        Args: {
+          p_event: string
+          p_settlement_id: string
+          p_tenant: string
+          p_version: number
+        }
+        Returns: string
       }
       project_leaderboard_scope: {
         Args: {
@@ -4185,12 +4197,24 @@ export type Database = {
           submitted_at: string
         }[]
       }
+      rebuild_draft_competition: {
+        Args: { p_competition: string; p_tenant: string }
+        Returns: undefined
+      }
       rebuild_leaderboard_scope: {
         Args: { p_scope_id: string; p_scope_type: string; p_tenant: string }
         Returns: undefined
       }
+      rebuild_tenant_draft_standings: {
+        Args: { p_tenant: string }
+        Returns: undefined
+      }
       rebuild_tenant_leaderboards: {
         Args: { p_tenant: string }
+        Returns: undefined
+      }
+      rebuild_user_achievements: {
+        Args: { p_tenant: string; p_user: string }
         Returns: undefined
       }
       rebuild_user_statistics: {

@@ -139,6 +139,35 @@ scope_id)` and `rebuild_tenant_leaderboards(tenant)` are deterministic full
 rebuilds (the latter never runs on the settlement path); a rebuild equals the
 incremental result.
 
+### Draft finishing positions & achievements (§5E)
+
+**Finishing positions** are authoritative result data, stored per grading version
+in `event_competitor_results` (historical versions are never deleted). Rows are
+either **recorded** (a full finishing order via `record_event_positions` — the
+authoritative order) or a **winner-only baseline** (derived from the settlement
+winner when no order was recorded). On regrade:
+
+- A recorded finishing order is **carried forward** to the new version when the
+  order is unchanged (a winner-only regrade), so draft standings never collapse to
+  winner-only. A winner-only baseline is **not** carried forward — a new version
+  derives its own baseline from its own winner.
+- If the finishing order actually changed, the operator records a new order for
+  the new active version, superseding the carried set for that version only.
+- With no recorded order anywhere, the winner-only baseline is used **only if the
+  competition permits it** (`competition_draft_settings.winner_only_fallback`);
+  otherwise the draft projection is **blocked** (visible) rather than inventing a
+  degraded result. Draft scoring stays config-driven (position→points) and
+  separate from prediction scoring.
+
+**Achievements** are evaluated from current authoritative statistics, version- and
+prerequisite-aware (they wait on the user's statistics projection, same as
+leaderboards). **Historical** milestones (first prediction, first correct, count)
+are grant-only and never revoked. **Reversible** milestones (streak, accuracy) are
+revoked via `revoked_at` (row + audit preserved) when no longer met after a
+regrade, and un-revoked if re-earned — so a re-grant sends no duplicate
+notification. Rebuilds: `rebuild_draft_competition`, `rebuild_user_achievements`,
+`rebuild_tenant_draft_standings` (the last never on the settlement path).
+
 ## Bracket advancement
 
 When a bracket matchup settles, `settle_event` calls `advance_bracket`, which

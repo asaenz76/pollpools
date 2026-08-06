@@ -2,21 +2,21 @@ import { registerJobHandler, type JobContext, type JobOutcome, type SystemJob } 
 import { JOB_TYPES, type ProjectionPayload } from "../types";
 
 /**
- * Settlement projection handlers (§5B). Each calls its version-aware SQL
- * projection function; a `false` return means the job's grading version is no
- * longer active (superseded by a regrade), so the job is superseded (skipped) —
- * an old version's job can never overwrite the active version's projections.
+ * Settlement projection handlers (§5B–§5E). Each calls its version-aware SQL
+ * projection function. Two return conventions:
+ *  - boolean  (user_stats, feed, notifications): true = applied, false = stale.
+ *  - status   (leaderboard, draft, achievements): 'applied' | 'stale' | 'defer'
+ *             | 'blocked'. `defer` = prerequisites unmet (retry, no failure-budget
+ *             cost); `blocked` = a required job dead-lettered / a required input is
+ *             missing → fail visibly, never publish stale/degraded data.
  */
-type ProjectFn =
-  | "project_user_stats"
-  | "project_achievements"
-  | "project_draft_standings"
-  | "project_settlement_feed"
-  | "project_settlement_notifications";
+function payload(job: SystemJob): ProjectionPayload {
+  return job.payload as ProjectionPayload;
+}
 
-async function applyProjection(
+async function booleanProjection(
   { admin }: JobContext,
-  fn: ProjectFn,
+  fn: "project_user_stats" | "project_settlement_feed" | "project_settlement_notifications",
   args: Record<string, unknown>,
   version: number,
 ): Promise<JobOutcome> {
@@ -25,52 +25,53 @@ async function applyProjection(
   if (data !== true) return { skipped: `grading version ${version} no longer active` };
 }
 
-function payload(job: SystemJob): ProjectionPayload {
-  return job.payload as ProjectionPayload;
-}
-
-registerJobHandler(JOB_TYPES.RECOMPUTE_USER_STATS, async (job, ctx) => {
-  const p = payload(job);
-  return applyProjection(ctx, "project_user_stats", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_user: p.user_id, p_settlement_id: p.settlement_id }, p.grading_version);
-});
-
-registerJobHandler(JOB_TYPES.EVALUATE_ACHIEVEMENTS, async (job, ctx) => {
-  const p = payload(job);
-  return applyProjection(ctx, "project_achievements", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_user: p.user_id }, p.grading_version);
-});
-
-registerJobHandler(JOB_TYPES.REFRESH_LEADERBOARD, async (job, { admin }) => {
-  const p = payload(job);
-  const { data, error } = await admin.rpc("project_leaderboard_scope", {
-    p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version,
-    p_settlement_id: p.settlement_id, p_scope: p.scope, p_scope_id: p.scope_id ?? null,
-  } as never);
-  if (error) throw new Error(`project_leaderboard_scope: ${error.message}`);
-  // 'applied' → complete · 'stale' → supersede · 'defer' → prerequisites unmet ·
-  // 'blocked' → a required stats job dead-lettered; fail visibly (never publish stale).
+/** Map a projection status function's result to a worker outcome. */
+async function statusProjection(
+  { admin }: JobContext,
+  fn: "project_leaderboard_scope" | "project_draft_standings" | "project_achievements",
+  args: Record<string, unknown>,
+  ctx: { version: number; settlementId: string; label: string },
+): Promise<JobOutcome> {
+  const { data, error } = await admin.rpc(fn, args as never);
+  if (error) throw new Error(`${fn}: ${error.message}`);
   switch (data as unknown as string) {
     case "stale":
-      return { skipped: `grading version ${p.grading_version} no longer active` };
+      return { skipped: `grading version ${ctx.version} no longer active` };
     case "defer":
-      return { defer: `awaiting user-statistics jobs for settlement ${p.settlement_id}` };
+      return { defer: `awaiting prerequisite jobs for settlement ${ctx.settlementId}` };
     case "blocked":
-      throw new Error(`leaderboard blocked: a required user-statistics job dead-lettered (settlement ${p.settlement_id})`);
+      throw new Error(`${ctx.label} blocked for settlement ${ctx.settlementId} (see prerequisites / recorded result)`);
     default:
       return; // 'applied'
   }
+}
+
+registerJobHandler(JOB_TYPES.RECOMPUTE_USER_STATS, (job, ctx) => {
+  const p = payload(job);
+  return booleanProjection(ctx, "project_user_stats", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_user: p.user_id, p_settlement_id: p.settlement_id }, p.grading_version);
 });
 
-registerJobHandler(JOB_TYPES.REFRESH_DRAFT_STANDINGS, async (job, ctx) => {
+registerJobHandler(JOB_TYPES.EVALUATE_ACHIEVEMENTS, (job, ctx) => {
   const p = payload(job);
-  return applyProjection(ctx, "project_draft_standings", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version }, p.grading_version);
+  return statusProjection(ctx, "project_achievements", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_user: p.user_id, p_settlement_id: p.settlement_id }, { version: p.grading_version, settlementId: p.settlement_id, label: "achievements" });
 });
 
-registerJobHandler(JOB_TYPES.SETTLEMENT_FEED, async (job, ctx) => {
+registerJobHandler(JOB_TYPES.REFRESH_LEADERBOARD, (job, ctx) => {
   const p = payload(job);
-  return applyProjection(ctx, "project_settlement_feed", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version }, p.grading_version);
+  return statusProjection(ctx, "project_leaderboard_scope", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_settlement_id: p.settlement_id, p_scope: p.scope, p_scope_id: p.scope_id ?? null }, { version: p.grading_version, settlementId: p.settlement_id, label: "leaderboard" });
 });
 
-registerJobHandler(JOB_TYPES.NOTIFY_SETTLEMENT, async (job, ctx) => {
+registerJobHandler(JOB_TYPES.REFRESH_DRAFT_STANDINGS, (job, ctx) => {
   const p = payload(job);
-  return applyProjection(ctx, "project_settlement_notifications", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version }, p.grading_version);
+  return statusProjection(ctx, "project_draft_standings", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_settlement_id: p.settlement_id }, { version: p.grading_version, settlementId: p.settlement_id, label: "draft standings" });
+});
+
+registerJobHandler(JOB_TYPES.SETTLEMENT_FEED, (job, ctx) => {
+  const p = payload(job);
+  return booleanProjection(ctx, "project_settlement_feed", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version }, p.grading_version);
+});
+
+registerJobHandler(JOB_TYPES.NOTIFY_SETTLEMENT, (job, ctx) => {
+  const p = payload(job);
+  return booleanProjection(ctx, "project_settlement_notifications", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version }, p.grading_version);
 });
