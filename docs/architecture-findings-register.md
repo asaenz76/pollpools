@@ -39,7 +39,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-09 | Enum drift: hand-maintained vs generated, no check | 🟠 | §15 | Resolve | Open |
 | F-10 | Duplicated logic (bracket gen, label maps) | 🟡 | §7, §15 | Resolve | Open |
 | F-11 | Hard-coded 80/20 revenue split fallback | 🟠 | §4, §14 | Resolve | Open |
-| F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | Open |
+| F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | ✅ Resolved |
 | F-13 | YouTube welded into event creation | 🟠 | §7, §10 | Resolve | Open |
 | F-14 | Draft scoring position-only, winner-only baseline | 🟠 | §3, §4 | Resolve | Open |
 | F-15 | Regrade drops recorded finishing positions | 🟠 | §5 | Resolve | Open |
@@ -207,9 +207,12 @@ Database impact · Risk · Estimated effort · Status.**
   events (which carry an order but a different event name) appear to record no earning.
 - **Planned solution.** Record earnings on the renewal/payment-success event as well, idempotently
   keyed per order id, while unifying the pipeline (§2).
-- **Files affected.** `0027_billing_functions.sql` (+ migration), billing tests.
-- **Database impact.** Additive change to `apply_billing_event`. **Risk.** Low–Medium (revenue correctness).
-- **Effort.** S–M. **Status.** Open.
+- **Files affected.** `0030_recurring_support_earnings.sql`, `src/lib/billing/lemon-squeezy-provider.ts`, billing tests.
+- **Database impact.** Additive rewrite of `apply_billing_event`. **Risk.** Low–Medium (revenue correctness).
+- **Effort.** S–M. **Status.** ✅ **Resolved** (migration `0030`): the LS adapter normalizes
+  `subscription-invoices` into an order, and the creator earning is now recorded on `order_created`
+  **and** `subscription_payment_success` / `subscription_payment_recovered`, idempotent per invoice
+  order id. Integration-tested (renewal → second 400¢ earning; replay is a no-op).
 
 ### F-13 — YouTube welded into event creation 🟠
 - **Description.** A mandatory, non-clearable Live YouTube URL is enforced inside the generic
@@ -368,3 +371,6 @@ document; this register is its actionable, status-tracked counterpart.
   mock provider (404 otherwise); a DB trigger rejects payout requests exceeding available earnings;
   `approve_creator_payout` releases-before-deletes in the insufficient-earnings branch. 142 tests pass.
   F-12 (recurring-renewal earnings) remains for its own slice.
+- **2026-08-05** — **F-12 Resolved** (§2, migration `0030`): creator earnings are now recorded on every
+  subscription renewal, not just the first. **§2 (payment architecture) is complete** — F-01, F-12,
+  F-24, F-25, F-26 all Resolved. 143 tests pass.

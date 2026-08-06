@@ -176,6 +176,9 @@ export class LemonSqueezyBillingProvider implements BillingProvider {
 
     const event: BillingWebhookEvent = { providerEventId, providerEventName: p.meta.event_name, type, customData };
     if (p.data.type === "orders") event.order = this.orderFrom(p.data.id, p.data.attributes, customData);
+    // Subscription renewals arrive as `subscription-invoices`; normalize them to an
+    // order so a creator earning is recorded for every renewal, not just the first.
+    if (p.data.type === "subscription-invoices") event.order = this.orderFrom(p.data.id, p.data.attributes, customData);
     if (p.data.type === "subscriptions") event.subscription = this.subFrom(p.data.id, p.data.attributes, customData);
     if (type === "order_refunded" && p.data.type === "orders") {
       event.refund = {

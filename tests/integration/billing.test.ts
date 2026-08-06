@@ -148,4 +148,25 @@ d("billing: webhooks, entitlements, earnings, payouts", () => {
       .select("id").single();
     expect(over.error?.message).toContain("INSUFFICIENT_EARNINGS");
   });
+
+  it("records a creator earning on each subscription renewal, not just the first (F-12)", async () => {
+    // Initial purchase.
+    await apply(orderEvent("order_created", supportId, `sub_init_${s}`, { total: 500, creator: creatorId }));
+    // Renewal invoice → a NEW order id → a second earning (idempotent per invoice).
+    const renewal = {
+      type: "subscription_payment_success",
+      customData: { tenant_id: tenantId, user_id: buyerId, internal_billing_product_id: supportId, creator_id: creatorId },
+      order: { providerOrderId: `sub_renew_${s}`, providerCustomerId: "cust_1", status: "paid", subtotal: money(500), tax: money(0), total: money(500), refunded: money(0), purchasedAt: new Date().toISOString() },
+    };
+    expect((await apply(renewal)).error).toBeNull();
+    expect((await apply(renewal)).error).toBeNull(); // replay is idempotent
+
+    const initOrder = (await admin.from("billing_orders").select("id").eq("provider_order_id", `sub_init_${s}`).single()).data!;
+    const renewOrder = (await admin.from("billing_orders").select("id").eq("provider_order_id", `sub_renew_${s}`).single()).data!;
+    const { data: earns } = await admin.from("creator_earnings").select("billing_order_id, creator_share_minor_units, earning_type").eq("creator_id", creatorId).eq("earning_type", "support_subscription");
+    expect(earns!.filter((e) => e.billing_order_id === initOrder.id).length).toBe(1);
+    const renewEarnings = earns!.filter((e) => e.billing_order_id === renewOrder.id);
+    expect(renewEarnings.length).toBe(1); // exactly one despite the replay
+    expect(renewEarnings[0]!.creator_share_minor_units).toBe(400); // 80% of 500
+  });
 });
