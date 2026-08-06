@@ -6,7 +6,9 @@
  * specific vertical (no "marble", "team", "horse", etc.). Vertical specifics
  * live only in competitor rows, option labels, and JSONB metadata.
  *
- * Keep this file and the SQL enum definitions in lockstep.
+ * Keep this file and the SQL enum definitions in lockstep. This is ENFORCED by
+ * `tests/unit/enum-parity.test.ts`, which fails if any enum here drifts from the
+ * generated `Constants.public.Enums` in `src/types/database.ts` (the authority).
  */
 
 export const TENANT_STATUS = ["active", "suspended", "archived"] as const;

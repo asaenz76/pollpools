@@ -35,8 +35,8 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | Open |
 | F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | Open |
 | F-07 | Closed enums force migration to extend | 🟠 | §3, §15 | Accept (mitigate) | Open |
-| F-08 | `as never` casts on money-path RPC boundaries | 🟠 | §15 | Resolve | Open |
-| F-09 | Enum drift: hand-maintained vs generated, no check | 🟠 | §15 | Resolve | Open |
+| F-08 | `as never` casts on money-path RPC boundaries | 🟠 | §15 | Resolve | ✅ Resolved |
+| F-09 | Enum drift: hand-maintained vs generated, no check | 🟠 | §15 | Resolve | ✅ Resolved |
 | F-10 | Duplicated logic (bracket gen, label maps) | 🟡 | §7, §15 | Resolve | Open |
 | F-11 | Hard-coded 80/20 revenue split fallback | 🟠 | §4, §14 | Resolve | Open |
 | F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | ✅ Resolved |
@@ -56,7 +56,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-26 | `approve_creator_payout` reject-cleanup ordering | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-27 | Grading math in SQL not covered by the tested TS | 🟠 | §4, §19 | Resolve | Open |
 | F-28 | Shared global singletons (webhook ledger, job queue) | 🟡 | §17 | Accept (revisit) | Open |
-| F-29 | Untyped `as unknown[]` JSONB casts | 🟡 | §15 | Resolve | Open |
+| F-29 | Untyped `as unknown[]` JSONB casts | 🟡 | §15 | Resolve | ✅ Resolved |
 
 Companion — **net-new platform capabilities** the phase mandates (not review
 findings, tracked here so the register is the single spine):
@@ -175,16 +175,22 @@ Database impact · Risk · Estimated effort · Status.**
 - **Description.** Five `as never` casts bypass generated RPC types on checkout, event creation,
   settlement, and `apply_billing_event`; the webhook payload enters the DB fully untyped.
 - **Planned solution.** Regenerate DB types after schema settles, add typed RPC wrappers, remove casts.
-- **Files affected.** `billing-actions.ts`, `creator-actions.ts`, `webhook.ts`, `src/types/*`.
-- **Database impact.** none (type-only). **Risk.** Low. **Effort.** S. **Status.** Open.
+- **Files affected.** `billing-actions.ts`, `creator-actions.ts`, `webhook.ts`, `src/types/rpc.ts` (new).
+- **Database impact.** none (type-only). **Risk.** Low. **Effort.** S.
+- **Status.** ✅ **Resolved**: root cause was Supabase's generator typing all function args as non-null.
+  Introduced `RpcArgs<K>` (`src/types/rpc.ts`); the five `as never` casts are replaced with
+  `as RpcArgs<"fn">` (still checks argument names — a typo is now a type error) and the webhook payload
+  with `as unknown as Json`. No blanket-`never` remains on the money paths.
 
 ### F-09 — Enum drift 🟠
 - **Description.** Hand-maintained `src/types/enums.ts` must stay in lockstep with SQL enums and
   the generated `database.ts`; no check enforces agreement.
 - **Planned solution.** Single source of truth: derive app enums from generated types (or a
   generated constants file) + a test asserting parity.
-- **Files affected.** `src/types/enums.ts`, `src/types/database.ts`, a new parity test.
-- **Database impact.** none. **Risk.** Low. **Effort.** S–M. **Status.** Open.
+- **Files affected.** `src/types/enums.ts`, `tests/unit/enum-parity.test.ts` (new).
+- **Database impact.** none. **Risk.** Low. **Effort.** S–M.
+- **Status.** ✅ **Resolved**: `tests/unit/enum-parity.test.ts` asserts every hand-maintained enum
+  matches the generated `Constants.public.Enums` (the authority) — 36 checks, drift now fails CI.
 
 ### F-10 — Duplicated logic 🟡
 - **Description.** The bracket generator is reimplemented in `scripts/seed-demo.mjs`; competition-type
@@ -374,3 +380,6 @@ document; this register is its actionable, status-tracked counterpart.
 - **2026-08-05** — **F-12 Resolved** (§2, migration `0030`): creator earnings are now recorded on every
   subscription renewal, not just the first. **§2 (payment architecture) is complete** — F-01, F-12,
   F-24, F-25, F-26 all Resolved. 143 tests pass.
+- **2026-08-05** — **F-08, F-09, F-29 Resolved** (§15): removed the `as never` money-path casts
+  (`RpcArgs<K>` helper), typed the tenant JSONB link blobs, and added an enum-parity test enforcing
+  single source of truth. 179 tests pass. F-07 (accept-with-mitigation) and F-10 (dedup) remain for §15's finish.

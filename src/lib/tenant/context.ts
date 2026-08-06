@@ -1,11 +1,16 @@
 import "server-only";
 
 import { cache } from "react";
+import { z } from "zod";
 import { headers } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { FeatureFlagService } from "@/lib/tenant/feature-flags";
 import { TENANT_HEADER } from "@/lib/supabase/middleware";
 import type { SentimentVisibility, TenantStatus } from "@/types/enums";
+
+/** A tenant-configured navigation link (legal/footer). */
+export type NavLink = { label: string; href: string };
+const navLinksSchema = z.array(z.object({ label: z.string(), href: z.string() })).catch([]);
 
 export type Tenant = {
   id: string;
@@ -27,8 +32,8 @@ export type TenantSettings = {
   minimumRankedPredictions: number;
   platformShareBps: number;
   creatorShareBps: number;
-  legalLinks: unknown[];
-  footerLinks: unknown[];
+  legalLinks: NavLink[];
+  footerLinks: NavLink[];
 };
 
 export type TenantContext = {
@@ -123,8 +128,8 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
         minimumRankedPredictions: settingsRow.minimum_ranked_predictions,
         platformShareBps: settingsRow.platform_share_bps,
         creatorShareBps: settingsRow.creator_share_bps,
-        legalLinks: (settingsRow.legal_links as unknown[]) ?? [],
-        footerLinks: (settingsRow.footer_links as unknown[]) ?? [],
+        legalLinks: navLinksSchema.parse(settingsRow.legal_links ?? []),
+        footerLinks: navLinksSchema.parse(settingsRow.footer_links ?? []),
       }
     : DEFAULT_SETTINGS;
 

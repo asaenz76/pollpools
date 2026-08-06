@@ -7,6 +7,7 @@ import { isValidTenantSlug } from "@/lib/tenant/resolver";
 import { parseYouTubeId } from "@/lib/domain/youtube";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import type { RpcArgs } from "@/types/rpc";
 
 type Ok<T = object> = { ok: true } & T;
 type Err = { ok: false; error: string };
@@ -166,7 +167,7 @@ export async function createEventAction(input: z.infer<typeof eventSchema>): Pro
     p_competitor_ids: parsed.data.competitorIds,
     p_market_question: parsed.data.marketQuestion || null,
     p_publish: parsed.data.publish,
-  } as never);
+  } as RpcArgs<"create_event_with_market">);
   if (error) return { ok: false, error: "Couldn't create the event. Check your inputs." };
   return { ok: true, slug: (data as { slug: string }).slug };
 }
@@ -184,7 +185,7 @@ export async function submitResultAction(input: { eventId: string; winningCompet
     p_notes: parsed.data.notes || null,
     p_result_url: parsed.data.resultUrl || null,
     p_idempotency_key: `result-${parsed.data.eventId}-${key}`,
-  } as never);
+  } as RpcArgs<"settle_event">);
   if (error) {
     if (error.message.includes("NOT_AUTHORIZED")) return { ok: false, error: "Results for your events are reviewed by an admin. Ask a Super Admin to enable direct settlement." };
     if (error.message.includes("ALREADY_SETTLED")) return { ok: false, error: "This event is already settled." };

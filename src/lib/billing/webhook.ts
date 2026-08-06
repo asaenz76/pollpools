@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { getBillingProvider, billingWebhookSecret } from "@/lib/billing/index";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import type { Json } from "@/types/rpc";
 
 export type WebhookResult = { status: number; body: { ok: boolean; reason?: string } };
 
@@ -58,10 +59,11 @@ export async function processBillingWebhook(rawBody: string, signature: string):
     webhookId = existing.id;
   }
 
-  // Apply the normalized event (idempotent inside the DB function).
+  // Apply the normalized event (idempotent inside the DB function). The event is
+  // a JSON-serializable domain object; cast to the generated Json arg type.
   const { error } = await admin.rpc("apply_billing_event", {
     p_webhook_id: webhookId,
-    p_event: event as never,
+    p_event: event as unknown as Json,
   });
 
   if (error) {

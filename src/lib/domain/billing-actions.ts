@@ -6,6 +6,7 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 import { getBillingProvider, paidDraftCheckoutEnabled } from "@/lib/billing/index";
 import { serverEnv, publicEnv } from "@/lib/env";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
+import type { RpcArgs } from "@/types/rpc";
 
 type Ok<T = object> = { ok: true } & T;
 type Err = { ok: false; error: string };
@@ -71,7 +72,7 @@ export async function startCheckoutAction(input: z.infer<typeof startSchema>): P
     p_creator_id: parsed.data.creatorId ?? null,
     p_competition_id: parsed.data.competitionId ?? null,
     p_draft_reservation_id: parsed.data.draftReservationId ?? null,
-  } as never);
+  } as RpcArgs<"create_billing_checkout">);
   if (error) return { ok: false, error: "Couldn't start checkout." };
 
   const result = co as {
@@ -100,7 +101,7 @@ export async function startCheckoutAction(input: z.infer<typeof startSchema>): P
     p_provider_checkout_id: checkout.providerCheckoutId,
     p_url: checkout.url,
     p_expires_at: checkout.expiresAt,
-  } as never);
+  } as RpcArgs<"set_billing_checkout_url">);
 
   return { ok: true, url: checkout.url };
 }
