@@ -3548,10 +3548,12 @@ export type Database = {
         Row: {
           attempts: number
           created_at: string
+          dedup_key: string | null
           error: string | null
           finished_at: string | null
           id: string
           job_type: string
+          max_attempts: number
           payload: Json
           run_at: string
           started_at: string | null
@@ -3562,10 +3564,12 @@ export type Database = {
         Insert: {
           attempts?: number
           created_at?: string
+          dedup_key?: string | null
           error?: string | null
           finished_at?: string | null
           id?: string
           job_type: string
+          max_attempts?: number
           payload?: Json
           run_at?: string
           started_at?: string | null
@@ -3576,10 +3580,12 @@ export type Database = {
         Update: {
           attempts?: number
           created_at?: string
+          dedup_key?: string | null
           error?: string | null
           finished_at?: string | null
           id?: string
           job_type?: string
+          max_attempts?: number
           payload?: Json
           run_at?: string
           started_at?: string | null
@@ -4013,6 +4019,32 @@ export type Database = {
         Args: { p_assignment_id: string; p_reason: string }
         Returns: Json
       }
+      claim_jobs: {
+        Args: { p_limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          dedup_key: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          job_type: string
+          max_attempts: number
+          payload: Json
+          run_at: string
+          started_at: string | null
+          status: string
+          tenant_id: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "system_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_job: { Args: { p_id: string }; Returns: undefined }
       create_billing_checkout: {
         Args: {
           p_billing_product_id: string
@@ -4062,7 +4094,19 @@ export type Database = {
           taken: boolean
         }[]
       }
+      enqueue_job: {
+        Args: {
+          p_dedup_key?: string
+          p_job_type: string
+          p_max_attempts?: number
+          p_payload: Json
+          p_run_at?: string
+          p_tenant: string
+        }
+        Returns: string
+      }
       expire_draft_reservations: { Args: never; Returns: number }
+      fail_job: { Args: { p_error: string; p_id: string }; Returns: undefined }
       lock_due_markets: { Args: never; Returns: number }
       mark_creator_payout_paid: {
         Args: { p_external_reference: string; p_payout_id: string }
@@ -4128,6 +4172,7 @@ export type Database = {
         }
         Returns: Json
       }
+      skip_job: { Args: { p_id: string; p_reason: string }; Returns: undefined }
       submit_prediction: {
         Args: {
           p_idempotency_key: string
