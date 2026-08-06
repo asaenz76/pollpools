@@ -4082,6 +4082,10 @@ export type Database = {
         }
         Returns: Json
       }
+      defer_job: {
+        Args: { p_delay_seconds?: number; p_id: string; p_reason: string }
+        Returns: undefined
+      }
       draft_competitor: {
         Args: {
           p_competition_id: string
@@ -4151,7 +4155,7 @@ export type Database = {
           p_tenant: string
           p_version: number
         }
-        Returns: boolean
+        Returns: string
       }
       project_settlement_feed: {
         Args: { p_event: string; p_tenant: string; p_version: number }

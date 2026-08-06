@@ -163,10 +163,10 @@ d("scoped leaderboards", () => {
 
     const call = (v: { id: string; grading_version: number }, scope: string, scopeId: string | null) =>
       admin.rpc("project_leaderboard_scope", { p_tenant: tenantId, p_event: e.eventId, p_version: v.grading_version, p_settlement_id: v.id, p_scope: scope, p_scope_id: scopeId } as never);
-    expect((await call(v1, "competition", compReg)).data).toBe(false); // stale
-    expect((await call(v2, "competition", compReg)).data).toBe(true);  // active
-    expect((await call(v2, "competition", compReg)).data).toBe(true);  // duplicate, idempotent
-    expect((await call(v1, "global", null)).data).toBe(false);         // out-of-order stale
+    expect((await call(v1, "competition", compReg)).data).toBe("stale");    // superseded
+    expect((await call(v2, "competition", compReg)).data).toBe("applied");  // active, prereqs ready
+    expect((await call(v2, "competition", compReg)).data).toBe("applied");  // duplicate, idempotent
+    expect((await call(v1, "global", null)).data).toBe("stale");            // out-of-order stale
     expect((await lb("competition", compReg)).find((r) => r.user_id === u)).toMatchObject({ total_points: 0 }); // v2 (incorrect)
   });
 
@@ -205,6 +205,76 @@ d("scoped leaderboards", () => {
     } finally {
       await admin.from("tenants").delete().eq("id", t2Id);
     }
+  });
+
+  // ── §5D dependency hardening: leaderboard must not read stale statistics ─────
+  const activeSettlement = async (eventId: string) =>
+    (await admin.from("settlements").select("id, grading_version").eq("event_id", eventId).eq("status", "active").single()).data!;
+  const setStatsJobs = (sid: string, status: string) =>
+    admin.from("system_jobs").update({ status }).eq("job_type", "projection.user_stats").filter("payload->>settlement_id", "eq", sid);
+  const refreshGlobal = (v: { id: string; grading_version: number }, eventId: string) =>
+    admin.rpc("project_leaderboard_scope", { p_tenant: tenantId, p_event: eventId, p_version: v.grading_version, p_settlement_id: v.id, p_scope: "global", p_scope_id: null } as never);
+
+  it("defers the leaderboard while prerequisite statistics jobs are unfinished", async () => {
+    const u = await newUser();
+    const e = await makeEvent({ competitionId: compReg });
+    await predict(e.marketId, u, e.optA);
+    await settle(e.eventId, e.compA); // jobs enqueued, NOT drained → stats pending
+    const v = await activeSettlement(e.eventId);
+    expect((await refreshGlobal(v, e.eventId)).data).toBe("defer"); // prerequisites pending
+  });
+
+  it("blocks (visibly) when a prerequisite statistics job is dead-lettered", async () => {
+    const u = await newUser();
+    const e = await makeEvent({ competitionId: compReg });
+    await predict(e.marketId, u, e.optA);
+    await settle(e.eventId, e.compA);
+    const v = await activeSettlement(e.eventId);
+    await setStatsJobs(v.id, "dead");
+    expect((await refreshGlobal(v, e.eventId)).data).toBe("blocked");
+  });
+
+  it("proceeds once the prerequisite statistics jobs succeed (idempotent)", async () => {
+    const u = await newUser();
+    const e = await makeEvent({ competitionId: compReg });
+    await predict(e.marketId, u, e.optA);
+    await settle(e.eventId, e.compA);
+    const v = await activeSettlement(e.eventId);
+    // Simulate the stats jobs finishing: recompute the user + mark the jobs succeeded.
+    await admin.rpc("rebuild_user_statistics", { p_tenant: tenantId, p_user: u } as never);
+    await setStatsJobs(v.id, "succeeded");
+    expect((await refreshGlobal(v, e.eventId)).data).toBe("applied");
+    expect((await refreshGlobal(v, e.eventId)).data).toBe("applied"); // duplicate harmless
+    expect((await lb("global", null)).some((r) => r.user_id === u)).toBe(true);
+  });
+
+  it("an older version's dead stats job does not block the current version", async () => {
+    const u = await newUser();
+    const e = await makeEvent({ competitionId: compReg });
+    await predict(e.marketId, u, e.optA);
+    await settle(e.eventId, e.compA);
+    const v1 = await activeSettlement(e.eventId);
+    await setStatsJobs(v1.id, "dead"); // v1's prerequisite is dead
+    await regrade(e.eventId, e.compB);
+    const v2 = await activeSettlement(e.eventId);
+    await admin.rpc("rebuild_user_statistics", { p_tenant: tenantId, p_user: u } as never);
+    await setStatsJobs(v2.id, "succeeded"); // v2's prerequisites are satisfied
+    // v1 is stale (short-circuits before prereqs); v2 proceeds despite v1's dead job.
+    expect((await refreshGlobal(v1, e.eventId)).data).toBe("stale");
+    expect((await refreshGlobal(v2, e.eventId)).data).toBe("applied");
+  });
+
+  it("normal drain: statistics succeed before the leaderboard refresh (no defer)", async () => {
+    // Clear leftover jobs from the direct-call tests above so the drain reflects
+    // only this settlement's work.
+    await admin.from("system_jobs").delete().eq("tenant_id", tenantId);
+    const u = await newUser();
+    const e = await makeEvent({ competitionId: compReg });
+    await predict(e.marketId, u, e.optA);
+    await settle(e.eventId, e.compA);
+    const res = await drain();
+    expect(res.deferred).toBe(0); // FIFO seq → stats succeed before the leaderboard runs
+    expect((await lb("global", null)).some((r) => r.user_id === u)).toBe(true);
   });
 
   it("ranks a large batch of users without dropping anyone (set-based, no N+1)", async () => {

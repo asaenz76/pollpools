@@ -10,7 +10,6 @@ import { JOB_TYPES, type ProjectionPayload } from "../types";
 type ProjectFn =
   | "project_user_stats"
   | "project_achievements"
-  | "project_leaderboard_scope"
   | "project_draft_standings"
   | "project_settlement_feed"
   | "project_settlement_notifications";
@@ -40,14 +39,25 @@ registerJobHandler(JOB_TYPES.EVALUATE_ACHIEVEMENTS, async (job, ctx) => {
   return applyProjection(ctx, "project_achievements", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_user: p.user_id }, p.grading_version);
 });
 
-registerJobHandler(JOB_TYPES.REFRESH_LEADERBOARD, async (job, ctx) => {
+registerJobHandler(JOB_TYPES.REFRESH_LEADERBOARD, async (job, { admin }) => {
   const p = payload(job);
-  return applyProjection(
-    ctx,
-    "project_leaderboard_scope",
-    { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_settlement_id: p.settlement_id, p_scope: p.scope, p_scope_id: p.scope_id ?? null },
-    p.grading_version,
-  );
+  const { data, error } = await admin.rpc("project_leaderboard_scope", {
+    p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version,
+    p_settlement_id: p.settlement_id, p_scope: p.scope, p_scope_id: p.scope_id ?? null,
+  } as never);
+  if (error) throw new Error(`project_leaderboard_scope: ${error.message}`);
+  // 'applied' → complete · 'stale' → supersede · 'defer' → prerequisites unmet ·
+  // 'blocked' → a required stats job dead-lettered; fail visibly (never publish stale).
+  switch (data as unknown as string) {
+    case "stale":
+      return { skipped: `grading version ${p.grading_version} no longer active` };
+    case "defer":
+      return { defer: `awaiting user-statistics jobs for settlement ${p.settlement_id}` };
+    case "blocked":
+      throw new Error(`leaderboard blocked: a required user-statistics job dead-lettered (settlement ${p.settlement_id})`);
+    default:
+      return; // 'applied'
+  }
 });
 
 registerJobHandler(JOB_TYPES.REFRESH_DRAFT_STANDINGS, async (job, ctx) => {

@@ -117,9 +117,16 @@ not a separate table). A settlement refreshes only the scopes its event
 touches — global + creator + (competition XOR season) when the event has a
 competition — so unrelated creators/competitions/seasons are never rebuilt. Each
 scope is a **separate job** (distinct dedup key) for isolated retries; global and
-competition rank from the maintained stats tables, so leaderboard jobs run after
-the affected users' stats jobs (guaranteed by monotonic `seq` FIFO processing,
-not timing). Ranking is deterministic: total points → accuracy → correct →
+competition rank from the maintained stats tables, so a leaderboard job runs only
+after the affected users' stats jobs have **succeeded**. This is an **explicit
+prerequisite check** (`app.user_stats_prereqs`), not a timing/FIFO assumption:
+while any required stats job is pending/running/retrying the leaderboard **defers**
+(re-scheduled, visible, no failure-budget cost); if a required stats job
+dead-letters the leaderboard **blocks** visibly rather than publish stale data
+(reconciliation repairs it). Prerequisites are scoped by `settlement_id`, so an
+older version's dead stats job never blocks the current version. FIFO `seq`
+ordering is kept only for predictable processing, not correctness. Ranking is
+deterministic: total points → accuracy → correct →
 earliest first-graded time → stable user id, with users below the tenant's
 minimum-ranked-predictions threshold kept but unranked.
 

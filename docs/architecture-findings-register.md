@@ -463,3 +463,11 @@ document; this register is its actionable, status-tracked counterpart.
   no immutable snapshots yet) in `docs/settlement.md`. New `leaderboard-scopes.test.ts` (10 tests) +
   updated async-settlement job counts. 217 tests pass. **F-05 stays Open until §5H reconciliation is
   tested (register rule 19); F-02/F-15/F-19 stay Open.**
+- **2026-08-05** — **§5D hardening** (migration `0039`): explicit projection dependencies (FIFO alone is
+  not the dependency mechanism). A stats-dependent leaderboard job checks `app.user_stats_prereqs` (per
+  settlement_id): all stats jobs succeeded → refresh; any pending/running/retrying → **defer**
+  (`defer_job` re-schedules without consuming the retry budget — visible, not a failure); any
+  dead-lettered → **blocked** (fails visibly, never publishes stale data; reconciliation repairs). An
+  older version's dead stats job never blocks the current version. Worker gained a `defer` outcome.
+  Tests added: retry→defer, dead-letter→blocked, later-success→applied, stale-prereq-doesn't-block,
+  duplicate-harmless, normal-drain-no-defer. 222 tests pass.

@@ -21,7 +21,15 @@ export type SystemJob = Database["public"]["Tables"]["system_jobs"]["Row"];
 type Admin = SupabaseClient<Database>;
 
 export type JobContext = { admin: Admin };
-export type JobOutcome = void | { skipped: string };
+/**
+ * A handler returns:
+ *  - void          → completed (default)
+ *  - { skipped }   → superseded stale work; terminal, visible (canceled)
+ *  - { defer }     → prerequisites unmet; re-scheduled without consuming the retry
+ *                    budget. NOT a failure. A thrown error, by contrast, retries
+ *                    with backoff and eventually dead-letters.
+ */
+export type JobOutcome = void | { skipped: string } | { defer: string };
 export type JobHandler = (job: SystemJob, ctx: JobContext) => Promise<JobOutcome>;
 
 const HANDLERS = new Map<string, JobHandler>();
@@ -33,7 +41,7 @@ export function registeredJobTypes(): string[] {
   return [...HANDLERS.keys()];
 }
 
-export type WorkerResult = { claimed: number; succeeded: number; skipped: number; failed: number };
+export type WorkerResult = { claimed: number; succeeded: number; skipped: number; deferred: number; failed: number };
 
 /**
  * Claim and process one batch of due jobs. `tenantId` scopes claiming to a single
@@ -43,7 +51,7 @@ export async function runPendingJobs(admin: Admin, limit = 20, tenantId: string 
   const { data, error } = await admin.rpc("claim_jobs", { p_limit: limit, p_tenant: tenantId } as never);
   if (error) throw new Error(`claim_jobs failed: ${error.message}`);
   const jobs = (data ?? []) as SystemJob[];
-  const result: WorkerResult = { claimed: jobs.length, succeeded: 0, skipped: 0, failed: 0 };
+  const result: WorkerResult = { claimed: jobs.length, succeeded: 0, skipped: 0, deferred: 0, failed: 0 };
 
   for (const job of jobs) {
     const handler = HANDLERS.get(job.job_type);
@@ -57,6 +65,9 @@ export async function runPendingJobs(admin: Admin, limit = 20, tenantId: string 
       if (outcome && "skipped" in outcome) {
         await admin.rpc("skip_job", { p_id: job.id, p_reason: outcome.skipped.slice(0, 500) });
         result.skipped++;
+      } else if (outcome && "defer" in outcome) {
+        await admin.rpc("defer_job", { p_id: job.id, p_reason: outcome.defer.slice(0, 500) } as never);
+        result.deferred++;
       } else {
         await admin.rpc("complete_job", { p_id: job.id });
         result.succeeded++;
@@ -72,12 +83,13 @@ export async function runPendingJobs(admin: Admin, limit = 20, tenantId: string 
 
 /** Drain due jobs until none remain (bounded). Used by reconciliation and tests. */
 export async function drainJobs(admin: Admin, tenantId: string | null = null, maxBatches = 50): Promise<WorkerResult> {
-  const total: WorkerResult = { claimed: 0, succeeded: 0, skipped: 0, failed: 0 };
+  const total: WorkerResult = { claimed: 0, succeeded: 0, skipped: 0, deferred: 0, failed: 0 };
   for (let i = 0; i < maxBatches; i++) {
     const r = await runPendingJobs(admin, 20, tenantId);
     total.claimed += r.claimed;
     total.succeeded += r.succeeded;
     total.skipped += r.skipped;
+    total.deferred += r.deferred;
     total.failed += r.failed;
     if (r.claimed === 0) break;
   }
