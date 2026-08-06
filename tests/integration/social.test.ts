@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { adminClient, createUser, signInAs, deleteUser, uniqueSuffix, integrationEnvReady } from "./helpers";
+import { drainJobs } from "@/lib/jobs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -71,15 +72,18 @@ d("social: notifications & feed", () => {
     await admin.from("predictions").insert({ tenant_id: tenantId, market_id: e.marketId, user_id: u1, option_id: e.optA, original_option_id: e.optA, idempotency_key: key(), status: "active" });
 
     await settle(e.eventId, e.compA); // u1 correct
+    await drainJobs(admin, tenantId); // notifications are a durable projection job
     const afterSettle = await notifsFor(u1, "prediction_correct");
     expect(afterSettle).toHaveLength(1);
 
     // A settle retry does not re-fire (idempotent short-circuit).
     await settle(e.eventId, e.compA);
+    await drainJobs(admin, tenantId);
     expect(await notifsFor(u1, "prediction_correct")).toHaveLength(1);
 
     // Regrade to the other competitor → a new corrected "missed" notification.
     await admin.rpc("regrade_event", { p_event_id: e.eventId, p_resolution: "settled", p_winning_competitor_id: e.compB, p_reason: "fix", p_idempotency_key: key() } as never);
+    await drainJobs(admin, tenantId);
     expect(await notifsFor(u1, "prediction_incorrect")).toHaveLength(1);
   });
 

@@ -2,6 +2,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { randomUUID } from "node:crypto";
 import { adminClient, createUser, signInAs, deleteUser, uniqueSuffix, integrationEnvReady } from "./helpers";
+import { drainJobs } from "@/lib/jobs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
@@ -166,6 +167,7 @@ d("competitor draft engine", () => {
     const { eventId } = await makeEvent(comp, [compIds[0]!, compIds[1]!]);
 
     await settle(eventId, compIds[0]!); // compA wins → 10 pts
+    await drainJobs(admin, tenantId); // draft standings are a durable projection job
     let lb = (await admin.from("draft_leaderboard_snapshots").select("user_id, competition_points, rank").eq("competition_id", comp).order("rank")).data!;
     expect(lb.find((x) => x.user_id === members[0]!.id)!.competition_points).toBe(10);
     expect(lb.find((x) => x.user_id === members[1]!.id)!.competition_points).toBe(0);
@@ -173,6 +175,7 @@ d("competitor draft engine", () => {
 
     // Regrade: compB wins instead → standings flip.
     await admin.rpc("regrade_event", { p_event_id: eventId, p_resolution: "settled", p_winning_competitor_id: compIds[1]!, p_reason: "correction", p_idempotency_key: key() } as never);
+    await drainJobs(admin, tenantId);
     lb = (await admin.from("draft_leaderboard_snapshots").select("user_id, competition_points, rank").eq("competition_id", comp).order("rank")).data!;
     expect(lb.find((x) => x.user_id === members[1]!.id)!.competition_points).toBe(10);
     expect(lb.find((x) => x.user_id === members[0]!.id)!.competition_points).toBe(0);

@@ -35,9 +35,12 @@ export function registeredJobTypes(): string[] {
 
 export type WorkerResult = { claimed: number; succeeded: number; skipped: number; failed: number };
 
-/** Claim and process one batch of due jobs. */
-export async function runPendingJobs(admin: Admin, limit = 20): Promise<WorkerResult> {
-  const { data, error } = await admin.rpc("claim_jobs", { p_limit: limit });
+/**
+ * Claim and process one batch of due jobs. `tenantId` scopes claiming to a single
+ * tenant (per-tenant workers / isolated tests); omit to drain all tenants.
+ */
+export async function runPendingJobs(admin: Admin, limit = 20, tenantId: string | null = null): Promise<WorkerResult> {
+  const { data, error } = await admin.rpc("claim_jobs", { p_limit: limit, p_tenant: tenantId } as never);
   if (error) throw new Error(`claim_jobs failed: ${error.message}`);
   const jobs = (data ?? []) as SystemJob[];
   const result: WorkerResult = { claimed: jobs.length, succeeded: 0, skipped: 0, failed: 0 };
@@ -68,10 +71,10 @@ export async function runPendingJobs(admin: Admin, limit = 20): Promise<WorkerRe
 }
 
 /** Drain due jobs until none remain (bounded). Used by reconciliation and tests. */
-export async function drainJobs(admin: Admin, maxBatches = 50): Promise<WorkerResult> {
+export async function drainJobs(admin: Admin, tenantId: string | null = null, maxBatches = 50): Promise<WorkerResult> {
   const total: WorkerResult = { claimed: 0, succeeded: 0, skipped: 0, failed: 0 };
   for (let i = 0; i < maxBatches; i++) {
-    const r = await runPendingJobs(admin);
+    const r = await runPendingJobs(admin, 20, tenantId);
     total.claimed += r.claimed;
     total.succeeded += r.succeeded;
     total.skipped += r.skipped;

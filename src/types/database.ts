@@ -4020,7 +4020,7 @@ export type Database = {
         Returns: Json
       }
       claim_jobs: {
-        Args: { p_limit?: number }
+        Args: { p_limit?: number; p_tenant?: string }
         Returns: {
           attempts: number
           created_at: string
@@ -4121,6 +4121,40 @@ export type Database = {
           total: number
           votes: number
         }[]
+      }
+      project_achievements: {
+        Args: {
+          p_event: string
+          p_tenant: string
+          p_user: string
+          p_version: number
+        }
+        Returns: boolean
+      }
+      project_draft_standings: {
+        Args: { p_event: string; p_tenant: string; p_version: number }
+        Returns: boolean
+      }
+      project_leaderboard: {
+        Args: { p_event: string; p_tenant: string; p_version: number }
+        Returns: boolean
+      }
+      project_settlement_feed: {
+        Args: { p_event: string; p_tenant: string; p_version: number }
+        Returns: boolean
+      }
+      project_settlement_notifications: {
+        Args: { p_event: string; p_tenant: string; p_version: number }
+        Returns: boolean
+      }
+      project_user_stats: {
+        Args: {
+          p_event: string
+          p_tenant: string
+          p_user: string
+          p_version: number
+        }
+        Returns: boolean
       }
       public_user_history: {
         Args: { p_tenant: string; p_user: string }

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { adminClient, createUser, signInAs, deleteUser, uniqueSuffix, integrationEnvReady } from "./helpers";
+import { drainJobs } from "@/lib/jobs";
 import { generateBracket, bracketToStructure } from "@/lib/domain/bracket";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -189,6 +190,7 @@ d("settlement engine", () => {
     expect(opts!.find((o) => o.id === e.optA)!.status).toBe("winner");
     expect(opts!.find((o) => o.id === e.optB)!.status).toBe("loser");
 
+    await drainJobs(admin, tenantId); // statistics/streaks are now durable projection jobs
     expect((await statsOf(u1))!.total_points).toBe(1);
     expect((await statsOf(u1))!.current_streak).toBe(1);
     expect((await statsOf(u3))!.total_points).toBe(0);
@@ -223,11 +225,13 @@ d("settlement engine", () => {
     await predict(e2.marketId, us, e2.optA);
     await settleRpc(admin, { eventId: e1.eventId, winner: e1.compA, key: key() });
     await settleRpc(admin, { eventId: e2.eventId, winner: e2.compA, key: key() });
+    await drainJobs(admin, tenantId);
     expect((await su())!.current_streak).toBe(2);
     const pointsBefore = (await su())!.total_points;
 
     const rg = await regradeRpc(admin, { eventId: e2.eventId, winner: e2.compB, reason: "corrected", key: key() });
     expect(rg.error).toBeNull();
+    await drainJobs(admin, tenantId);
     expect((await su())!.current_streak).toBe(0);
     expect((await su())!.total_points).toBe(pointsBefore - 1);
 
@@ -236,6 +240,7 @@ d("settlement engine", () => {
     expect(settlements!.filter((x) => x.status === "superseded")).toHaveLength(1);
 
     await regradeRpc(admin, { eventId: e2.eventId, winner: e2.compA, reason: "re-corrected", key: key() });
+    await drainJobs(admin, tenantId);
     expect((await su())!.current_streak).toBe(2);
 
     await deleteUser(us);
@@ -245,10 +250,12 @@ d("settlement engine", () => {
     const e = await makeEvent();
     await predict(e.marketId, u2, e.optA);
     await settleRpc(admin, { eventId: e.eventId, winner: e.compA, key: key() });
+    await drainJobs(admin, tenantId); // achievements are a durable projection job
     const before = await admin.from("user_achievements").select("achievement_id").eq("tenant_id", tenantId).eq("user_id", u2);
     expect(before.data!.length).toBeGreaterThanOrEqual(2);
 
     await regradeRpc(admin, { eventId: e.eventId, winner: e.compA, reason: "no-op", key: key() });
+    await drainJobs(admin, tenantId);
     const after = await admin.from("user_achievements").select("achievement_id").eq("tenant_id", tenantId).eq("user_id", u2);
     expect(after.data!.length).toBe(before.data!.length);
   });
@@ -260,10 +267,12 @@ d("settlement engine", () => {
     await settleRpc(admin, { eventId: e.eventId, resolution: "voided", winner: null, key: key() });
     const { data: grades } = await admin.from("settlement_grades").select("outcome").eq("event_id", e.eventId);
     expect(grades!.every((g) => g.outcome === "void")).toBe(true);
+    await drainJobs(admin, tenantId);
     expect((await statsOf(u3))!.total_points).toBe(before);
   });
 
   it("populates the global leaderboard", async () => {
+    await drainJobs(admin, tenantId);
     const { data: lb } = await admin.from("leaderboard_snapshots").select("user_id, total_points, rank, ranked").eq("tenant_id", tenantId).eq("scope", "global");
     expect(lb!.length).toBeGreaterThan(0);
   });

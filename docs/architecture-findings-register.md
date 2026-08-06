@@ -430,3 +430,15 @@ document; this register is its actionable, status-tracked counterpart.
   scoring values are already config-driven (position_points); additional draft scoring strategies are an
   accepted extension point; its baseline/regrade concern is tracked as F-15 (§5/§6). 193 tests pass.
   **§3/§4 complete.**
+- **2026-08-05** — **§5A** (migration `0035`): durable job lifecycle + worker contract (enqueue/claim/
+  complete/fail→dead-letter/skip; `src/lib/jobs`). 198 tests. F-02/05/15/19 remain **Open** (rule 12).
+- **2026-08-05** — **§5B** (migration `0036`): settlement enqueue integration. `settle_event`/`regrade_event`
+  now ENQUEUE version-aware projection jobs IN THE SAME TRANSACTION (transactional outbox) instead of
+  recomputing inline — 6 job types (user_stats, achievements, leaderboard, draft_standings, feed,
+  notify_settlement); the three synchronous projection triggers (draft, grade-notify, settlement-feed) are
+  retired. Each projection function checks the ACTIVE settlement version and no-ops when superseded, so an
+  old version's jobs stay visible but can never overwrite the active version's projections. Tenant-scoped
+  claiming isolates parallel tests. Existing settlement/draft/social tests now drain the queue before
+  asserting derived state; new async-settlement tests cover commit-before-projection, exactly-once enqueue,
+  retry-no-duplicate, regrade-new-version, and stale-version-non-authoritative. 201 tests pass.
+  **F-02/F-05/F-15/F-19 stay Open** until C→H complete (register rule 12).
