@@ -10,7 +10,7 @@ import { JOB_TYPES, type ProjectionPayload } from "../types";
 type ProjectFn =
   | "project_user_stats"
   | "project_achievements"
-  | "project_leaderboard"
+  | "project_leaderboard_scope"
   | "project_draft_standings"
   | "project_settlement_feed"
   | "project_settlement_notifications";
@@ -42,7 +42,12 @@ registerJobHandler(JOB_TYPES.EVALUATE_ACHIEVEMENTS, async (job, ctx) => {
 
 registerJobHandler(JOB_TYPES.REFRESH_LEADERBOARD, async (job, ctx) => {
   const p = payload(job);
-  return applyProjection(ctx, "project_leaderboard", { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version }, p.grading_version);
+  return applyProjection(
+    ctx,
+    "project_leaderboard_scope",
+    { p_tenant: p.tenant_id, p_event: p.event_id, p_version: p.grading_version, p_settlement_id: p.settlement_id, p_scope: p.scope, p_scope_id: p.scope_id ?? null },
+    p.grading_version,
+  );
 });
 
 registerJobHandler(JOB_TYPES.REFRESH_DRAFT_STANDINGS, async (job, ctx) => {

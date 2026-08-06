@@ -109,6 +109,29 @@ break a streak. `rebuild_user_statistics(tenant, user)` runs the same
 deterministic logic as the incremental projection, so a full rebuild always
 equals the incremental result.
 
+### Scoped leaderboards
+
+There are four **separate** leaderboard scopes: **global**, **creator**,
+**competition**, and **season** (a season is a competition with `type='SEASON'`,
+not a separate table). A settlement refreshes only the scopes its event
+touches — global + creator + (competition XOR season) when the event has a
+competition — so unrelated creators/competitions/seasons are never rebuilt. Each
+scope is a **separate job** (distinct dedup key) for isolated retries; global and
+competition rank from the maintained stats tables, so leaderboard jobs run after
+the affected users' stats jobs (guaranteed by monotonic `seq` FIFO processing,
+not timing). Ranking is deterministic: total points → accuracy → correct →
+earliest first-graded time → stable user id, with users below the tenant's
+minimum-ranked-predictions threshold kept but unranked.
+
+**Leaderboard model.** The "latest" leaderboard is a **mutable projection row**
+per `(tenant, scope, scope_id, period='all_time', user)`, refreshed in place
+(delete + reinsert for that scope only). The `period` column exists for future
+periodic **immutable** snapshots, but none are produced today, so nothing
+immutable is ever mutated or deleted. `rebuild_leaderboard_scope(tenant, scope,
+scope_id)` and `rebuild_tenant_leaderboards(tenant)` are deterministic full
+rebuilds (the latter never runs on the settlement path); a rebuild equals the
+incremental result.
+
 ## Bracket advancement
 
 When a bracket matchup settles, `settle_event` calls `advance_bracket`, which

@@ -102,17 +102,19 @@ d("async settlement — enqueue integration", () => {
     const sid = await activeSettlementId(e.eventId);
     const jobs1 = await jobsFor(sid);
     const types = jobs1.map((j) => j.job_type).sort();
-    // 2 users × (stats + achievements) + leaderboard + draft + feed + notify = 8
-    expect(jobs1.length).toBe(8);
+    // 2 users × (stats + achievements) + 2 leaderboard scopes (global + creator; no
+    // competition on this event) + draft + feed + notify = 9
+    expect(jobs1.length).toBe(9);
     expect(types.filter((t) => t === "projection.user_stats").length).toBe(2);
     expect(types.filter((t) => t === "projection.achievements").length).toBe(2);
+    expect(types.filter((t) => t === "projection.leaderboard").length).toBe(2); // global + creator
     expect(new Set(types)).toEqual(new Set([
       "projection.user_stats", "projection.achievements", "projection.leaderboard",
       "projection.draft_standings", "projection.feed", "projection.notify_settlement",
     ]));
     // Idempotent settle replay (same key) enqueues nothing new.
     await settle(e.eventId, e.compA, k);
-    expect((await jobsFor(sid)).length).toBe(8);
+    expect((await jobsFor(sid)).length).toBe(9);
   });
 
   it("regrade enqueues jobs for the NEW version; old-version jobs stay visible but cannot become authoritative", async () => {
@@ -125,14 +127,14 @@ d("async settlement — enqueue integration", () => {
     await regrade(e.eventId, e.compB); // v2: B wins → u1 incorrect
     const v2 = await activeSettlementId(e.eventId);
     expect(v2).not.toBe(v1);
-    // 1 user × (stats + achievements) + leaderboard + draft + feed + notify = 6.
-    expect((await jobsFor(v2)).length).toBe(6); // fresh job set for v2
+    // 1 user × (stats + achievements) + 2 leaderboard scopes + draft + feed + notify = 7.
+    expect((await jobsFor(v2)).length).toBe(7); // fresh job set for v2
 
     // Drain everything: v1's jobs see v2 active and skip (canceled), regardless of order.
     await drainJobs(admin, tenantId);
 
     const v1jobs = await jobsFor(v1);
-    expect(v1jobs.length).toBe(6);
+    expect(v1jobs.length).toBe(7);
     expect(v1jobs.every((j) => j.status === "canceled")).toBe(true); // superseded, visible
     // The authoritative projection reflects v2 (u3 now incorrect → 0 points), NOT v1.
     expect((await statsOf(u3))!.total_points).toBe(0);

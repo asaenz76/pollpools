@@ -3556,6 +3556,7 @@ export type Database = {
           max_attempts: number
           payload: Json
           run_at: string
+          seq: number
           started_at: string | null
           status: string
           tenant_id: string | null
@@ -3572,6 +3573,7 @@ export type Database = {
           max_attempts?: number
           payload?: Json
           run_at?: string
+          seq?: number
           started_at?: string | null
           status?: string
           tenant_id?: string | null
@@ -3588,6 +3590,7 @@ export type Database = {
           max_attempts?: number
           payload?: Json
           run_at?: string
+          seq?: number
           started_at?: string | null
           status?: string
           tenant_id?: string | null
@@ -4035,6 +4038,7 @@ export type Database = {
           max_attempts: number
           payload: Json
           run_at: string
+          seq: number
           started_at: string | null
           status: string
           tenant_id: string | null
@@ -4138,8 +4142,15 @@ export type Database = {
         Args: { p_event: string; p_tenant: string; p_version: number }
         Returns: boolean
       }
-      project_leaderboard: {
-        Args: { p_event: string; p_tenant: string; p_version: number }
+      project_leaderboard_scope: {
+        Args: {
+          p_event: string
+          p_scope: string
+          p_scope_id: string
+          p_settlement_id: string
+          p_tenant: string
+          p_version: number
+        }
         Returns: boolean
       }
       project_settlement_feed: {
@@ -4169,6 +4180,14 @@ export type Database = {
           outcome: string
           submitted_at: string
         }[]
+      }
+      rebuild_leaderboard_scope: {
+        Args: { p_scope_id: string; p_scope_type: string; p_tenant: string }
+        Returns: undefined
+      }
+      rebuild_tenant_leaderboards: {
+        Args: { p_tenant: string }
+        Returns: undefined
       }
       rebuild_user_statistics: {
         Args: { p_tenant: string; p_user: string }

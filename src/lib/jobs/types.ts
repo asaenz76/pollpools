@@ -17,4 +17,7 @@ export type ProjectionPayload = {
   user_id?: string;
   competition_id?: string | null;
   creator_id?: string | null;
+  /** Leaderboard jobs only: which scope this job refreshes. */
+  scope?: "global" | "creator" | "competition" | "season";
+  scope_id?: string | null;
 };

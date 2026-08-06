@@ -451,3 +451,15 @@ document; this register is its actionable, status-tracked counterpart.
   verification in `project_user_stats`. New `user-stats.test.ts` covers all 13 rule-13 scenarios
   (affected-only, streak inc/reset/void, regrade both directions, stale no-op, duplicate + out-of-order,
   rebuild==incremental, same-timestamp id tiebreak). 207 tests pass. F-02/05/15/19 stay Open.
+- **2026-08-05** — **§5D** (migration `0038`): scoped + incremental leaderboard refresh (the substance of
+  F-05). Four separate scopes — global / creator / competition / season (a SEASON competition, not a new
+  table); a settlement refreshes only the scopes its event touches (global + creator + competition XOR
+  season) via one isolated job per scope (distinct dedup keys). `project_leaderboard_scope` is version-
+  and scope-aware (verifies the event belongs to the scope; stale → no-op). Deterministic ranking; min-
+  threshold respected. Leaderboard-after-stats ordering guaranteed by a monotonic `system_jobs.seq` +
+  FIFO worker processing (not timing). `rebuild_leaderboard_scope` / `rebuild_tenant_leaderboards`
+  (never on the settlement path). Read API now requires an explicit scope (`getLeaderboard`), with
+  `getGlobalLeaderboard` the UI's intentional global wrapper. Model documented (mutable projection row;
+  no immutable snapshots yet) in `docs/settlement.md`. New `leaderboard-scopes.test.ts` (10 tests) +
+  updated async-settlement job counts. 217 tests pass. **F-05 stays Open until §5H reconciliation is
+  tested (register rule 19); F-02/F-15/F-19 stay Open.**
