@@ -8,7 +8,9 @@ import { signOutAction } from "@/lib/auth/actions";
 import { Trophy } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BottomNav } from "@/components/domain/bottom-nav";
+import { TenantLogo } from "@/components/domain/tenant-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { resolveTenantBrand, tenantBrandCss } from "@/lib/theme/tenant-theme";
 
 export default async function TenantLayout({ children }: { children: ReactNode }) {
   const ctx = await getTenantContext();
@@ -18,13 +20,16 @@ export default async function TenantLayout({ children }: { children: ReactNode }
   const user = await getSessionUser();
   const unread = user ? await getUnreadNotificationCount() : 0;
 
+  // Resolve this tenant's brand palette and inject it as CSS-variable overrides.
+  // Server-rendered → present at first paint (no flash); values are validated hex.
+  const brand = resolveTenantBrand(tenant.theme);
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      <style dangerouslySetInnerHTML={{ __html: tenantBrandCss(brand) }} />
       <header className="sticky top-0 z-10 border-b border-border bg-card/80 backdrop-blur">
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-4 py-3">
-          <Link href={`/t/${tenant.slug}`} className="font-semibold tracking-tight">
-            {tenant.displayName}
-          </Link>
+          <TenantLogo href={`/t/${tenant.slug}`} displayName={tenant.displayName} logoLight={brand.logoLight} logoDark={brand.logoDark} />
           <div className="flex items-center gap-1">
             <Link
               href={`/t/${tenant.slug}/leaderboard`}

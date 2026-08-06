@@ -1,30 +1,52 @@
 @import "tailwindcss";
 
 /*
- * Prediction Engine design tokens (spec §24).
- * ~95% grayscale. Blue = interaction only. Green = positive/correct.
- * Red = negative/error/destructive. Orange = streaks. Medals = rankings only.
+ * Prediction Engine design tokens.
+ *
+ * ARCHITECTURE
+ * - Neutral surface system + semantic states are PLATFORM defaults (shared by every
+ *   tenant). ~80–90% of any screen is neutral.
+ * - BRAND tokens (--primary family, --brand-*) are tenant-overridable: the tenant
+ *   layout injects values resolved from `tenants.theme` (see src/lib/theme). The
+ *   defaults below are the Marble Grand Prix racing palette.
+ * - Semantic meaning is NEVER a brand color: positive=green, negative=red,
+ *   streak=amber, medals=rankings. Blue = interaction; red/crimson/navy = brand
+ *   emphasis only.
+ *
  * Dark mode is class-based (next-themes attribute="class").
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  /* ── Neutral surfaces (platform) ─────────────────────────────────────────── */
   --background: #fafafa;
   --card: #ffffff;
+  --surface: #ffffff;
+  --surface-elevated: #ffffff;
   --foreground: #111111;
-  --muted: #f2f2f2;
-  --muted-foreground: #737373;
-  --border: #e8e8e8;
-  --input: #e8e8e8;
-  --ring: #4f46e5;
+  --muted: #f5f5f5;
+  --muted-foreground: #737373;   /* secondary text */
+  --foreground-muted: #a3a3a3;   /* muted / tertiary text */
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --input: #e5e5e5;
 
-  --primary: #4f46e5;
+  /* ── Brand / interaction (tenant-overridable; defaults = Marble Grand Prix) ── */
+  --ring: #0c44ac;
+  --primary: #0c44ac;            /* Royal Blue — primary interaction */
   --primary-foreground: #ffffff;
+  --primary-hover: #0a3a92;      /* derived darker accessible blue */
+  --primary-subtle: #eaf0fb;     /* very light blue tint */
+  --brand-red: #ed0101;          /* Racing Red — energetic emphasis */
+  --brand-crimson: #970005;      /* Crimson — deeper red companion */
+  --brand-navy: #000052;         /* Midnight Navy — premium depth */
 
+  /* ── Semantic states (NOT brand) ─────────────────────────────────────────── */
   --positive: #22c55e;
   --positive-foreground: #ffffff;
   --negative: #ef4444;
   --negative-foreground: #ffffff;
+  --warning: #f59e0b;
   --streak: #fb923c;
 
   --medal-gold: #d4af37;
@@ -35,40 +57,62 @@
 }
 
 .dark {
-  --background: #0f1115;
-  --card: #181a20;
-  --foreground: #f5f5f5;
-  --muted: #1f232b;
-  --muted-foreground: #a1a1aa;
-  --border: #2a2d35;
-  --input: #2a2d35;
-  --ring: #6366f1;
+  /* ── Neutral surfaces (kept neutral — navy is an accent, not the background) ─ */
+  --background: #0d0d10;
+  --card: #151519;
+  --surface: #151519;
+  --surface-elevated: #1b1b20;
+  --foreground: #ffffff;
+  --muted: #1b1b20;
+  --muted-foreground: #a3a3a3;   /* secondary text */
+  --foreground-muted: #737373;   /* muted / tertiary text */
+  --border: #2a2a30;
+  --border-strong: #3a3a42;
+  --input: #2a2a30;
 
-  --primary: #6366f1;
+  /* ── Brand / interaction (lighter blue for contrast on dark surfaces) ─────── */
+  --ring: #3b6fe0;
+  --primary: #3b6fe0;            /* accessible lighter royal blue */
   --primary-foreground: #ffffff;
+  --primary-hover: #5a87ea;
+  --primary-subtle: #172444;     /* deep navy/blue selected tint */
+  --brand-red: #ed0101;
+  --brand-crimson: #970005;
+  --brand-navy: #000052;
 
   --positive: #22c55e;
   --negative: #ef4444;
+  --warning: #f59e0b;
   --streak: #fb923c;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-foreground-muted: var(--foreground-muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-brand-red: var(--brand-red);
+  --color-brand-crimson: var(--brand-crimson);
+  --color-brand-navy: var(--brand-navy);
 
   --color-positive: var(--positive);
   --color-positive-foreground: var(--positive-foreground);
   --color-negative: var(--negative);
   --color-negative-foreground: var(--negative-foreground);
+  --color-warning: var(--warning);
   --color-streak: var(--streak);
 
   --color-medal-gold: var(--medal-gold);

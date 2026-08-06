@@ -135,7 +135,7 @@ export function PredictionMarket(props: PredictionMarketProps) {
                     : isPickedLoser
                       ? "border-negative"
                       : isPicked
-                        ? "border-primary"
+                        ? "border-primary bg-primary-subtle"
                         : "border-border",
                   interactive ? "hover:bg-muted cursor-pointer" : "cursor-default",
                 )}

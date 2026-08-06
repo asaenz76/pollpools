@@ -14,7 +14,9 @@ values (
   'Predict the winners of marble races, build your streak, and climb the community leaderboards. Free to play.',
   'active',
   'UTC',
-  '{"accent":"#4f46e5"}'::jsonb
+  -- Marble Grand Prix racing palette (tenant brand config; resolved to CSS tokens
+  -- by src/lib/theme). Neutral surfaces + semantic states stay platform defaults.
+  '{"brandPrimary":"#0c44ac","brandSecondary":"#ed0101","brandAccent":"#970005","brandDeep":"#000052"}'::jsonb
 )
 on conflict (slug) do nothing;
 

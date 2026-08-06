@@ -62,23 +62,33 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
       </header>
 
       {canEmbedMedia && resolvedMedia?.embedUrl ? (
-        <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
-          <iframe
-            className="h-full w-full"
-            src={resolvedMedia.embedUrl}
-            title={event.title}
-            allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="flex flex-col gap-2">
+          {primaryMedia?.mediaType === "livestream" ? (
+            <span className="inline-flex w-fit items-center gap-1 rounded bg-brand-red px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">
+              Live · {resolvedMedia.providerLabel}
+            </span>
+          ) : null}
+          <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
+            <iframe
+              className="h-full w-full"
+              src={resolvedMedia.embedUrl}
+              title={event.title}
+              allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
         </div>
       ) : resolvedMedia && mediaWatchLabel && mediaCfg.externalLinksEnabled ? (
         <a
           href={resolvedMedia.url}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="inline-flex w-fit items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm text-primary hover:bg-accent"
+          className="inline-flex w-fit items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
         >
-          {mediaWatchLabel} →
+          {primaryMedia?.mediaType === "livestream" ? (
+            <span className="rounded bg-brand-red px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Live</span>
+          ) : null}
+          <span className="text-primary">{mediaWatchLabel} →</span>
         </a>
       ) : null}
 

@@ -137,7 +137,7 @@ export function ProfileForm({ creatorId, initial }: { creatorId: string; initial
 export function CompetitorForm({ creatorId }: { creatorId: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#4f46e5");
+  const [color, setColor] = useState("#0c44ac");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
