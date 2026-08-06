@@ -177,9 +177,28 @@ after downstream matchups already exist records the corrected winner on that slo
 but does not automatically rewrite already-generated downstream matchups — that
 is a documented manual-review step.
 
+## Reconciliation & operations
+
+Because projections are eventually-consistent caches, a reconciliation layer
+proves they match their canonical rebuilds and repairs them if not — never
+touching grades or history. `reconcile(tenant, scope, mode, key)` supports
+`dry_run` (savepoint-rollback drift detection), `repair`, and `requeue`;
+`requeue_actionable_jobs` revives current dead-letter / stuck jobs (preserving
+originals, idempotent, skipping superseded history); `projection_health` /
+`projection_job_stats` expose operability. See [reconciliation.md](reconciliation.md)
+and [operations.md](operations.md); the job model itself is in [jobs.md](jobs.md).
+
 ## Tests
 
 - Unit: `scoring-streaks-leaderboard.test.ts` (grading, reversible streaks, tie-breaking, thresholds).
 - Integration (`settlement.test.ts`, live DB): grading + stats, idempotent retry,
   ALREADY_SETTLED, reversible regrade, achievement idempotency, void, leaderboard
   population, bracket advancement on settle, and settlement authorization.
+- Integration (`regrade-convergence.test.ts`): the whole pipeline converges to the
+  active-version canonical rebuild under regrade / stale / out-of-order / duplicate
+  / dead-letter / concurrent execution.
+- Integration (`reconciliation.test.ts`): clean dry-run is zero-diff; corrupted
+  stats / leaderboard / draft are detected and repaired idempotently; current vs
+  historical dead-letter classification; stuck-job requeue preserves the original;
+  interrupted fan-out resumes with no duplicate recipients; auth + cross-tenant
+  rejection; concurrent identical runs collapse to one; health states.

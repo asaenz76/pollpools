@@ -29,10 +29,10 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | ID | Finding | Sev | Phase 7.5 § | Target | Status |
 | --- | --- | --- | --- | --- | --- |
 | F-01 | Dual payment stacks (FNV-1a draft vs HMAC billing) | 🔴 | §2 | Resolve | ✅ Resolved |
-| F-02 | Synchronous full-tenant recompute at settlement | 🔴 | §5, §6 | Resolve | Open |
+| F-02 | Synchronous full-tenant recompute at settlement | 🔴 | §5, §6 | Resolve | ✅ Resolved |
 | F-03 | Market grading is single-winner-only | 🟠 | §3 | Resolve | ✅ Resolved |
 | F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | ✅ Resolved |
-| F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | Open |
+| F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | ✅ Resolved |
 | F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | Open |
 | F-07 | Closed enums force migration to extend | 🟠 | §3, §15 | Accept (mitigate) | 🟦 Accepted |
 | F-08 | `as never` casts on money-path RPC boundaries | 🟠 | §15 | Resolve | ✅ Resolved |
@@ -107,7 +107,7 @@ Database impact · Risk · Estimated effort · Status.**
   - Verified: typecheck + lint + build clean; **141 tests pass**. Follow-up billing-function
     hardenings (F-12, F-24, F-25, F-26) tracked separately below.
 
-### F-02 — Synchronous full-tenant recompute at settlement 🔴
+### F-02 — Synchronous full-tenant recompute at settlement 🔴 → ✅ Resolved
 - **Description.** Every settlement rebuilds the entire tenant leaderboard and re-scans each
   predictor's full grade history inside the transaction holding the event lock — O(all users).
   Draft competitions add a second full rebuild.
@@ -120,11 +120,18 @@ Database impact · Risk · Estimated effort · Status.**
   recompute inline. Additive.
 - **Risk.** Medium — settlement *correctness* must never depend on background jobs; grades are
   committed synchronously, derived caches are eventually consistent. Requires careful ordering.
-- **Effort.** L. **Status.** **In progress** — §5A–§5G done: settlement is async (outbox, §5B),
-  projections are incremental + version-aware with explicit prerequisites + defer/dead-letter (§5C–§5F),
-  and §5G proves the whole pipeline converges to the active-version canonical rebuild under regrade,
-  stale/out-of-order/duplicate execution, dead-letter, and concurrent settle/regrade. **Closes after §5H**
-  (reconciliation, repair, operational visibility) per register rules.
+- **Effort.** L. **Status.** ✅ **Resolved** (§5A–§5H). Settlement's synchronous transaction now does
+  only validate/lock/grade/commit and enqueues durable projection jobs via a transactional outbox (§5B);
+  leaderboards, stats, achievements, draft standings, notifications and feeds are incremental,
+  version-aware, prerequisite-gated jobs with defer/dead-letter semantics (§5C–§5F). The full-tenant
+  in-transaction recompute is gone — there is no O(all users) work on the event lock. §5G proves the
+  pipeline converges to the active-version canonical rebuild under regrade / stale / out-of-order /
+  duplicate / dead-letter / concurrent execution; §5H (migration `0043`) adds reconciliation
+  (`reconcile` dry-run/repair/requeue), job classification + `requeue_actionable_jobs`, and
+  `projection_health` / `projection_job_stats` so drift is detectable and repairable without ever
+  touching grades or history. Correctness never depends on a background job: grades commit
+  synchronously, caches are eventually consistent and reconcilable. 257 tests pass. Docs:
+  `settlement.md`, `jobs.md`, `reconciliation.md`, `operations.md`.
 
 ### F-03 — Market grading is single-winner-only 🟠
 - **Description.** `market_type` declares `YES_NO` and `MULTIPLE_CHOICE`, but only
@@ -156,13 +163,21 @@ Database impact · Risk · Estimated effort · Status.**
   rule change is picked up by the next settlement/regrade. Integration-tested (a competition-scoped rule of
   3 points grades a correct pick as 3).
 
-### F-05 — Only global leaderboard scope implemented 🟠
+### F-05 — Only global leaderboard scope implemented 🟠 → ✅ Resolved
 - **Description.** `creator` / `competition` / `season` leaderboard scopes and the
   `season_champion` / `creator_champion` achievements are schema-ready with no refresh function.
 - **Planned solution.** Scope-parameterized incremental refresh covering all scopes (F-06/§6).
 - **Files affected.** `0011_settlement_functions.sql` (+ new migration), leaderboard features, tests.
 - **Database impact.** New refresh functions; additive.
-- **Risk.** Low–Medium. **Effort.** M. **Status.** Open.
+- **Risk.** Low–Medium. **Effort.** M. **Status.** ✅ **Resolved** (§5D, migration `0038`; closed at §5H).
+  All four scopes — global / creator / competition / season (a `type='SEASON'` competition, not a new
+  table) — have version- and scope-aware incremental refresh (`project_leaderboard_scope`); a settlement
+  refreshes only the scopes its event touches, one isolated job per scope. Read APIs require an explicit
+  scope. Deterministic canonical rebuilds (`rebuild_leaderboard_scope` / `rebuild_tenant_leaderboards`)
+  back both the pipeline and §5H reconciliation, which detects and repairs any scope's drift
+  (`reconciliation.test.ts` corrupts and repairs a competition leaderboard). Closed alongside F-02 after
+  the §5H reconciliation test matrix passed (register rule 19). 257 tests pass. Documented in
+  `docs/settlement.md` / `jobs.md` / `reconciliation.md`.
 
 ### F-06 — Result source is manual-only 🟠
 - **Description.** `external_provider` / `webhook` / `future_adapter` enum values exist but
@@ -524,3 +539,30 @@ document; this register is its actionable, status-tracked counterpart.
   projection function checks the active version at entry within its single transaction (recompute-from-
   active is self-correcting). 248 tests pass (stable ×3). **F-02, F-05 progress-noted, NOT closed — they
   close after §5H (rule 11).**
+- **2026-08-06** — **§5H: F-02 and F-05 Resolved** (migration `0043`): reconciliation, repair &
+  operational visibility — the operational close-out of the async settlement pipeline. `public.reconcile
+  (tenant, scope, mode, key)` orchestrates all scopes (user / event / settlement / competition / creator /
+  season / tenant) in three modes: `dry_run` (rebuild inside a savepoint, diff, then RAISE-rollback so it
+  reports drift with **zero** side effects while plpgsql locals survive), `repair` (keep the writes), and
+  `requeue`. It reuses the deterministic rebuilds (`rebuild_user_statistics` / `rebuild_leaderboard_scope`
+  / `rebuild_draft_competition` / `rebuild_user_achievements`) — no logic duplicated — and **never**
+  touches grades, settlements, predictions, or audit/history. `app.classify_projection_job` separates
+  `current_and_actionable` / `dead_letter_current` / `stuck` (requeued) from `stale_version` /
+  `superseded` / `dead_letter_historical` / `missing_prerequisite` / `malformed_payload` (left alone);
+  `public.requeue_actionable_jobs` enqueues fresh `repair:{id}` jobs, **preserving the originals**,
+  idempotent, skipping superseded history. Visibility: `projection_job_stats` (counts, oldest-pending,
+  by-type, recent failures) + `projection_health` (healthy / delayed / degraded / blocked / critical,
+  where a *superseded* dead-letter never raises the level). Every run is idempotent by `idempotency_key`
+  (unique + `on conflict do nothing` → concurrent identical requests collapse to one run) and recorded in
+  `reconciliation_runs` (super-admin RLS) + the audit log; ordinary users get `NOT_AUTHORIZED`, cross-
+  tenant scopes `CROSS_TENANT_SCOPE`. Typed service layer `src/lib/ops/reconciliation.ts` (`reconcile`,
+  `requeueActionableJobs`, `getProjectionJobStats`, `getProjectionHealth`, `runProjectionMonitor` — the
+  scheduled check requeues on degraded/blocked/stuck but never full-rebuilds). Docs: `reconciliation.md`,
+  `jobs.md`, `operations.md`, `settlement.md`. New `reconciliation.test.ts` (9): clean dry-run zero-diff +
+  incremental==canonical, corrupted stats/leaderboard/draft detected & repaired idempotently (dry-run
+  writes nothing), current dead-letter requeued (original preserved, idempotent) vs superseded not,
+  stuck-job requeue, interrupted fan-out resumes from cursor with no dup recipients, auth + cross-tenant
+  rejection, concurrent-identical-run collapses to one, health healthy/blocked/degraded ignoring stale
+  history. **257 tests pass (stable ×2)**, lint + build clean. **F-02 and F-05 Resolved** — settlement is
+  fully async (grade-authoritative, cache-eventual) with reconciliation as the proven safety net, and all
+  four leaderboard scopes plus every derived projection are reconcilable to their canonical rebuild.

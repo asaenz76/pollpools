@@ -3301,6 +3301,77 @@ export type Database = {
           },
         ]
       }
+      reconciliation_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          differences_found: number
+          error: string | null
+          failed_at: string | null
+          id: string
+          idempotency_key: string
+          initiated_by: string | null
+          jobs_requeued: number
+          mode: Database["public"]["Enums"]["reconciliation_mode"]
+          repairs_applied: number
+          scope_id: string | null
+          scope_type: Database["public"]["Enums"]["reconciliation_scope_type"]
+          started_at: string | null
+          status: Database["public"]["Enums"]["reconciliation_status"]
+          summary: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          differences_found?: number
+          error?: string | null
+          failed_at?: string | null
+          id?: string
+          idempotency_key: string
+          initiated_by?: string | null
+          jobs_requeued?: number
+          mode: Database["public"]["Enums"]["reconciliation_mode"]
+          repairs_applied?: number
+          scope_id?: string | null
+          scope_type: Database["public"]["Enums"]["reconciliation_scope_type"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["reconciliation_status"]
+          summary?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          differences_found?: number
+          error?: string | null
+          failed_at?: string | null
+          id?: string
+          idempotency_key?: string
+          initiated_by?: string | null
+          jobs_requeued?: number
+          mode?: Database["public"]["Enums"]["reconciliation_mode"]
+          repairs_applied?: number
+          scope_id?: string | null
+          scope_type?: Database["public"]["Enums"]["reconciliation_scope_type"]
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["reconciliation_status"]
+          summary?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliation_runs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scoring_rules: {
         Row: {
           config: Json
@@ -4320,6 +4391,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      projection_health: {
+        Args: {
+          p_delay_warn_seconds?: number
+          p_stuck_minutes?: number
+          p_tenant: string
+        }
+        Returns: Json
+      }
+      projection_job_stats: {
+        Args: { p_stuck_minutes?: number; p_tenant: string }
+        Returns: Json
+      }
       public_user_history: {
         Args: { p_tenant: string; p_user: string }
         Returns: {
@@ -4354,6 +4437,16 @@ export type Database = {
         Args: { p_tenant: string; p_user: string }
         Returns: undefined
       }
+      reconcile: {
+        Args: {
+          p_idempotency_key: string
+          p_mode: Database["public"]["Enums"]["reconciliation_mode"]
+          p_scope_id: string
+          p_scope_type: Database["public"]["Enums"]["reconciliation_scope_type"]
+          p_tenant: string
+        }
+        Returns: Json
+      }
       record_event_positions: {
         Args: { p_event_id: string; p_positions: Json }
         Returns: Json
@@ -4372,6 +4465,10 @@ export type Database = {
       reject_creator_payout: {
         Args: { p_payout_id: string; p_reason: string }
         Returns: undefined
+      }
+      requeue_actionable_jobs: {
+        Args: { p_stuck_minutes?: number; p_tenant: string }
+        Returns: number
       }
       set_billing_checkout_url: {
         Args: {
@@ -4590,6 +4687,22 @@ export type Database = {
         | "sponsor"
         | "premium_access"
       provider_approval_status: "pending" | "approved" | "rejected" | "revoked"
+      reconciliation_mode: "dry_run" | "repair" | "requeue"
+      reconciliation_scope_type:
+        | "user"
+        | "event"
+        | "settlement"
+        | "competition"
+        | "creator"
+        | "season"
+        | "tenant"
+      reconciliation_status:
+        | "pending"
+        | "running"
+        | "completed"
+        | "completed_with_differences"
+        | "failed"
+        | "canceled"
       result_source_type:
         | "creator_manual"
         | "super_admin_manual"
@@ -4967,6 +5080,24 @@ export const Constants = {
         "premium_access",
       ],
       provider_approval_status: ["pending", "approved", "rejected", "revoked"],
+      reconciliation_mode: ["dry_run", "repair", "requeue"],
+      reconciliation_scope_type: [
+        "user",
+        "event",
+        "settlement",
+        "competition",
+        "creator",
+        "season",
+        "tenant",
+      ],
+      reconciliation_status: [
+        "pending",
+        "running",
+        "completed",
+        "completed_with_differences",
+        "failed",
+        "canceled",
+      ],
       result_source_type: [
         "creator_manual",
         "super_admin_manual",
