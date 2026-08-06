@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { computeSentiment, type Sentiment } from "@/lib/domain/sentiment";
 import { getLockState, type LockState } from "@/lib/domain/locking";
-import type { MarketStatus, MarketType, EventStatus } from "@/types/enums";
+import type { MarketStatus, MarketType, EventStatus, EventMediaType } from "@/types/enums";
 
 export type EventOption = {
   id: string;
@@ -30,6 +30,16 @@ export type EventMarket = {
   userOutcome: "correct" | "incorrect" | "void" | null;
 };
 
+export type EventMedia = {
+  id: string;
+  provider: string;
+  mediaType: EventMediaType;
+  url: string;
+  label: string | null;
+  thumbnailUrl: string | null;
+  isPrimary: boolean;
+};
+
 export type EventDetail = {
   id: string;
   title: string;
@@ -38,7 +48,9 @@ export type EventDetail = {
   status: EventStatus;
   startsAt: string | null;
   locksAt: string | null;
+  /** @deprecated legacy field; use `media`. Retained for backward compatibility. */
   youtubeUrl: string | null;
+  media: EventMedia[];
   coverImageUrl: string | null;
   creator: { displayName: string; slug: string; avatarUrl: string | null } | null;
   markets: EventMarket[];
@@ -59,6 +71,13 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
     .maybeSingle();
 
   if (!event) return null;
+
+  const { data: mediaRows } = await supabase
+    .from("event_media_links")
+    .select("id, provider, media_type, url, label, thumbnail_url, is_primary")
+    .eq("event_id", event.id)
+    .order("is_primary", { ascending: false })
+    .order("created_at");
 
   const { data: marketRows } = await supabase
     .from("markets")
@@ -150,6 +169,15 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
     startsAt: event.starts_at,
     locksAt: event.locks_at,
     youtubeUrl: event.youtube_url,
+    media: (mediaRows ?? []).map((m) => ({
+      id: m.id,
+      provider: m.provider,
+      mediaType: m.media_type as EventMediaType,
+      url: m.url,
+      label: m.label,
+      thumbnailUrl: m.thumbnail_url,
+      isPrimary: m.is_primary,
+    })),
     coverImageUrl: event.cover_image_url,
     creator: creator
       ? { displayName: creator.display_name, slug: creator.slug, avatarUrl: creator.avatar_url }

@@ -30,6 +30,16 @@ export type Tenant = {
   engineVersion: EngineVersion;
 };
 
+export type MediaSettings = {
+  enabled: boolean;
+  optional: boolean;
+  externalLinksEnabled: boolean;
+  inlineEmbedsEnabled: boolean;
+  /** Empty = all providers allowed. */
+  allowedProviders: string[];
+  preferredProvider: string | null;
+};
+
 export type TenantSettings = {
   sentimentVisibility: SentimentVisibility;
   smallParticipationDisplay: boolean;
@@ -38,6 +48,7 @@ export type TenantSettings = {
   creatorShareBps: number;
   legalLinks: NavLink[];
   footerLinks: NavLink[];
+  media: MediaSettings;
 };
 
 export type TenantContext = {
@@ -49,12 +60,24 @@ export type TenantContext = {
 // Non-monetary defaults for a tenant with no settings row. The revenue split is
 // NOT hard-coded here — it is resolved from the platform default (platform_config)
 // at use, so there is a single source of truth for the split (finding F-11).
+// Media is enabled + optional by default; no preferred provider; empty allow-list
+// means all providers are permitted. YouTube is deliberately NOT a default (§9).
+const DEFAULT_MEDIA_SETTINGS: MediaSettings = {
+  enabled: true,
+  optional: true,
+  externalLinksEnabled: true,
+  inlineEmbedsEnabled: true,
+  allowedProviders: [],
+  preferredProvider: null,
+};
+
 const DEFAULT_SETTINGS_BASE = {
   sentimentVisibility: "always" as SentimentVisibility,
   smallParticipationDisplay: true,
   minimumRankedPredictions: 5,
   legalLinks: [] as NavLink[],
   footerLinks: [] as NavLink[],
+  media: DEFAULT_MEDIA_SETTINGS,
 };
 
 /**
@@ -103,7 +126,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     supabase
       .from("tenant_settings")
       .select(
-        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links",
+        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links, event_media_enabled, event_media_optional, external_media_links_enabled, inline_embeds_enabled, allowed_media_providers, preferred_media_provider",
       )
       .eq("tenant_id", tenantId)
       .maybeSingle(),
@@ -137,6 +160,14 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
       creatorShareBps: settingsRow.creator_share_bps,
       legalLinks: navLinksSchema.parse(settingsRow.legal_links ?? []),
       footerLinks: navLinksSchema.parse(settingsRow.footer_links ?? []),
+      media: {
+        enabled: settingsRow.event_media_enabled,
+        optional: settingsRow.event_media_optional,
+        externalLinksEnabled: settingsRow.external_media_links_enabled,
+        inlineEmbedsEnabled: settingsRow.inline_embeds_enabled,
+        allowedProviders: settingsRow.allowed_media_providers ?? [],
+        preferredProvider: settingsRow.preferred_media_provider,
+      },
     };
   } else {
     const platform = await getPlatformConfig();

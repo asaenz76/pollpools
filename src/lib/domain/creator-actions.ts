@@ -4,7 +4,8 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createBracket } from "@/lib/domain/competitions";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
-import { parseYouTubeId } from "@/lib/domain/youtube";
+import { validateMediaUrl, detectProvider } from "@/lib/domain/media";
+import { EVENT_MEDIA_TYPE } from "@/types/enums";
 import { getMarketGrader, UnsupportedMarketTypeError } from "@/lib/engine/graders";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -135,6 +136,16 @@ export async function createBracketCompetitionAction(input: { creatorId: string;
 }
 
 // ── Events ───────────────────────────────────────────────────────────────────
+// Optional event media (Phase 7.6). A live/recorded/external link is optional but
+// recommended — publication is NEVER blocked by its absence.
+const mediaItemSchema = z.object({
+  url: z.string().trim().min(1),
+  provider: z.string().trim().max(40).optional(),
+  mediaType: z.enum(EVENT_MEDIA_TYPE).optional(),
+  label: z.string().trim().max(120).optional(),
+  isPrimary: z.boolean().optional(),
+});
+
 const eventSchema = z.object({
   creatorId: uuid,
   competitionId: uuid.nullable().optional(),
@@ -142,11 +153,7 @@ const eventSchema = z.object({
   description: z.string().trim().max(1000).optional(),
   startsAt: z.string().optional(),
   locksAt: z.string().optional(),
-  youtubeUrl: z
-    .string()
-    .trim()
-    .min(1, "The Live YouTube URL is required")
-    .refine((u) => parseYouTubeId(u) !== null, "Enter a valid YouTube URL"),
+  media: z.array(mediaItemSchema).max(10).optional(),
   competitorIds: z.array(uuid).min(2, "Select at least 2 competitors"),
   marketQuestion: z.string().trim().max(200).optional(),
   publish: z.boolean().default(true),
@@ -155,6 +162,24 @@ const eventSchema = z.object({
 export async function createEventAction(input: z.infer<typeof eventSchema>): Promise<Ok<{ slug: string }> | Err> {
   const parsed = eventSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+
+  // Validate + normalize any media links. A single link defaults to primary.
+  const items = parsed.data.media ?? [];
+  const media: { url: string; provider: string; media_type: string; label: string | null; is_primary: boolean }[] = [];
+  for (const item of items) {
+    const v = validateMediaUrl(item.url);
+    if (!v.ok) return { ok: false, error: v.error };
+    media.push({
+      url: v.url.toString(),
+      provider: item.provider?.trim() || detectProvider(v.url),
+      media_type: item.mediaType ?? "other",
+      label: item.label ?? null,
+      is_primary: item.isPrimary ?? false,
+    });
+  }
+  if (media.length === 1) media[0]!.is_primary = true;
+  if (media.filter((m) => m.is_primary).length > 1) return { ok: false, error: "Only one media link can be primary." };
+
   const supabase = await createServerSupabase();
   const slug = slugify(parsed.data.title);
   const { data, error } = await supabase.rpc("create_event_with_market", {
@@ -165,10 +190,10 @@ export async function createEventAction(input: z.infer<typeof eventSchema>): Pro
     p_description: parsed.data.description ?? null,
     p_starts_at: parsed.data.startsAt || null,
     p_locks_at: parsed.data.locksAt || null,
-    p_youtube_url: parsed.data.youtubeUrl,
     p_competitor_ids: parsed.data.competitorIds,
     p_market_question: parsed.data.marketQuestion || null,
     p_publish: parsed.data.publish,
+    p_media: media,
   } as RpcArgs<"create_event_with_market">);
   if (error) return { ok: false, error: "Couldn't create the event. Check your inputs." };
   return { ok: true, slug: (data as { slug: string }).slug };

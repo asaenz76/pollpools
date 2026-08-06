@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MIN_BRACKET_COMPETITORS, MAX_BRACKET_COMPETITORS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { EVENT_MEDIA_TYPE, type EventMediaType } from "@/types/enums";
+import { validateMediaUrl, detectProvider, providerLabel } from "@/lib/domain/media";
 
 type Competitor = { id: string; name: string; color: string | null };
 
@@ -210,8 +212,16 @@ export function EventForm({
   const [title, setTitle] = useState("");
   const [description, setDesc] = useState("");
   const [locksAt, setLocksAt] = useState("");
-  const [youtubeUrl, setYoutube] = useState("");
+  const [mediaUrl, setMediaUrl] = useState("");
+  const [mediaType, setMediaType] = useState<EventMediaType>("livestream");
+  const [mediaLabel, setMediaLabel] = useState("");
+  const [mediaPrimary, setMediaPrimary] = useState(true);
   const [question, setQuestion] = useState("Which competitor will win?");
+
+  // Live provider hint: valid URL → detected provider; non-empty invalid → error copy.
+  const trimmedMedia = mediaUrl.trim();
+  const mediaCheck = trimmedMedia ? validateMediaUrl(trimmedMedia) : null;
+  const detectedProvider = mediaCheck?.ok ? providerLabel(detectProvider(mediaCheck.url)) : null;
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -230,6 +240,7 @@ export function EventForm({
         e.preventDefault();
         setError(null);
         if (selected.size < 2) return setError("Select at least 2 competitors.");
+        if (trimmedMedia && mediaCheck && !mediaCheck.ok) return setError(mediaCheck.error);
         start(async () => {
           const res = await createEventAction({
             creatorId,
@@ -237,7 +248,9 @@ export function EventForm({
             title,
             description,
             locksAt: locksAt ? new Date(locksAt).toISOString() : undefined,
-            youtubeUrl,
+            media: trimmedMedia
+              ? [{ url: trimmedMedia, mediaType, label: mediaLabel.trim() || undefined, isPrimary: mediaPrimary }]
+              : undefined,
             competitorIds: [...selected],
             marketQuestion: question,
             publish: true,
@@ -250,7 +263,49 @@ export function EventForm({
       <Field label="Event title"><Input value={title} onChange={(e) => setTitle(e.target.value)} required minLength={2} /></Field>
       <Field label="Description (optional)"><Input value={description} onChange={(e) => setDesc(e.target.value)} /></Field>
       <Field label="Locks at (optional)"><Input type="datetime-local" value={locksAt} onChange={(e) => setLocksAt(e.target.value)} /></Field>
-      <Field label="Live YouTube URL"><Input value={youtubeUrl} onChange={(e) => setYoutube(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" required /></Field>
+
+      <fieldset className="flex flex-col gap-3 rounded-lg border border-border p-3">
+        <legend className="px-1 text-sm font-medium">Live stream or video</legend>
+        <p className="text-xs text-muted-foreground">
+          Add a livestream, video, or event link so participants can watch along. This is optional but recommended.
+        </p>
+        <Field label="Media URL (optional)">
+          <Input
+            value={mediaUrl}
+            onChange={(e) => setMediaUrl(e.target.value)}
+            placeholder="https://… (YouTube, TikTok, Twitch, or any link)"
+            inputMode="url"
+          />
+        </Field>
+        {trimmedMedia && mediaCheck && !mediaCheck.ok ? (
+          <p className="text-xs text-destructive">{mediaCheck.error}</p>
+        ) : detectedProvider ? (
+          <p className="text-xs text-muted-foreground">Detected: {detectedProvider}</p>
+        ) : null}
+        {trimmedMedia ? (
+          <>
+            <Field label="Media type">
+              <select
+                className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                value={mediaType}
+                onChange={(e) => setMediaType(e.target.value as EventMediaType)}
+              >
+                {EVENT_MEDIA_TYPE.map((t) => (
+                  <option key={t} value={t}>{t.replace("_", " ")}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Display label (optional)">
+              <Input value={mediaLabel} onChange={(e) => setMediaLabel(e.target.value)} placeholder="Watch live on YouTube" maxLength={120} />
+            </Field>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={mediaPrimary} onChange={(e) => setMediaPrimary(e.target.checked)} />
+              Primary media
+            </label>
+          </>
+        ) : null}
+      </fieldset>
+
       <Field label="Market question"><Input value={question} onChange={(e) => setQuestion(e.target.value)} /></Field>
       <div className="flex flex-col gap-1.5">
         <Label>Competitors ({selected.size} selected)</Label>

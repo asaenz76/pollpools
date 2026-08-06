@@ -115,15 +115,19 @@ d("notification fan-out (event publication)", () => {
     await follow(a); await follow(b); await follow(c);
     const e = await publish();
     const fo = await fanoutFor(e);
-    // Process the first follower only, then b unfollows before its batch.
+    // Process one follower (the batch orders by user_id, so which one is data-dependent).
     await admin.rpc("process_event_publish_fanout", { p_fanout_id: fo!.id, p_batch_size: 1 } as never);
-    // Whichever of a/b/c sorts first got processed; unfollow b regardless.
-    await unfollow(b);
+    // Deterministically pick a follower NOT yet processed and unfollow before its
+    // batch — its notification must never be created.
+    const notYetNotified: string[] = [];
+    for (const u of [a, b, c]) if ((await notifsFor(u)).length === 0) notYetNotified.push(u);
+    const unfollower = notYetNotified[0]!;
+    await unfollow(unfollower);
     // A user who follows AFTER publication must not be retroactively notified.
     const late = await newUser(); await follow(late);
     // Drain the rest.
     await drain();
-    expect(await notifsFor(b)).toHaveLength(0); // unfollowed before its batch
+    expect(await notifsFor(unfollower)).toHaveLength(0); // unfollowed before its batch
     expect(await notifsFor(late)).toHaveLength(0); // followed after publication (created_at cutoff)
   });
 

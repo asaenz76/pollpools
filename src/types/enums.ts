@@ -150,6 +150,21 @@ export const RESULT_SOURCE_TYPE = [
 ] as const;
 export type ResultSourceType = (typeof RESULT_SOURCE_TYPE)[number];
 
+/**
+ * Generic event-media classification (Phase 7.6). Drives whether the UI offers an
+ * inline embed or an external link. The media *provider* is deliberately NOT an
+ * enum — it is an open registry value (see `src/lib/domain/media`) so a new
+ * platform never needs an engine migration.
+ */
+export const EVENT_MEDIA_TYPE = [
+  "livestream",
+  "video",
+  "event_page",
+  "social_post",
+  "other",
+] as const;
+export type EventMediaType = (typeof EVENT_MEDIA_TYPE)[number];
+
 export const SENTIMENT_VISIBILITY = [
   "always",
   "after_prediction",

@@ -8,7 +8,7 @@ import { getEventSocial } from "@/features/social/get-event-social";
 import { ShareButton } from "@/components/domain/share-button";
 import { LikeButton } from "@/components/domain/like-button";
 import { CommentSection } from "@/components/domain/comment-section";
-import { parseYouTubeId, youtubeEmbedUrl } from "@/lib/domain/youtube";
+import { resolveEventMedia, watchLabel } from "@/lib/domain/media";
 import { SMALL_PARTICIPATION_THRESHOLD } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -24,8 +24,19 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
   const user = await getSessionUser();
   const signInHref = `/t/${ctx.tenant.slug}/sign-in`;
 
-  const videoId = ctx.features.isEnabled("youtube_embeds_enabled")
-    ? parseYouTubeId(event.youtubeUrl)
+  // Optional event media (Phase 7.6): render an inline embed only for explicitly
+  // supported providers when the tenant allows it; otherwise a safe external link.
+  const mediaCfg = ctx.settings.media;
+  const primaryMedia = mediaCfg.enabled
+    ? event.media.find((m) => m.isPrimary) ?? event.media[0] ?? null
+    : null;
+  const resolvedMedia = primaryMedia ? resolveEventMedia(primaryMedia.url, primaryMedia.provider) : null;
+  const providerAllowed =
+    resolvedMedia !== null &&
+    (mediaCfg.allowedProviders.length === 0 || mediaCfg.allowedProviders.includes(resolvedMedia.provider));
+  const canEmbedMedia = Boolean(resolvedMedia?.canEmbed && mediaCfg.inlineEmbedsEnabled && providerAllowed && resolvedMedia.embedUrl);
+  const mediaWatchLabel = primaryMedia && resolvedMedia
+    ? primaryMedia.label?.trim() || watchLabel(resolvedMedia.provider, primaryMedia.mediaType)
     : null;
 
   const likesEnabled = ctx.features.isEnabled("likes_enabled");
@@ -50,24 +61,24 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
         {event.description ? <p className="mt-3 text-sm text-muted-foreground">{event.description}</p> : null}
       </header>
 
-      {videoId ? (
+      {canEmbedMedia && resolvedMedia?.embedUrl ? (
         <div className="aspect-video w-full overflow-hidden rounded-lg border border-border">
           <iframe
             className="h-full w-full"
-            src={youtubeEmbedUrl(videoId)}
+            src={resolvedMedia.embedUrl}
             title={event.title}
             allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           />
         </div>
-      ) : event.youtubeUrl ? (
+      ) : resolvedMedia && mediaWatchLabel && mediaCfg.externalLinksEnabled ? (
         <a
-          href={event.youtubeUrl}
+          href={resolvedMedia.url}
           target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-primary hover:underline"
+          rel="noopener noreferrer nofollow"
+          className="inline-flex w-fit items-center gap-1 rounded-md border border-border px-3 py-1.5 text-sm text-primary hover:bg-accent"
         >
-          Watch on YouTube →
+          {mediaWatchLabel} →
         </a>
       ) : null}
 

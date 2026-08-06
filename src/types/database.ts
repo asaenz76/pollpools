@@ -2220,6 +2220,72 @@ export type Database = {
           },
         ]
       }
+      event_media_links: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          event_id: string
+          id: string
+          is_primary: boolean
+          label: string | null
+          media_type: Database["public"]["Enums"]["event_media_type"]
+          metadata: Json
+          provider: string
+          starts_at: string | null
+          tenant_id: string
+          thumbnail_url: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          event_id: string
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          media_type: Database["public"]["Enums"]["event_media_type"]
+          metadata?: Json
+          provider: string
+          starts_at?: string | null
+          tenant_id: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          event_id?: string
+          id?: string
+          is_primary?: boolean
+          label?: string | null
+          media_type?: Database["public"]["Enums"]["event_media_type"]
+          metadata?: Json
+          provider?: string
+          starts_at?: string | null
+          tenant_id?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_media_links_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_media_links_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_results: {
         Row: {
           created_at: string
@@ -3868,13 +3934,19 @@ export type Database = {
       }
       tenant_settings: {
         Row: {
+          allowed_media_providers: string[]
           created_at: string
           creator_share_bps: number
           enabled_competition_types: Database["public"]["Enums"]["competition_type"][]
+          event_media_enabled: boolean
+          event_media_optional: boolean
+          external_media_links_enabled: boolean
           footer_links: Json
+          inline_embeds_enabled: boolean
           legal_links: Json
           minimum_ranked_predictions: number
           platform_share_bps: number
+          preferred_media_provider: string | null
           sentiment_visibility: Database["public"]["Enums"]["sentiment_visibility"]
           settings: Json
           small_participation_display: boolean
@@ -3882,13 +3954,19 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allowed_media_providers?: string[]
           created_at?: string
           creator_share_bps?: number
           enabled_competition_types?: Database["public"]["Enums"]["competition_type"][]
+          event_media_enabled?: boolean
+          event_media_optional?: boolean
+          external_media_links_enabled?: boolean
           footer_links?: Json
+          inline_embeds_enabled?: boolean
           legal_links?: Json
           minimum_ranked_predictions?: number
           platform_share_bps?: number
+          preferred_media_provider?: string | null
           sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
           settings?: Json
           small_participation_display?: boolean
@@ -3896,13 +3974,19 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allowed_media_providers?: string[]
           created_at?: string
           creator_share_bps?: number
           enabled_competition_types?: Database["public"]["Enums"]["competition_type"][]
+          event_media_enabled?: boolean
+          event_media_optional?: boolean
+          external_media_links_enabled?: boolean
           footer_links?: Json
+          inline_embeds_enabled?: boolean
           legal_links?: Json
           minimum_ranked_predictions?: number
           platform_share_bps?: number
+          preferred_media_provider?: string | null
           sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
           settings?: Json
           small_participation_display?: boolean
@@ -4301,11 +4385,11 @@ export type Database = {
           p_description: string
           p_locks_at: string
           p_market_question: string
+          p_media?: Json
           p_publish: boolean
           p_slug: string
           p_starts_at: string
           p_title: string
-          p_youtube_url: string
         }
         Returns: Json
       }
@@ -4627,6 +4711,12 @@ export type Database = {
         | "prize_award"
         | "admin_grant"
       entitlement_status: "active" | "expired" | "revoked"
+      event_media_type:
+        | "livestream"
+        | "video"
+        | "event_page"
+        | "social_post"
+        | "other"
       event_status:
         | "draft"
         | "scheduled"
@@ -5012,6 +5102,13 @@ export const Constants = {
         "admin_grant",
       ],
       entitlement_status: ["active", "expired", "revoked"],
+      event_media_type: [
+        "livestream",
+        "video",
+        "event_page",
+        "social_post",
+        "other",
+      ],
       event_status: [
         "draft",
         "scheduled",
