@@ -3,6 +3,30 @@
 The other high-risk core. `settle_event` / `regrade_event` are the only entry
 points; both are atomic, idempotent, and versioned.
 
+## Option-based result model (Phase 7.76)
+
+The authoritative result of a settled market is **one or more winning market-option
+ids** — not a competitor. A winning **competitor is optional metadata**, derived
+from the winning option only when it references one. This lets any outcome settle,
+including non-competitor ones (Draw / Yes / No / None / Over / Under / a category or
+range result), with **no pseudo-competitor**.
+
+- **Contract.** `settle_event(… p_winning_competitor_id, p_winning_option_ids)`:
+  `p_winning_option_ids` is authoritative when supplied; a competitor-only call is
+  still accepted (backward compatible) and resolves its option unambiguously.
+- **Validation** (`app.resolve_winning_options`, server-side): every winning option
+  must belong to the event's markets **and** tenant; SINGLE_CHOICE_WINNER accepts
+  exactly one winner per market; a supplied competitor must match a winning option;
+  an empty set for a `settled` market is rejected (`OPTIONS_REQUIRED`).
+- **Durable storage.** `event_result_options` records the authoritative winning
+  options per grading version (history preserved across regrades);
+  `event_results.winning_competitor_id` holds the derived competitor (nullable).
+- **Brackets** still require a competitor winner — a non-competitor result on a
+  bracket matchup is rejected (`BRACKET_REQUIRES_COMPETITOR`), never guessed.
+- **Draft** scoring ignores non-competitor outcomes (no fake points).
+- **Notifications / feed** carry the winning-option **label** (never a null
+  competitor). See [tenant-creation-validation.md](tenant-creation-validation.md).
+
 ## Settlement state machine
 
 ```

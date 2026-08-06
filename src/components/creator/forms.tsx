@@ -361,9 +361,11 @@ export function BracketForm({ creatorId, tenantSlug, competitors }: { creatorId:
 }
 
 // ── Submit result ────────────────────────────────────────────────────────────
-export function ResultForm({ eventId, competitors }: { eventId: string; competitors: Competitor[] }) {
+type ResultOption = { id: string; label: string; competitorId: string | null; color: string | null };
+
+export function ResultForm({ eventId, options }: { eventId: string; options: ResultOption[] }) {
   const router = useRouter();
-  const [winner, setWinner] = useState<string>("");
+  const [optionId, setOptionId] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -373,27 +375,30 @@ export function ResultForm({ eventId, competitors }: { eventId: string; competit
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
-        if (!winner) return setError("Choose the winning competitor.");
+        if (!optionId) return setError("Select the result.");
+        // The selected OPTION is authoritative; a competitor is passed only when the
+        // option represents one (so Draw / Yes / No settle without a competitor).
+        const selected = options.find((o) => o.id === optionId);
         start(async () => {
-          const res = await submitResultAction({ eventId, winningCompetitorId: winner, notes });
+          const res = await submitResultAction({ eventId, winningOptionIds: [optionId], winningCompetitorId: selected?.competitorId ?? undefined, notes });
           if (!res.ok) return setError(res.error);
           router.refresh();
         });
       }}
     >
       <div className="flex flex-col gap-1.5">
-        <Label>Winner</Label>
+        <Label>Result</Label>
         <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          {competitors.map((c) => (
-            <li key={c.id}>
+          {options.map((o) => (
+            <li key={o.id}>
               <button
                 type="button"
-                onClick={() => setWinner(c.id)}
-                aria-pressed={winner === c.id}
-                className={cn("flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm", winner === c.id ? "border-positive bg-muted" : "border-border hover:bg-muted")}
+                onClick={() => setOptionId(o.id)}
+                aria-pressed={optionId === o.id}
+                className={cn("flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm", optionId === o.id ? "border-positive bg-muted" : "border-border hover:bg-muted")}
               >
-                <span aria-hidden className="size-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: c.color ?? "transparent" }} />
-                <span className="min-w-0 truncate">{c.name}</span>
+                <span aria-hidden className="size-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: o.color ?? "transparent" }} />
+                <span className="min-w-0 truncate">{o.label}</span>
               </button>
             </li>
           ))}
@@ -401,7 +406,7 @@ export function ResultForm({ eventId, competitors }: { eventId: string; competit
       </div>
       <Field label="Result notes (optional)"><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
       <Err msg={error} />
-      <Button type="submit" disabled={pending}>{pending ? "Submitting…" : "Submit result"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Submitting…" : "Confirm result"}</Button>
     </form>
   );
 }

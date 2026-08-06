@@ -12,9 +12,9 @@ const d = integrationEnvReady ? describe : describe.skip;
  * Validates a three-way Home / Draw / Away market vertical built from DATA + CONFIG
  * only. Clubs are generic competitors; matches are generic events; the three-way
  * market is composed from generic options (two competitor-backed, one — "Draw" —
- * with NO competitor). Competitor-outcome settlement (home/away) is validated end
- * to end. The DRAW outcome exposes an architecture leak (settle_event mandates a
- * winning competitor) — validated as a rejection and reported, NOT worked around.
+ * with NO competitor). All three outcomes settle end to end via option-based
+ * settlement (Phase 7.76): Home/Away record a winning competitor; Draw settles
+ * with none and invents no pseudo-competitor. LEAK-1 is resolved.
  */
 d("Tenant A — MatchCircle (three-way sports market, config + data only)", () => {
   const s = uniqueSuffix();
@@ -122,14 +122,42 @@ d("Tenant A — MatchCircle (three-way sports market, config + data only)", () =
     expect((await admin.from("predictions").select("status").eq("market_id", hm.marketId).eq("user_id", fans[1]!).single()).data!.status).toBe("correct"); // away backer now correct
   });
 
-  it("ARCHITECTURE LEAK: a DRAW outcome (no competitor) cannot be settled by the existing engine", async () => {
+  it("settles a DRAW outcome with NO competitor (no pseudo-competitor invented)", async () => {
     const dm = await makeMatch("draw-fixture", clubs[0]!, clubs[1]!);
     await predict(dm.marketId, fans[0]!, dm.draw);
-    // There is no competitor for "Draw"; settle_event mandates a winning competitor.
-    const nullWinner = await settle(dm.eventId, null, [dm.draw]);
-    expect(nullWinner.error?.message).toContain("WINNER_REQUIRED"); // <-- the leak: outcome must be a competitor
-    // The prediction on Draw stays ungraded (event unsettled) — never silently mis-resolved.
-    expect((await admin.from("predictions").select("status").eq("market_id", dm.marketId).eq("user_id", fans[0]!).single()).data!.status).toBe("active");
+    await predict(dm.marketId, fans[1]!, dm.home);
+    // Option-based settlement: the Draw option is authoritative; no winning competitor.
+    const settled = await settle(dm.eventId, null, [dm.draw]);
+    expect(settled.error).toBeNull();
+    await drain();
+    expect((await admin.from("predictions").select("status").eq("market_id", dm.marketId).eq("user_id", fans[0]!).single()).data!.status).toBe("correct"); // Draw backer
+    expect((await admin.from("predictions").select("status").eq("market_id", dm.marketId).eq("user_id", fans[1]!).single()).data!.status).toBe("incorrect"); // Home backer
+    // Recorded winner is null; the authoritative winning OPTION is durably stored.
+    expect((await admin.from("event_results").select("winning_competitor_id").eq("event_id", dm.eventId).eq("grading_version", 1).single()).data!.winning_competitor_id).toBeNull();
+    expect((await admin.from("event_result_options").select("option_id").eq("event_id", dm.eventId)).data!.map((r) => r.option_id)).toContain(dm.draw);
+    // No "Draw" competitor was invented — the competitor count is unchanged.
+    expect((await admin.from("competitors").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId)).count).toBe(4);
+  });
+
+  it("regrades across competitor ↔ non-competitor outcomes (Home → Draw → Away)", async () => {
+    const m = await makeMatch("swingy", clubs[0]!, clubs[1]!);
+    await predict(m.marketId, fans[0]!, m.home);
+    await predict(m.marketId, fans[1]!, m.draw);
+    await predict(m.marketId, fans[2]!, m.away);
+    const graded = async (u: string) => (await admin.from("predictions").select("status").eq("market_id", m.marketId).eq("user_id", u).single()).data!.status;
+
+    expect((await settle(m.eventId, clubs[0]!)).error).toBeNull(); await drain(); // Home win
+    expect(await graded(fans[0]!)).toBe("correct");
+
+    const toDraw = await admin.rpc("regrade_event", { p_event_id: m.eventId, p_resolution: "settled", p_winning_competitor_id: null, p_reason: "VAR: draw", p_idempotency_key: `sw-d-${s}`, p_winning_option_ids: [m.draw] } as never);
+    expect(toDraw.error).toBeNull(); await drain(); // Home → Draw (competitor → non-competitor)
+    expect(await graded(fans[1]!)).toBe("correct");
+    expect(await graded(fans[0]!)).toBe("incorrect");
+
+    const toAway = await admin.rpc("regrade_event", { p_event_id: m.eventId, p_resolution: "settled", p_winning_competitor_id: clubs[1]!, p_reason: "final", p_idempotency_key: `sw-a-${s}`, p_winning_option_ids: null } as never);
+    expect(toAway.error).toBeNull(); await drain(); // Draw → Away (non-competitor → competitor)
+    expect(await graded(fans[2]!)).toBe("correct");
+    expect(await graded(fans[1]!)).toBe("incorrect");
   });
 
   it("populates statistics, streaks, and global / competition / creator leaderboards", async () => {
@@ -143,11 +171,16 @@ d("Tenant A — MatchCircle (three-way sports market, config + data only)", () =
     }
   });
 
-  it("emits settlement notifications and feed activity", async () => {
+  it("emits settlement notifications and feed activity carrying the winning-option label (incl. Draw)", async () => {
     const { count: notifs } = await admin.from("notifications").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId);
     expect(notifs).toBeGreaterThanOrEqual(1);
     const { count: feed } = await admin.from("feed_activities").select("*", { count: "exact", head: true }).eq("tenant_id", tenantId);
     expect(feed).toBeGreaterThanOrEqual(1);
+    // A settled Draw exposes the option label "Draw" (never a null competitor).
+    const drawNotif = (await admin.from("notifications").select("metadata").eq("tenant_id", tenantId).eq("user_id", fans[0]!)).data ?? [];
+    expect(drawNotif.some((n) => (n.metadata as { result_label?: string } | null)?.result_label === "Draw")).toBe(true);
+    const drawFeed = (await admin.from("feed_activities").select("metadata").eq("tenant_id", tenantId).eq("type", "event_settled")).data ?? [];
+    expect(drawFeed.some((f) => (f.metadata as { result_label?: string } | null)?.result_label === "Draw")).toBe(true);
   });
 
   it("supports events with no media and with an optional generic livestream link", async () => {

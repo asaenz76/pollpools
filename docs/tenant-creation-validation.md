@@ -11,9 +11,15 @@ made** — only test files (see *Files changed*).
 
 | Tenant | Vertical | Test | Result |
 | --- | --- | --- | --- |
-| **A — MatchCircle** | sports / clubs, three-way market | `tenant-a-matchcircle.test.ts` | 8/8 (1 leak documented) |
+| **A — MatchCircle** | sports / clubs, three-way market | `tenant-a-matchcircle.test.ts` | 9/9 (Draw now settles) |
 | **B — ColorCircuit** | livestream racing + Competitor Draft | `tenant-b-colorcircuit.test.ts` | 9/9 |
 | **C — Cook-off Championship** | non-video culinary | `tenant-creation.test.ts` | 8/8 |
+
+> **Update (Phase 7.76):** LEAK-1 is **resolved**. Settlement now accepts winning
+> market-option ids as authoritative with an optional winning competitor, so the
+> three-way Draw outcome settles with no pseudo-competitor. The final verdict below
+> is now **YES**. See [option-settlement.test.ts](../tests/integration/option-settlement.test.ts)
+> and the [findings register](architecture-findings-register.md) (LEAK-1).
 
 ## Tenant A — MatchCircle (sports-style community)
 
@@ -23,8 +29,7 @@ Draw / Away** market composed from generic options (two competitor-backed, one �
 
 - ✅ Tenant creation from config; League (SEASON) + Tournament (TOURNAMENT) types; clubs as generic competitors.
 - ✅ Three-way market creation; predictions across all three options; Community Sentiment (3 options, correct vote totals).
-- ✅ Settlement for **home win** and **away win** (competitor outcomes); **regrade** between competitor outcomes.
-- ❌ **Settlement for "Draw"** — architecture leak (see below). Validated as a clean rejection (`WINNER_REQUIRED`); the Draw prediction is left ungraded, never mis-resolved.
+- ✅ Settlement for **home win**, **away win**, **and Draw** (Phase 7.76). Draw settles via option-based settlement with **no competitor and no pseudo-competitor**; **regrade** works across competitor ↔ non-competitor outcomes (Home → Draw → Away).
 - ✅ User statistics, streaks; global / creator / **season** (the league's competition leaderboard) leaderboards.
 - ✅ Settlement notifications; feed activity.
 - ✅ Event with no media; event with an optional generic livestream link.
@@ -78,8 +83,8 @@ tenant is forced to depend on any platform.
 
 ## Market results
 
-- **Single-winner** (racing, culinary): ✅ fully supported via competitor outcome resolution.
-- **Three-way Home/Draw/Away** (sports): ⚠️ **partially** — competitor outcomes (home/away) settle and regrade; the **non-competitor "Draw" outcome cannot be settled** (leak below).
+- **Single-winner** (racing, culinary): ✅ fully supported.
+- **Three-way Home/Draw/Away** (sports): ✅ **fully supported** (Phase 7.76) — competitor outcomes (home/away) and the non-competitor **Draw** outcome all settle and regrade via authoritative winning-option ids.
 
 ## Draft results
 
@@ -107,7 +112,15 @@ tenants after normal processing — async projections equal the canonical rebuil
 
 ## Architecture leaks
 
-### LEAK-1 — Non-competitor market outcomes cannot be settled (Draw) 🟠 Moderate
+### LEAK-1 — Non-competitor market outcomes cannot be settled (Draw) 🟠 → ✅ RESOLVED (Phase 7.76)
+
+**Resolved** in Phase 7.76 (migration `0047`): winning market-option ids are now
+authoritative and the winning competitor is optional (derived from the option, no
+pseudo-competitor). Bracket advancement still requires a competitor. Full details
+in the [findings register](architecture-findings-register.md#leak-1--settlement-contract-required-a-competitor-winner-----resolved).
+The original finding is retained below for the record.
+
+
 
 - **Tenant:** A (MatchCircle) — any three-way / draw / no-contest / multi-outcome market.
 - **Desired behavior:** settle a Home/Draw/Away market to **"Draw"**, an outcome that is not a competitor.
@@ -128,24 +141,30 @@ three tenants do). Recorded for completeness; no new leak.
 
 ## Final verdict
 
-> ## PARTIALLY
+> # YES
 
-**Two of three tenants (B, C) validate fully with zero engine changes and zero
-migrations.** Tenant A validates everything **except** the three-way market's
-**Draw** outcome, which the existing settlement contract cannot express (LEAK-1).
+**All three tenants validate fully.** After Phase 7.76 (option-based settlement),
+Tenant A's three-way market settles every outcome — Home, Away, **and Draw** —
+with no pseudo-competitor and no architecture leak. Tenants B and C were already
+fully validated.
 
-The YES criteria are met on every point **except one**: *"three-way sports market
-works using existing engine behavior"* is **false** — competitor outcomes (home,
-away) work, but a non-competitor Draw does not settle. Because the criteria require
-**all** points, the honest verdict is **PARTIALLY**, gated solely on LEAK-1. Per
-the Architecture Leak Rule, the leak was **reported, not fixed** — resolving it is
-Phase-8 work (a settlement-contract change, tied to F-03).
-
-Everything else validated: zero engine-code changes, zero migrations, all tests
-pass (381 total; 25 across the three tenants, stable ×2), optional media works, no
-media works, Open Predictions work, Competitor Draft works where enabled,
-settlement / regrade / projections / reconciliation work, and production job
+Every YES criterion is met: all three tenants work; zero engine-code changes and
+zero migrations *for the breadth validation itself* (Phase 7.75B); the LEAK-1 fix
+was a deliberate, narrowly-scoped engine phase (7.76); all tests pass; no
+tenant-specific terminology leaks into shared code; optional media works; no media
+works; Open Predictions work; Competitor Draft works where enabled; the **three-way
+sports market now works using existing engine behavior** (option-based settlement);
+settlement / regrade / projections / reconciliation work; and production job
 draining works.
+
+> Note on scope attribution: Phase **7.75B** was validation-only (no engine
+> changes) and correctly returned **PARTIALLY** because LEAK-1 was still open.
+> Phase **7.76** then resolved LEAK-1 with a focused settlement-contract change,
+> which is what lifts the verdict to **YES**.
+
+Residual (non-blocking, deferred): entity-type vocabulary and the default English
+market question remain non-config-shapeable (**F-21**, Phase 8). The engine stays
+vocabulary-neutral, so this blocks no tenant.
 
 See also: [architecture-review-v2.md](architecture-review-v2.md),
 [event-media.md](event-media.md), [architecture-findings-register.md](architecture-findings-register.md).

@@ -57,6 +57,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-27 | Grading math in SQL not covered by the tested TS | 🟠 | §4, §19, §7.6 | Resolve | ✅ Resolved |
 | F-28 | Shared global singletons (webhook ledger, job queue) | 🟡 | §17 | Accept (revisit) | 🟦 Accepted |
 | F-29 | Untyped `as unknown[]` JSONB casts | 🟡 | §15 | Resolve | ✅ Resolved |
+| LEAK-1 | Settlement contract requires a competitor winner (non-competitor outcomes like Draw unsettleable) | 🟠 | §7.76 | Resolve | ✅ Resolved |
 
 Companion — **net-new platform capabilities** the phase mandates (not review
 findings, tracked here so the register is the single spine):
@@ -426,6 +427,33 @@ Database impact · Risk · Estimated effort · Status.**
   this detail entry previously read "Open" while the matrix/changelog recorded Resolved — register drift
   fixed.)
 
+### LEAK-1 — Settlement contract required a competitor winner 🟠 → ✅ Resolved
+- **Description.** Found in Phase 7.75B (Tenant A / MatchCircle). The `MarketGrader`
+  strategy (F-03) was already generic — `app.apply_grading` grades by an arbitrary
+  winning-option set — but the settlement **contract** (`settle_event` /
+  `regrade_event`) mandated `p_winning_competitor_id` (`WINNER_REQUIRED`) and
+  validated it mapped to an option. So a market outcome not represented by a
+  competitor (Draw / Yes / No / None / Over / Under / a category or numeric-range
+  result) could not be settled, and the only data workaround (a pseudo-competitor)
+  polluted the competitor space and recorded a false winner.
+- **Status.** ✅ **Resolved** (Phase 7.76, migration `0047`). The authoritative
+  result is now one or more **winning market-option ids**; the winning competitor
+  is **optional**, derived from the winning option only when it references one (no
+  pseudo-competitor is ever created). A durable, versioned `event_result_options`
+  table stores the authoritative winning options; a shared `app.resolve_winning_options`
+  helper enforces all tenant/market/event membership + SINGLE_CHOICE cardinality +
+  optional-competitor-match rules server-side. Bracket advancement still requires a
+  competitor (`BRACKET_REQUIRES_COMPETITOR`, rejected loudly otherwise); draft and
+  reconciliation already operate from grades and are unaffected; notifications/feed
+  now carry the winning-option label (never a null competitor). `submitResultAction`
+  + the creator `ResultForm` submit the selected option (backward-compatible with
+  competitor-only callers). Historical results backfilled additively. Tested:
+  `option-settlement.test.ts` (competitor-via-option, non-competitor Yes/No, the
+  full validation matrix, idempotent regrade, bracket safety, draft non-corruption)
+  and Tenant A revalidation (Home/Draw/Away settle; regrade across
+  competitor↔non-competitor). This is F-03's settlement-layer completion: **the
+  grader was generic; the remaining limitation was the settlement/result contract.**
+
 ---
 
 ## Phase 8 deferral ledger
@@ -625,3 +653,18 @@ document; this register is its actionable, status-tracked counterpart.
     `ALLOW_INTEGRATION_TEST_SKIP`) so integration suites can never be silently skipped green.
   - Remaining moderates explicitly **Deferred (Phase 8)**: F-06, F-17, F-18, F-21, F-22, F-23 (see the
     deferral ledger). **355 tests pass (stable ×2)**, lint + build clean.
+- **2026-08-06** — **Phase 7.75B (Tenant Breadth Validation)** — validation-only (test files + report;
+  zero engine/migration/schema changes). Three verticals via config + data alone: **A** MatchCircle
+  (sports three-way), **B** ColorCircuit (racing + Draft), **C** Cook-off (non-video). Verdict
+  **PARTIALLY**, gated on **LEAK-1** (a non-competitor "Draw" outcome could not be settled). B and C
+  passed fully. 381 tests pass.
+- **2026-08-06** — **Phase 7.76 (Option-Based Settlement Completion) — LEAK-1 Resolved** (migration
+  `0047`): winning market-option ids are authoritative; the winning competitor is optional (derived from
+  the option). `event_result_options` (durable, versioned) + `app.resolve_winning_options` (server-side
+  validation: membership, SINGLE_CHOICE cardinality, optional-competitor match). Bracket advancement
+  still requires a competitor (`BRACKET_REQUIRES_COMPETITOR`). Draft/reconciliation unaffected;
+  notifications/feed carry the winning-option label. `submitResultAction` + `ResultForm` are option-based
+  (backward compatible). Historical results backfilled. New `option-settlement.test.ts` (6) + Tenant A
+  revalidated (**Draw settles, no pseudo-competitor**). **Tenant Creation Validation verdict is now YES**
+  — all three tenants pass with zero remaining architecture leaks. **388 tests pass (stable ×2)**,
+  typecheck + lint + build clean.

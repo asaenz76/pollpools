@@ -200,25 +200,48 @@ export async function createEventAction(input: z.infer<typeof eventSchema>): Pro
 }
 
 // ── Result submission (settlement) ───────────────────────────────────────────
-export async function submitResultAction(input: { eventId: string; winningCompetitorId: string; notes?: string; resultUrl?: string }): Promise<Ok | Err> {
-  const parsed = z.object({ eventId: uuid, winningCompetitorId: uuid, notes: z.string().max(1000).optional(), resultUrl: z.string().url().optional().or(z.literal("")) }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Invalid input." };
+// The authoritative result is the selected winning market option(s). A winning
+// competitor is optional — supplied only when the selected option represents one —
+// so non-competitor outcomes (Draw / Yes / No …) settle without a competitor. A
+// competitor-only call is still accepted (backward compatible) and resolves its
+// option via the market grader.
+export async function submitResultAction(input: {
+  eventId: string;
+  winningOptionIds?: string[];
+  winningCompetitorId?: string;
+  notes?: string;
+  resultUrl?: string;
+}): Promise<Ok | Err> {
+  const parsed = z
+    .object({
+      eventId: uuid,
+      winningOptionIds: z.array(uuid).min(1).optional(),
+      winningCompetitorId: uuid.optional(),
+      notes: z.string().max(1000).optional(),
+      resultUrl: z.string().url().optional().or(z.literal("")),
+    })
+    .refine((r) => (r.winningOptionIds && r.winningOptionIds.length > 0) || r.winningCompetitorId, {
+      message: "Select the result.",
+    })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   const supabase = await createServerSupabase();
   const key = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
-  // Resolve the winning option(s) per market via its grader (strategy per market
-  // type). Settlement grades against these; if none resolve, it falls back to the
-  // single-winner competitor mapping.
+  const optionIds: string[] = [...(parsed.data.winningOptionIds ?? [])];
   const { data: markets } = await supabase
     .from("markets")
     .select("id, type, market_options(id, competitor_id)")
     .eq("event_id", parsed.data.eventId);
-  const winningOptionIds: string[] = [];
   try {
     for (const m of markets ?? []) {
+      // Ensure the market type is supported (raises loudly for an unregistered grader).
       const grader = getMarketGrader(m.type as MarketType);
-      const opts = (m.market_options ?? []).map((o) => ({ id: o.id, competitorId: o.competitor_id }));
-      winningOptionIds.push(...grader.resolveWinningOptionIds(opts, { winningCompetitorId: parsed.data.winningCompetitorId }));
+      // Back-compat: a competitor-only submission resolves its option(s) via the grader.
+      if (optionIds.length === 0 && parsed.data.winningCompetitorId) {
+        const opts = (m.market_options ?? []).map((o) => ({ id: o.id, competitorId: o.competitor_id }));
+        optionIds.push(...grader.resolveWinningOptionIds(opts, { winningCompetitorId: parsed.data.winningCompetitorId }));
+      }
     }
   } catch (e) {
     if (e instanceof UnsupportedMarketTypeError) return { ok: false, error: "This market type can't be settled yet." };
@@ -228,11 +251,11 @@ export async function submitResultAction(input: { eventId: string; winningCompet
   const { error } = await supabase.rpc("settle_event", {
     p_event_id: parsed.data.eventId,
     p_resolution: "settled",
-    p_winning_competitor_id: parsed.data.winningCompetitorId,
+    p_winning_competitor_id: parsed.data.winningCompetitorId ?? null,
     p_notes: parsed.data.notes || null,
     p_result_url: parsed.data.resultUrl || null,
     p_idempotency_key: `result-${parsed.data.eventId}-${key}`,
-    p_winning_option_ids: winningOptionIds.length > 0 ? winningOptionIds : null,
+    p_winning_option_ids: optionIds.length > 0 ? optionIds : null,
   } as RpcArgs<"settle_event">);
   if (error) {
     if (error.message.includes("NOT_AUTHORIZED")) return { ok: false, error: "Results for your events are reviewed by an admin. Ask a Super Admin to enable direct settlement." };

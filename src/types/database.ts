@@ -2286,6 +2286,75 @@ export type Database = {
           },
         ]
       }
+      event_result_options: {
+        Row: {
+          competitor_id: string | null
+          created_at: string
+          event_id: string
+          grading_version: number
+          id: string
+          market_id: string
+          option_id: string
+          tenant_id: string
+        }
+        Insert: {
+          competitor_id?: string | null
+          created_at?: string
+          event_id: string
+          grading_version: number
+          id?: string
+          market_id: string
+          option_id: string
+          tenant_id: string
+        }
+        Update: {
+          competitor_id?: string | null
+          created_at?: string
+          event_id?: string
+          grading_version?: number
+          id?: string
+          market_id?: string
+          option_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_result_options_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "competitors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_result_options_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_result_options_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_result_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "market_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_result_options_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_results: {
         Row: {
           created_at: string

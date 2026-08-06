@@ -26,14 +26,20 @@ export default async function SubmitResultPage({ params }: { params: Promise<{ e
     .maybeSingle();
   if (!event) notFound();
 
-  const { data: rows } = await supabase
-    .from("event_competitors")
-    .select("competitors(id, name, color)")
-    .eq("event_id", event.id);
-  const competitors = (rows ?? []).flatMap((r) => {
-    const c = Array.isArray(r.competitors) ? r.competitors[0] : r.competitors;
-    return c ? [{ id: c.id, name: c.name, color: c.color }] : [];
-  });
+  // The authoritative result is a market OPTION (which may be a non-competitor
+  // outcome like "Draw"), so present the options rather than competitors.
+  const { data: marketRows } = await supabase
+    .from("markets")
+    .select("id, market_options(id, label, competitor_id, color, display_order)")
+    .eq("event_id", event.id)
+    .neq("status", "draft")
+    .order("created_at");
+  const options = (marketRows ?? []).flatMap((m) =>
+    (m.market_options ?? [])
+      .slice()
+      .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+      .map((o) => ({ id: o.id, label: o.label, competitorId: o.competitor_id, color: o.color })),
+  );
 
   const settled = event.status === "settled" || event.status === "voided" || event.status === "canceled";
 
@@ -64,12 +70,12 @@ export default async function SubmitResultPage({ params }: { params: Promise<{ e
             </CardDescription>
           </CardHeader>
         </Card>
-      ) : competitors.length < 2 ? (
-        <p className="text-sm text-muted-foreground">This event has no competitors to choose a winner from.</p>
+      ) : options.length < 2 ? (
+        <p className="text-sm text-muted-foreground">This event has no market options to choose a result from.</p>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">Choose the winner. Settlement grades predictions, updates streaks, and refreshes leaderboards.</p>
-          <ResultForm eventId={event.id} competitors={competitors} />
+          <p className="text-sm text-muted-foreground">Select the result. Settlement grades predictions, updates streaks, and refreshes leaderboards.</p>
+          <ResultForm eventId={event.id} options={options} />
         </>
       )}
     </div>
