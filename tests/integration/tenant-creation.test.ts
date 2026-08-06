@@ -32,7 +32,7 @@ d("tenant creation validation (new non-video vertical, config + data only)", () 
   let creator1: string, creator2: string, competition1: string, support1: string;
   const chefs: string[] = [];
   let eventId: string, marketId: string;
-  let winnerCompetitor: string, winnerOption: string;
+  let winnerCompetitor: string;
   const optByCompetitor = new Map<string, string>();
 
   const apply = (event: Record<string, unknown>) =>
@@ -98,7 +98,6 @@ d("tenant creation validation (new non-video vertical, config + data only)", () 
     const { data: opts } = await admin.from("market_options").select("id, competitor_id").eq("market_id", marketId);
     for (const o of opts!) if (o.competitor_id) optByCompetitor.set(o.competitor_id, o.id);
     winnerCompetitor = chefs[0]!;
-    winnerOption = optByCompetitor.get(winnerCompetitor)!;
 
     // A second-tenant event, to prove isolation.
     const { data: e2 } = await admin.from("events").insert({ tenant_id: t2, creator_id: creator2, title: "Bake Round 1", slug: `bake-r1-${s}`, status: "open", starts_at: new Date(Date.now() - 3600_000).toISOString(), locks_at: new Date(Date.now() + 3600_000).toISOString() }).select("id").single();
