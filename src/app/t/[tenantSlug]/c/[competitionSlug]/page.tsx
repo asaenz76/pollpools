@@ -55,6 +55,7 @@ export default async function CompetitionPage({
         <DraftSection
           data={draft}
           competitionId={competition.id}
+          tenantSlug={ctx.tenant.slug}
           signedIn={Boolean(user)}
           signInHref={`/t/${ctx.tenant.slug}/sign-in`}
         />

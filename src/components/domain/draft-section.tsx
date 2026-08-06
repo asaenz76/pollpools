@@ -3,12 +3,13 @@
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { draftCompetitorAction, completeMockPaymentAction } from "@/lib/domain/draft-actions";
+import { draftCompetitorAction } from "@/lib/domain/draft-actions";
 import type { DraftSection as DraftSectionData } from "@/features/draft/get-draft";
 import { DraftOptionalNotice } from "@/components/domain/draft-notice";
+import { CheckoutButton } from "@/components/billing/buttons";
 import { DRAFT_PAID_NOTICE } from "@/lib/constants";
 import { formatCountdown } from "@/lib/domain/locking";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function formatFee(minor: number | null, currency: string | null): string {
@@ -19,11 +20,13 @@ function formatFee(minor: number | null, currency: string | null): string {
 export function DraftSection({
   data,
   competitionId,
+  tenantSlug,
   signedIn,
   signInHref,
 }: {
   data: DraftSectionData;
   competitionId: string;
+  tenantSlug: string;
   signedIn: boolean;
   signInHref: string;
 }) {
@@ -48,15 +51,6 @@ export function DraftSection({
     setError(null);
     startTransition(async () => {
       const res = await draftCompetitorAction({ competitionId, competitorId });
-      if (!res.ok) return setError(res.error);
-      router.refresh();
-    });
-  }
-
-  function onPay(reference: string) {
-    setError(null);
-    startTransition(async () => {
-      const res = await completeMockPaymentAction({ paymentReference: reference });
       if (!res.ok) return setError(res.error);
       router.refresh();
     });
@@ -96,15 +90,20 @@ export function DraftSection({
                 : `${data.userPoints ?? 0} pts${data.userRank ? ` · Rank ${data.userRank}` : ""}`}
             </span>
           </div>
-          {data.userAssignment.status === "pending_payment" && data.userAssignment.paymentReference ? (
-            <Button
-              className="mt-3 w-full"
-              size="sm"
-              disabled={pending}
-              onClick={() => onPay(data.userAssignment!.paymentReference!)}
-            >
-              {pending ? "Processing…" : `Complete payment (test) — ${formatFee(data.feeMinorUnits, data.currencyCode)}`}
-            </Button>
+          {data.userAssignment.status === "pending_payment" ? (
+            <div className="mt-3">
+              {data.paidDraftProductId ? (
+                <CheckoutButton
+                  productId={data.paidDraftProductId}
+                  tenantSlug={tenantSlug}
+                  competitionId={competitionId}
+                  draftReservationId={data.userAssignment.assignmentId}
+                  label={`Complete payment — ${formatFee(data.feeMinorUnits, data.currencyCode)}`}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">Paid drafting is currently unavailable.</p>
+              )}
+            </div>
           ) : null}
         </div>
       ) : !signedIn ? (

@@ -1393,7 +1393,6 @@ export type Database = {
           id: string
           idempotency_key: string
           metadata: Json
-          payment_reference_id: string | null
           payment_status: Database["public"]["Enums"]["draft_payment_status"]
           reservation_expires_at: string | null
           reserved_at: string | null
@@ -1415,7 +1414,6 @@ export type Database = {
           id?: string
           idempotency_key: string
           metadata?: Json
-          payment_reference_id?: string | null
           payment_status?: Database["public"]["Enums"]["draft_payment_status"]
           reservation_expires_at?: string | null
           reserved_at?: string | null
@@ -1437,7 +1435,6 @@ export type Database = {
           id?: string
           idempotency_key?: string
           metadata?: Json
-          payment_reference_id?: string | null
           payment_status?: Database["public"]["Enums"]["draft_payment_status"]
           reservation_expires_at?: string | null
           reserved_at?: string | null
@@ -1458,13 +1455,6 @@ export type Database = {
             columns: ["competitor_id"]
             isOneToOne: false
             referencedRelation: "competitors"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "competitor_draft_assignments_payment_reference_id_fkey"
-            columns: ["payment_reference_id"]
-            isOneToOne: false
-            referencedRelation: "draft_payments"
             referencedColumns: ["id"]
           },
           {
@@ -2065,73 +2055,6 @@ export type Database = {
           },
           {
             foreignKeyName: "draft_leaderboard_snapshots_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      draft_payments: {
-        Row: {
-          amount_minor_units: number
-          competition_id: string
-          confirmed_at: string | null
-          created_at: string
-          currency_code: string
-          id: string
-          provider: string
-          provider_reference: string
-          status: Database["public"]["Enums"]["draft_payment_status"]
-          tenant_id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount_minor_units: number
-          competition_id: string
-          confirmed_at?: string | null
-          created_at?: string
-          currency_code: string
-          id?: string
-          provider?: string
-          provider_reference: string
-          status?: Database["public"]["Enums"]["draft_payment_status"]
-          tenant_id: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount_minor_units?: number
-          competition_id?: string
-          confirmed_at?: string | null
-          created_at?: string
-          currency_code?: string
-          id?: string
-          provider?: string
-          provider_reference?: string
-          status?: Database["public"]["Enums"]["draft_payment_status"]
-          tenant_id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "draft_payments_competition_id_fkey"
-            columns: ["competition_id"]
-            isOneToOne: false
-            referencedRelation: "competitions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "draft_payments_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "draft_payments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -4058,10 +3981,6 @@ export type Database = {
       }
       cancel_draft_assignment: {
         Args: { p_assignment_id: string; p_reason: string }
-        Returns: Json
-      }
-      confirm_draft_payment: {
-        Args: { p_provider_reference: string }
         Returns: Json
       }
       create_billing_checkout: {

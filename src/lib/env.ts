@@ -24,8 +24,6 @@ export const publicEnv = publicSchema.parse({
 
 const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  SUBSCRIPTION_PROVIDER: z.string().default("mock"),
-  SUBSCRIPTION_WEBHOOK_SECRET: z.string().min(1),
   APP_SIGNING_SECRET: z.string().min(1),
 
   // ── Billing (Phase 7) ──────────────────────────────────────────────────────
@@ -58,8 +56,6 @@ export function serverEnv(): z.infer<typeof serverSchema> {
   if (!cachedServerEnv) {
     cachedServerEnv = serverSchema.parse({
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-      SUBSCRIPTION_PROVIDER: process.env.SUBSCRIPTION_PROVIDER,
-      SUBSCRIPTION_WEBHOOK_SECRET: process.env.SUBSCRIPTION_WEBHOOK_SECRET,
       APP_SIGNING_SECRET: process.env.APP_SIGNING_SECRET,
       BILLING_PROVIDER: process.env.BILLING_PROVIDER,
       PAID_DRAFT_CHECKOUT_ENABLED: process.env.PAID_DRAFT_CHECKOUT_ENABLED,

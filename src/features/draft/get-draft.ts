@@ -47,12 +47,13 @@ export type DraftSection = {
     competitorName: string;
     status: string;
     paymentStatus: string;
-    paymentReference: string | null;
   } | null;
   userRank: number | null;
   userPoints: number | null;
   standings: DraftStandingRow[];
   prizes: DraftPrize[];
+  /** Billing product used to pay for a paid-draft reservation (null if none / free). */
+  paidDraftProductId: string | null;
 };
 
 export async function getDraftSection(
@@ -106,26 +107,38 @@ export async function getDraftSection(
   if (userId) {
     const { data: asg } = await supabase
       .from("competitor_draft_assignments")
-      .select("id, competitor_id, status, payment_status, payment_reference_id, draft_payments(provider_reference)")
+      .select("id, competitor_id, status, payment_status")
       .eq("competition_id", competitionId)
       .eq("user_id", userId)
       .not("status", "in", "(canceled,expired)")
       .order("created_at", { ascending: false })
       .maybeSingle();
     if (asg) {
-      const payment = Array.isArray(asg.draft_payments) ? asg.draft_payments[0] : asg.draft_payments;
       userAssignment = {
         assignmentId: asg.id,
         competitorId: asg.competitor_id,
         competitorName: nameByCompetitor.get(asg.competitor_id) ?? "Your competitor",
         status: asg.status,
         paymentStatus: asg.payment_status,
-        paymentReference: payment?.provider_reference ?? null,
       };
       const mine = (standingRows ?? []).find((r) => r.user_id === userId);
       userRank = mine?.rank ?? null;
       userPoints = mine?.competition_points ?? null;
     }
+  }
+
+  // The paid-draft billing product for this competition (single billing pipeline).
+  let paidDraftProductId: string | null = null;
+  if (settings.access_type === "paid") {
+    const { data: product } = await supabase
+      .from("billing_products")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("product_type", "paid_competitor_draft")
+      .eq("competition_id", competitionId)
+      .eq("status", "active")
+      .maybeSingle();
+    paidDraftProductId = product?.id ?? null;
   }
 
   return {
@@ -167,5 +180,6 @@ export async function getDraftSection(
       placementFrom: p.placement_from,
       placementTo: p.placement_to,
     })),
+    paidDraftProductId,
   };
 }

@@ -6,7 +6,6 @@ import {
   isDraftOpen,
   type DraftStanding,
 } from "@/lib/domain/draft";
-import { MockPaymentAdapter, getPaymentAdapter } from "@/lib/payments/adapter";
 
 const CONFIG = { "1": 10, "2": 8, "3": 6, "4": 5, "5": 4, "6": 3, "7": 2, "8": 1 };
 
@@ -66,20 +65,5 @@ describe("draft window", () => {
     expect(isDraftOpen({ status: "open", opensAt: "2026-01-01T13:00:00Z", closesAt: null }, now)).toBe(false);
     expect(isDraftOpen({ status: "open", opensAt: null, closesAt: "2026-01-01T11:00:00Z" }, now)).toBe(false);
     expect(isDraftOpen({ status: "open", opensAt: "2026-01-01T11:00:00Z", closesAt: "2026-01-01T13:00:00Z" }, now)).toBe(true);
-  });
-});
-
-describe("mock payment adapter", () => {
-  it("verifies a correctly-signed webhook and rejects forgery/replay with a bad secret", () => {
-    const adapter = getPaymentAdapter("mock");
-    const ref = "mock_abc123";
-    const secret = "s3cret";
-    const sig = MockPaymentAdapter.sign(ref, secret);
-    expect(adapter.verifyWebhook({ provider: "mock", reference: ref, status: "paid", signature: sig }, secret)).toBe(true);
-    expect(adapter.verifyWebhook({ provider: "mock", reference: ref, status: "paid", signature: "mock_sig_bad" }, secret)).toBe(false);
-    expect(adapter.verifyWebhook({ provider: "mock", reference: ref, status: "paid", signature: sig }, "wrong")).toBe(false);
-  });
-  it("rejects an unknown provider", () => {
-    expect(() => getPaymentAdapter("stripe")).toThrow(/Unsupported/);
   });
 });

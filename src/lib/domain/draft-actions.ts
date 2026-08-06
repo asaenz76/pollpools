@@ -2,9 +2,6 @@
 
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { createAdminSupabase } from "@/lib/supabase/admin";
-import { getPaymentAdapter, MockPaymentAdapter } from "@/lib/payments/adapter";
-import { serverEnv } from "@/lib/env";
 
 const uuid = z.string().uuid();
 
@@ -25,10 +22,15 @@ function friendly(message: string, map: Record<string, string>): string {
 }
 
 export type DraftResult =
-  | { ok: true; status: string; assignmentId: string; paymentReference: string | null }
+  | { ok: true; status: string; assignmentId: string; paymentRequired: boolean }
   | { ok: false; error: string };
 
-/** Draft a competitor. FREE → confirmed; PAID → reservation needing payment. */
+/**
+ * Draft a competitor. FREE → confirmed immediately. PAID → creates a
+ * `pending_payment` reservation; payment is completed through the single
+ * BillingProvider pipeline (billing checkout → verified webhook confirms it),
+ * the same architecture as every other paid feature.
+ */
 export async function draftCompetitorAction(input: {
   competitionId: string;
   competitorId: string;
@@ -47,53 +49,13 @@ export async function draftCompetitorAction(input: {
   });
   if (error) return { ok: false, error: friendly(error.message, DRAFT_ERRORS) };
 
-  const result = data as { assignment_id: string; status: string; payment?: { reference: string } | null };
+  const result = data as { assignment_id: string; status: string; payment_required?: boolean };
   return {
     ok: true,
     status: result.status,
     assignmentId: result.assignment_id,
-    paymentReference: result.payment?.reference ?? null,
+    paymentRequired: Boolean(result.payment_required),
   };
-}
-
-/**
- * Simulate the payment provider's verified webhook for the MOCK adapter. Confirms
- * the current user's own pending payment only, verifies the signature, then calls
- * the service-role `confirm_draft_payment` (idempotent / replay-safe).
- */
-export async function completeMockPaymentAction(input: {
-  paymentReference: string;
-}): Promise<{ ok: true; status: string } | { ok: false; error: string }> {
-  const ref = z.string().min(6).safeParse(input.paymentReference);
-  if (!ref.success) return { ok: false, error: "Invalid payment." };
-
-  const supabase = await createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Please sign in." };
-
-  // The user may only complete their OWN pending payment (RLS enforces the read).
-  const { data: payment } = await supabase
-    .from("draft_payments")
-    .select("id, status")
-    .eq("provider_reference", ref.data)
-    .eq("user_id", user.id)
-    .maybeSingle();
-  if (!payment) return { ok: false, error: "Payment not found." };
-
-  // Verify the (mock) provider signature, then confirm via the service role.
-  const secret = serverEnv().SUBSCRIPTION_WEBHOOK_SECRET;
-  const adapter = getPaymentAdapter("mock");
-  const signature = MockPaymentAdapter.sign(ref.data, secret);
-  if (!adapter.verifyWebhook({ provider: "mock", reference: ref.data, status: "paid", signature }, secret)) {
-    return { ok: false, error: "Payment verification failed." };
-  }
-
-  const admin = createAdminSupabase();
-  const { data, error } = await admin.rpc("confirm_draft_payment", { p_provider_reference: ref.data });
-  if (error) return { ok: false, error: "Couldn't confirm payment." };
-  return { ok: true, status: (data as { status?: string }).status ?? "confirmed" };
 }
 
 export async function cancelDraftAction(input: {

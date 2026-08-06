@@ -14,6 +14,7 @@ export function CheckoutButton({
   tenantSlug,
   creatorId,
   competitionId,
+  draftReservationId,
   label,
   variant = "primary",
 }: {
@@ -21,6 +22,7 @@ export function CheckoutButton({
   tenantSlug: string;
   creatorId?: string;
   competitionId?: string;
+  draftReservationId?: string;
   label: string;
   variant?: "primary" | "outline";
 }) {
@@ -34,7 +36,7 @@ export function CheckoutButton({
         onClick={() =>
           start(async () => {
             setError(null);
-            const res = await startCheckoutAction({ productId, tenantSlug, creatorId, competitionId });
+            const res = await startCheckoutAction({ productId, tenantSlug, creatorId, competitionId, draftReservationId });
             if (!res.ok) return setError(res.error);
             window.location.href = res.url;
           })

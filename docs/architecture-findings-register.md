@@ -28,7 +28,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 
 | ID | Finding | Sev | Phase 7.5 § | Target | Status |
 | --- | --- | --- | --- | --- | --- |
-| F-01 | Dual payment stacks (FNV-1a draft vs HMAC billing) | 🔴 | §2 | Resolve | Open |
+| F-01 | Dual payment stacks (FNV-1a draft vs HMAC billing) | 🔴 | §2 | Resolve | ✅ Resolved |
 | F-02 | Synchronous full-tenant recompute at settlement | 🔴 | §5, §6 | Resolve | Open |
 | F-03 | Market grading is single-winner-only | 🟠 | §3 | Resolve | Open |
 | F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | Open |
@@ -93,7 +93,19 @@ Database impact · Risk · Estimated effort · Status.**
   path if fully superseded by `apply_billing_event`; additive migration only, no destructive drops.
 - **Risk.** Low — paid draft is gated OFF in production (`PAID_DRAFT_CHECKOUT_ENABLED=false`);
   the free-draft path is untouched. Main risk is test churn.
-- **Effort.** L (≈1–2 wk). **Status.** Open.
+- **Effort.** L (≈1–2 wk). **Status.** ✅ **Resolved** (migration `0028`).
+  - `src/lib/payments/*` deleted (FNV-1a signer, `MockPaymentAdapter`, `getPaymentAdapter`);
+    `completeMockPaymentAction` removed; `SUBSCRIPTION_PROVIDER` / `SUBSCRIPTION_WEBHOOK_SECRET`
+    dropped from env + `.env` files.
+  - `draft_competitor` now creates a **reservation only**; paid confirmation flows through the
+    single `BillingProvider` pipeline (`startCheckoutAction` → verified webhook →
+    `apply_billing_event`). `confirm_draft_payment` RPC + `draft_payments` table +
+    `payment_reference_id` column dropped; `expire_draft_reservations` / `cancel_draft_assignment`
+    updated to no longer reference them.
+  - UI `pending_payment` state now renders the billing `CheckoutButton` (forwarding
+    `draftReservationId`). Draft integration test reworked to confirm via `apply_billing_event`.
+  - Verified: typecheck + lint + build clean; **141 tests pass**. Follow-up billing-function
+    hardenings (F-12, F-24, F-25, F-26) tracked separately below.
 
 ### F-02 — Synchronous full-tenant recompute at settlement 🔴
 - **Description.** Every settlement rebuilds the entire tenant leaderboard and re-scans each
@@ -343,3 +355,7 @@ document; this register is its actionable, status-tracked counterpart.
 
 - **2026-08-05** — Register created; all 29 findings + 7 planned capabilities recorded at status
   Open with target dispositions. Phase 7.5 implementation begins with §2 (F-01).
+- **2026-08-05** — **F-01 Resolved** (§2, migration `0028`): the two payment stacks are unified onto
+  the single `BillingProvider` pipeline; legacy `lib/payments` + `confirm_draft_payment` +
+  `draft_payments` removed. 141 tests pass. F-12/F-24/F-25/F-26 (billing-function hardenings) remain
+  Open for the next §2 slice.

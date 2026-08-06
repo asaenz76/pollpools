@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { randomUUID } from "node:crypto";
 import { adminClient, createUser, signInAs, deleteUser, uniqueSuffix, integrationEnvReady } from "./helpers";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
@@ -21,8 +22,10 @@ d("competitor draft engine", () => {
 
   const draft = (client: SupabaseClient<Database>, competitionId: string, competitorId: string, k = key()) =>
     client.rpc("draft_competitor", { p_competition_id: competitionId, p_competitor_id: competitorId, p_idempotency_key: k } as never) as unknown as Rpc<{
-      assignment_id: string; status: string; existing?: boolean; payment?: { reference: string; amount_minor_units: number; currency_code: string };
+      assignment_id: string; status: string; existing?: boolean; payment_required?: boolean; payment?: { amount_minor_units: number; currency_code: string };
     }>;
+
+  const money = (n: number) => ({ amountMinorUnits: n, currencyCode: "USD" });
 
   const settle = (eventId: string, winner: string | null) =>
     admin.rpc("settle_event", { p_event_id: eventId, p_resolution: winner ? "settled" : "voided", p_winning_competitor_id: winner, p_notes: null, p_result_url: null, p_idempotency_key: key() } as never) as unknown as Rpc<unknown>;
@@ -108,25 +111,38 @@ d("competitor draft engine", () => {
     expect(res.error).toBeNull();
   });
 
-  it("paid draft: reservation + mock payment confirmation (idempotent)", async () => {
+  it("paid draft: reservation confirmed through the single billing pipeline (idempotent)", async () => {
     const comp = await makeCompetition({ mode: "exclusive", access: "paid", fee: 500, currency: "USD" });
+    // The paid-draft billing product — the SAME billing architecture as every paid feature.
+    const { data: prod } = await admin
+      .from("billing_products")
+      .insert({ tenant_id: tenantId, product_type: "paid_competitor_draft", name: "Draft entry", provider: "mock", status: "active", currency_code: "USD", price_minor_units: 500, billing_interval: "one_time", competition_id: comp } as never)
+      .select("id").single();
+
     const r = await draft(members[0]!.client, comp, compIds[0]!);
     expect(r.error).toBeNull();
     expect(r.data!.status).toBe("pending_payment");
     expect(r.data!.payment!.amount_minor_units).toBe(500); // fee from server config, not client
     expect(r.data!.payment!.currency_code).toBe("USD");
-    const ref = r.data!.payment!.reference;
+    const assignmentId = r.data!.assignment_id;
 
-    const confirm = await admin.rpc("confirm_draft_payment", { p_provider_reference: ref } as never);
+    // Confirm via a verified billing webhook (apply_billing_event) — no separate pipeline.
+    const orderEvent = (orderId: string) => ({
+      type: "order_created",
+      customData: { tenant_id: tenantId, user_id: members[0]!.id, internal_billing_product_id: (prod as { id: string }).id, draft_reservation_id: assignmentId },
+      order: { providerOrderId: orderId, providerCustomerId: "cust_d", status: "paid", subtotal: money(500), tax: money(0), total: money(500), refunded: money(0), purchasedAt: new Date().toISOString() },
+    });
+    const confirm = await admin.rpc("apply_billing_event", { p_webhook_id: randomUUID(), p_event: orderEvent(`draft_${s}`) } as never);
     expect(confirm.error).toBeNull();
-    const { data: asg } = await admin.from("competitor_draft_assignments").select("status, payment_status").eq("id", r.data!.assignment_id).single();
+    const { data: asg } = await admin.from("competitor_draft_assignments").select("status, payment_status").eq("id", assignmentId).single();
     expect(asg!.status).toBe("confirmed");
     expect(asg!.payment_status).toBe("paid");
 
-    // Replay the webhook → idempotent, no change.
-    const replay = await admin.rpc("confirm_draft_payment", { p_provider_reference: ref } as never);
+    // Replay the same order → idempotent, assignment stays confirmed.
+    const replay = await admin.rpc("apply_billing_event", { p_webhook_id: randomUUID(), p_event: orderEvent(`draft_${s}`) } as never);
     expect(replay.error).toBeNull();
-    expect((replay.data as { already?: boolean }).already).toBe(true);
+    const { data: asg2 } = await admin.from("competitor_draft_assignments").select("status").eq("id", assignmentId).single();
+    expect(asg2!.status).toBe("confirmed");
   });
 
   it("reservations expire and release the competitor", async () => {
