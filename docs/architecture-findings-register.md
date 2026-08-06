@@ -51,9 +51,9 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | Open |
 | F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | Open |
 | F-23 | No admin / ops surface | 🟠 | — | Defer (Phase 8) | Open |
-| F-24 | `mock/pay` GET route lacks explicit env assertion | 🟡 | §2 | Resolve | Open |
-| F-25 | `requestPayoutAction` persists unvalidated amount | 🟡 | §2 | Resolve | Open |
-| F-26 | `approve_creator_payout` reject-cleanup ordering | 🟡 | §2 | Resolve | Open |
+| F-24 | `mock/pay` GET route lacks explicit env assertion | 🟡 | §2 | Resolve | ✅ Resolved |
+| F-25 | `requestPayoutAction` persists unvalidated amount | 🟡 | §2 | Resolve | ✅ Resolved |
+| F-26 | `approve_creator_payout` reject-cleanup ordering | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-27 | Grading math in SQL not covered by the tested TS | 🟠 | §4, §19 | Resolve | Open |
 | F-28 | Shared global singletons (webhook ledger, job queue) | 🟡 | §17 | Accept (revisit) | Open |
 | F-29 | Untyped `as unknown[]` JSONB casts | 🟡 | §15 | Resolve | Open |
@@ -303,21 +303,26 @@ Database impact · Risk · Estimated effort · Status.**
 - **Planned solution.** Add an explicit non-production / provider assertion at the route boundary
   during the payment unification (§2).
 - **Files affected.** `src/app/api/billing/mock/pay/route.ts`. **Database impact.** none. **Risk.** Low.
-- **Effort.** S. **Status.** Open.
+- **Effort.** S. **Status.** ✅ **Resolved** (migration `0029` slice): the route now returns 404
+  unless `BILLING_PROVIDER = mock`, so a real-provider deployment can never reach the self-signing path.
 
 ### F-25 — `requestPayoutAction` persists unvalidated amount 🟡
 - **Description.** The action accepts a client `amountMinorUnits` and stores a `requested` payout
   with no server check against the earnings ledger (downstream approval still can't over-pay).
 - **Planned solution.** Validate the requested amount against available earnings server-side at request time.
-- **Files affected.** `src/lib/domain/billing-actions.ts`, `0027_billing_functions.sql`.
-- **Database impact.** optional check in the request function; additive. **Risk.** Low. **Effort.** S. **Status.** Open.
+- **Files affected.** `src/lib/domain/billing-actions.ts`, `0029_payout_hardening.sql`.
+- **Database impact.** `BEFORE INSERT` trigger on `creator_payout_requests`; additive. **Risk.** Low. **Effort.** S.
+- **Status.** ✅ **Resolved** (migration `0029`): a DB trigger rejects any request whose amount is ≤ 0 or
+  exceeds the creator's available, unallocated earnings — airtight even if a client bypasses the action.
+  Integration-tested (over-request → `INSUFFICIENT_EARNINGS`).
 
 ### F-26 — `approve_creator_payout` reject-cleanup ordering 🟡
 - **Description.** In the insufficient-funds branch, allocations are deleted before the dependent
   `update`, leaving a dead statement — harmless only because the subsequent `raise` rolls back.
 - **Planned solution.** Reorder (update before delete) or drop the redundant statements.
-- **Files affected.** `0027_billing_functions.sql` (+ migration). **Database impact.** function fix; additive.
-- **Risk.** Low. **Effort.** S. **Status.** Open.
+- **Files affected.** `0029_payout_hardening.sql`. **Database impact.** function fix; additive.
+- **Risk.** Low. **Effort.** S. **Status.** ✅ **Resolved** (migration `0029`): the insufficient-earnings
+  branch now releases the reserved earnings *before* deleting the allocations.
 
 ### F-27 — Grading math in SQL not covered by tested TS 🟠
 - **Description.** The production grader is SQL; the well-tested `scoring.ts` mirror is not the code
@@ -359,3 +364,7 @@ document; this register is its actionable, status-tracked counterpart.
   the single `BillingProvider` pipeline; legacy `lib/payments` + `confirm_draft_payment` +
   `draft_payments` removed. 141 tests pass. F-12/F-24/F-25/F-26 (billing-function hardenings) remain
   Open for the next §2 slice.
+- **2026-08-05** — **F-24, F-25, F-26 Resolved** (§2, migration `0029`): mock-pay route gated to the
+  mock provider (404 otherwise); a DB trigger rejects payout requests exceeding available earnings;
+  `approve_creator_payout` releases-before-deletes in the insufficient-earnings branch. 142 tests pass.
+  F-12 (recurring-renewal earnings) remains for its own slice.

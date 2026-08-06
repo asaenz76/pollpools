@@ -153,6 +153,10 @@ export async function requestPayoutAction(input: { creatorId: string; amountMino
     payout_destination_masked: parsed.data.destinationMasked ?? null,
     idempotency_key: `payout-${key}`,
   });
-  if (error) return { ok: false, error: "Couldn't request payout." };
+  if (error) {
+    if (error.message.includes("INSUFFICIENT_EARNINGS")) return { ok: false, error: "That's more than your available earnings." };
+    if (error.message.includes("INVALID_AMOUNT")) return { ok: false, error: "Enter a payout amount greater than zero." };
+    return { ok: false, error: "Couldn't request payout." };
+  }
   return { ok: true };
 }

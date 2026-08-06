@@ -4,16 +4,22 @@ import { createAdminSupabase } from "@/lib/supabase/admin";
 import { MockBillingProvider } from "@/lib/billing/mock-provider";
 import { billingWebhookSecret } from "@/lib/billing/index";
 import { processBillingWebhook } from "@/lib/billing/webhook";
-import { publicEnv } from "@/lib/env";
+import { publicEnv, serverEnv } from "@/lib/env";
 
 /**
  * Mock hosted checkout completion (local/test only). Simulates the provider
  * charging the user and delivering VERIFIED webhooks, then redirects to the
  * success page. Real providers do this off-site; the pipeline is identical.
+ *
+ * This route can grant entitlements by self-signing webhooks, so it is hard
+ * off-limits unless the mock provider is the configured one — a real provider
+ * deployment (e.g. production on lemon_squeezy) can never reach it.
  */
 export async function GET(request: NextRequest) {
-  const checkoutId = request.nextUrl.searchParams.get("checkout_id") ?? "";
   const home = `${publicEnv.NEXT_PUBLIC_APP_URL}/`;
+  if (serverEnv().BILLING_PROVIDER !== "mock") return new NextResponse("Not found", { status: 404 });
+
+  const checkoutId = request.nextUrl.searchParams.get("checkout_id") ?? "";
   if (!z.string().uuid().safeParse(checkoutId).success) return NextResponse.redirect(home);
 
   const admin = createAdminSupabase();

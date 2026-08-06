@@ -139,4 +139,13 @@ d("billing: webhooks, entitlements, earnings, payouts", () => {
     const again = await admin.rpc("mark_creator_payout_paid", { p_payout_id: payoutId, p_external_reference: "wire-124" } as never);
     expect(again.error?.message).toContain("NOT_APPROVED");
   });
+
+  it("rejects a payout request that exceeds available earnings (F-25)", async () => {
+    const owner = await signInAs(`cowner-${s}@example.test`, pw);
+    const over = await owner
+      .from("creator_payout_requests")
+      .insert({ tenant_id: tenantId, creator_id: creatorId, amount_minor_units: 99_999_999, currency_code: "USD", status: "requested", idempotency_key: `pay-over-${s}` })
+      .select("id").single();
+    expect(over.error?.message).toContain("INSUFFICIENT_EARNINGS");
+  });
 });
