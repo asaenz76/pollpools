@@ -44,7 +44,12 @@ export default async function NotificationsPage() {
                 )}
               >
                 <p className="text-sm font-medium">{n.title}</p>
-                {n.body ? <p className="text-sm text-muted-foreground">{n.body}</p> : null}
+                {n.body ? (
+                  <p className="text-sm text-muted-foreground">
+                    {n.body}
+                    {n.resultLabel ? <span> · Result: {n.resultLabel}</span> : null}
+                  </p>
+                ) : null}
               </div>
             );
             return <li key={n.id}>{href ? <Link href={href}>{inner}</Link> : inner}</li>;

@@ -10,6 +10,8 @@ export type NotificationItem = {
   type: NotificationType;
   title: string;
   body: string | null;
+  /** Winning-option label for settlement notifications (e.g. "Draw"), when present. */
+  resultLabel: string | null;
   entityType: string | null;
   entityId: string | null;
   read: boolean;
@@ -22,20 +24,24 @@ export async function getNotifications(limit = 50): Promise<NotificationItem[]> 
   const supabase = await createServerSupabase();
   const { data } = await supabase
     .from("notifications")
-    .select("id, type, title, body, entity_type, entity_id, read_at, created_at")
+    .select("id, type, title, body, entity_type, entity_id, metadata, read_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(limit);
-  return (data ?? []).map((n) => ({
-    id: n.id,
-    type: n.type as NotificationType,
-    title: n.title,
-    body: n.body,
-    entityType: n.entity_type,
-    entityId: n.entity_id,
-    read: n.read_at != null,
-    createdAt: n.created_at,
-  }));
+  return (data ?? []).map((n) => {
+    const meta = (n.metadata ?? {}) as Record<string, unknown>;
+    return {
+      id: n.id,
+      type: n.type as NotificationType,
+      title: n.title,
+      body: n.body,
+      resultLabel: typeof meta.result_label === "string" ? meta.result_label : null,
+      entityType: n.entity_type,
+      entityId: n.entity_id,
+      read: n.read_at != null,
+      createdAt: n.created_at,
+    };
+  });
 }
 
 /** Unread count for the header badge. Memoized per request. */

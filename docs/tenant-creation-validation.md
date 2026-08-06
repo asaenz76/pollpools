@@ -139,6 +139,36 @@ This is the already-tracked, Phase-8-deferred **F-21** (config vocabulary) and d
 not block any tenant from operating (a creator supplies the wording as data, as all
 three tenants do). Recorded for completeness; no new leak.
 
+## Browser verification — creator result-submission flow (Phase 7.76)
+
+A live browser pass of the creator result flow on a three-way (Home / Draw / Away)
+market, signed in as a settlement-enabled creator. All 12 checks pass:
+
+| # | Check | Result |
+| --- | --- | --- |
+| 1 | Creator opens the result page for a three-way market | ✅ |
+| 2 | Form displays all options — Home win / Draw / Away win | ✅ |
+| 3 | Draw is a normal selectable result | ✅ |
+| 4 | Selecting Draw requires/displays no competitor | ✅ (form shows only options + notes) |
+| 5 | Submitting Draw succeeds | ✅ ("Already settled") |
+| 6 | Settled event shows the Draw label | ✅ (Draw ✓ green on the event page) |
+| 7 | Predictions grade correctly | ✅ (Draw → correct; Home/Away → incorrect) |
+| 8 | Notifications/feed display "Draw" | ✅ **after a defect fix** (see below) |
+| 9 | Regrade Draw → Away succeeds | ✅ (Away shown as winner; Draw backer now "Not this time.") |
+| 10 | Regrade Away → Draw succeeds | ✅ (Draw shown as winner; Draw backer "You called it right.") |
+| 11 | Mobile layout usable at 320 / 375 / 390 px | ✅ (single-column, full-width, no overflow) |
+| 12 | No console errors | ✅ |
+
+**Defect found and fixed (check 8).** The settlement `metadata.result_label`
+("Draw") was written correctly (Phase 7.76 migration), but the **feed and
+notification UI did not render it** — the feed said only "… was settled" and
+notifications didn't fetch `metadata`. Fixed minimally: the feed now shows
+"… was settled — result: Draw", and settlement notifications show
+"Derby Day · Result: Draw". Files changed: `src/features/social/get-feed.ts`,
+`src/features/social/get-notifications.ts`,
+`src/app/t/[tenantSlug]/notifications/page.tsx`. Re-verified in the browser;
+388 tests still pass; typecheck + lint clean. No engine/settlement logic changed.
+
 ## Final verdict
 
 > # YES

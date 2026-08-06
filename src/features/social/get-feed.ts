@@ -59,9 +59,13 @@ export async function getFeed(tenantId: string, tenantSlug: string, limit = 40):
         text = `${actor?.display_name ?? "Someone"} earned "${String(meta.achievement_name ?? "an achievement")}"`;
         href = actor?.handle ? `/t/${tenantSlug}/u/${actor.handle}` : null;
         break;
-      case "event_settled":
-        text = `${event?.title ?? "An event"} was settled`;
+      case "event_settled": {
+        const resultLabel = typeof meta.result_label === "string" ? meta.result_label : null;
+        text = resultLabel
+          ? `${event?.title ?? "An event"} was settled — result: ${resultLabel}`
+          : `${event?.title ?? "An event"} was settled`;
         break;
+      }
       default:
         text = "New activity";
     }
