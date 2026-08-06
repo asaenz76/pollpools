@@ -50,7 +50,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-20 | Missing `predictions(market_id, status)` index | 🟡 | §17, §7.6 | Resolve | ✅ Resolved |
 | F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | ⏭ Deferred (Phase 8) |
 | F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | ⏭ Deferred (Phase 8) |
-| F-23 | No admin / ops surface | 🟠 | §7.6 | Defer (Phase 8) | ⏭ Deferred (drain/monitor endpoints landed; admin UI Phase 8) |
+| F-23 | No admin / ops surface | 🟠 | §7.6, §8A | Resolve | 🏗 In progress (Phase 8-A: admin ops UI) |
 | F-24 | `mock/pay` GET route lacks explicit env assertion | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-25 | `requestPayoutAction` persists unvalidated amount | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-26 | `approve_creator_payout` reject-cleanup ordering | 🟡 | §2 | Resolve | ✅ Resolved |

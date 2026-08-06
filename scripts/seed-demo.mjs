@@ -99,6 +99,11 @@ async function main() {
     { onConflict: "tenant_id,user_id", ignoreDuplicates: true },
   );
 
+  // Local dev convenience: grant the demo owner the platform super_admin role so
+  // the /admin operations surface is reachable after seeding. Demo-only.
+  const { data: existingSuper } = await db.from("user_roles").select("id").eq("user_id", ownerId).eq("role", "super_admin").is("tenant_id", null).maybeSingle();
+  if (!existingSuper) await db.from("user_roles").insert({ user_id: ownerId, role: "super_admin", tenant_id: null });
+
   const { data: creator } = await db
     .from("creators")
     .upsert(
