@@ -120,7 +120,11 @@ Database impact · Risk · Estimated effort · Status.**
   recompute inline. Additive.
 - **Risk.** Medium — settlement *correctness* must never depend on background jobs; grades are
   committed synchronously, derived caches are eventually consistent. Requires careful ordering.
-- **Effort.** L. **Status.** Open.
+- **Effort.** L. **Status.** **In progress** — §5A–§5G done: settlement is async (outbox, §5B),
+  projections are incremental + version-aware with explicit prerequisites + defer/dead-letter (§5C–§5F),
+  and §5G proves the whole pipeline converges to the active-version canonical rebuild under regrade,
+  stale/out-of-order/duplicate execution, dead-letter, and concurrent settle/regrade. **Closes after §5H**
+  (reconciliation, repair, operational visibility) per register rules.
 
 ### F-03 — Market grading is single-winner-only 🟠
 - **Description.** `market_type` declares `YES_NO` and `MULTIPLE_CHOICE`, but only
@@ -508,3 +512,15 @@ document; this register is its actionable, status-tracked counterpart.
   provider boundary (in-app persistence vs future transport). Worker gained a `defer` outcome already;
   added a tenant-scoped claim index + 20s integration test timeout for the raised job volume. New
   `notification-fanout.test.ts` (6). 239 tests pass (stable ×4). **F-02 and F-05 stay Open until §5H.**
+- **2026-08-05** — **§5G** (tests only, no migration): cross-projection regrade & stale-job protection.
+  New `regrade-convergence.test.ts` (9) proves the ENTIRE async pipeline (stats, streaks, all four
+  leaderboard scopes, draft standings, achievements, feed, notifications, milestones) **converges to a
+  deterministic canonical rebuild** from active grades under: multi-regrade v1→v2→v3 (incl. back-to-A,
+  no blind row reuse), stale-version no-op, out-of-order (leaderboard/achievements defer before stats),
+  duplicate execution (no double-count/dup rows), concurrent settle (exactly one active; ALREADY_SETTLED)
+  + duplicate-idempotency-key, concurrent regrades (one active), dead-letter cross-version (old dead job
+  never blocks the current version + stays visible; current-version prereq dead → blocked, no stale
+  publish), and delivered-notification history preserved with a single corrected notice. Verified every
+  projection function checks the active version at entry within its single transaction (recompute-from-
+  active is self-correcting). 248 tests pass (stable ×3). **F-02, F-05 progress-noted, NOT closed — they
+  close after §5H (rule 11).**
