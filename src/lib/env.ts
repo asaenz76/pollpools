@@ -26,6 +26,17 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   APP_SIGNING_SECRET: z.string().min(1),
 
+  // Shared secret authenticating internal scheduled endpoints (job drain,
+  // projection monitor). Optional so local/dev builds don't require it, but the
+  // endpoints refuse to run (503) until it is set — they are never open.
+  CRON_SECRET: z.string().min(1).optional(),
+  // Allow integration tests to skip when the DB env is absent. Defaults false so
+  // CI cannot silently skip; a local developer may set it true (see §11 / docs).
+  ALLOW_INTEGRATION_TEST_SKIP: z
+    .string()
+    .default("false")
+    .transform((v) => v === "true" || v === "1"),
+
   // ── Billing (Phase 7) ──────────────────────────────────────────────────────
   BILLING_PROVIDER: z.enum(["lemon_squeezy", "mock", "manual"]).default("mock"),
   // Production gate: paid Competitor Draft checkout stays OFF unless explicitly on.
@@ -57,6 +68,8 @@ export function serverEnv(): z.infer<typeof serverSchema> {
     cachedServerEnv = serverSchema.parse({
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
       APP_SIGNING_SECRET: process.env.APP_SIGNING_SECRET,
+      CRON_SECRET: process.env.CRON_SECRET,
+      ALLOW_INTEGRATION_TEST_SKIP: process.env.ALLOW_INTEGRATION_TEST_SKIP,
       BILLING_PROVIDER: process.env.BILLING_PROVIDER,
       PAID_DRAFT_CHECKOUT_ENABLED: process.env.PAID_DRAFT_CHECKOUT_ENABLED,
       BILLING_WEBHOOK_SECRET: process.env.BILLING_WEBHOOK_SECRET,

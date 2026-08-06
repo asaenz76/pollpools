@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+      // `server-only` throws when imported outside a server bundle; in tests there
+      // is no client/server boundary, so alias it to a no-op to allow importing
+      // server modules (admin client, internal routes) directly.
+      "server-only": fileURLToPath(new URL("./tests/stubs/server-only.ts", import.meta.url)),
     },
   },
   test: {

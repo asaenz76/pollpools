@@ -4205,11 +4205,36 @@ export type Database = {
         }
         Relationships: []
       }
+      worker_leases: {
+        Row: {
+          acquired_at: string
+          expires_at: string
+          holder: string
+          partition: string
+        }
+        Insert: {
+          acquired_at?: string
+          expires_at: string
+          holder: string
+          partition: string
+        }
+        Update: {
+          acquired_at?: string
+          expires_at?: string
+          holder?: string
+          partition?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      acquire_worker_lease: {
+        Args: { p_holder: string; p_partition: string; p_ttl_seconds?: number }
+        Returns: boolean
+      }
       advance_bracket: {
         Args: { p_event_id: string; p_winner_competitor_id: string }
         Returns: undefined
@@ -4319,7 +4344,7 @@ export type Database = {
         Returns: string
       }
       expire_draft_reservations: { Args: never; Returns: number }
-      fail_job: { Args: { p_error: string; p_id: string }; Returns: undefined }
+      fail_job: { Args: { p_error: string; p_id: string }; Returns: string }
       lock_due_markets: { Args: never; Returns: number }
       mark_creator_payout_paid: {
         Args: { p_external_reference: string; p_payout_id: string }
@@ -4464,6 +4489,10 @@ export type Database = {
       }
       reject_creator_payout: {
         Args: { p_payout_id: string; p_reason: string }
+        Returns: undefined
+      }
+      release_worker_lease: {
+        Args: { p_holder: string; p_partition: string }
         Returns: undefined
       }
       requeue_actionable_jobs: {

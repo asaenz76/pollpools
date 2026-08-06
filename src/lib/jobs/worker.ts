@@ -41,7 +41,16 @@ export function registeredJobTypes(): string[] {
   return [...HANDLERS.keys()];
 }
 
-export type WorkerResult = { claimed: number; succeeded: number; skipped: number; deferred: number; failed: number };
+export type WorkerResult = {
+  claimed: number;
+  succeeded: number;
+  skipped: number;
+  deferred: number;
+  /** Threw and re-queued with backoff (retry budget remaining). */
+  failed: number;
+  /** Threw and exhausted the retry budget → dead-letter (terminal, visible). */
+  deadLettered: number;
+};
 
 /**
  * Claim and process one batch of due jobs. `tenantId` scopes claiming to a single
@@ -51,13 +60,20 @@ export async function runPendingJobs(admin: Admin, limit = 20, tenantId: string 
   const { data, error } = await admin.rpc("claim_jobs", { p_limit: limit, p_tenant: tenantId } as never);
   if (error) throw new Error(`claim_jobs failed: ${error.message}`);
   const jobs = (data ?? []) as SystemJob[];
-  const result: WorkerResult = { claimed: jobs.length, succeeded: 0, skipped: 0, deferred: 0, failed: 0 };
+  const result: WorkerResult = { claimed: jobs.length, succeeded: 0, skipped: 0, deferred: 0, failed: 0, deadLettered: 0 };
+
+  // Record a failure and count it as a retry vs. a dead-letter from fail_job's
+  // returned status, so drain logs distinguish "will retry" from "gave up".
+  const recordFailure = async (id: string, message: string) => {
+    const { data: status } = await admin.rpc("fail_job", { p_id: id, p_error: message.slice(0, 500) });
+    if ((status as unknown as string) === "dead") result.deadLettered++;
+    else result.failed++;
+  };
 
   for (const job of jobs) {
     const handler = HANDLERS.get(job.job_type);
     if (!handler) {
-      await admin.rpc("fail_job", { p_id: job.id, p_error: `No handler for job_type "${job.job_type}"` });
-      result.failed++;
+      await recordFailure(job.id, `No handler for job_type "${job.job_type}"`);
       continue;
     }
     try {
@@ -74,8 +90,7 @@ export async function runPendingJobs(admin: Admin, limit = 20, tenantId: string 
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      await admin.rpc("fail_job", { p_id: job.id, p_error: message.slice(0, 500) });
-      result.failed++;
+      await recordFailure(job.id, message);
     }
   }
   return result;
@@ -83,7 +98,7 @@ export async function runPendingJobs(admin: Admin, limit = 20, tenantId: string 
 
 /** Drain due jobs until none remain (bounded). Used by reconciliation and tests. */
 export async function drainJobs(admin: Admin, tenantId: string | null = null, maxBatches = 50): Promise<WorkerResult> {
-  const total: WorkerResult = { claimed: 0, succeeded: 0, skipped: 0, deferred: 0, failed: 0 };
+  const total: WorkerResult = { claimed: 0, succeeded: 0, skipped: 0, deferred: 0, failed: 0, deadLettered: 0 };
   for (let i = 0; i < maxBatches; i++) {
     const r = await runPendingJobs(admin, 20, tenantId);
     total.claimed += r.claimed;
@@ -91,6 +106,7 @@ export async function drainJobs(admin: Admin, tenantId: string | null = null, ma
     total.skipped += r.skipped;
     total.deferred += r.deferred;
     total.failed += r.failed;
+    total.deadLettered += r.deadLettered;
     if (r.claimed === 0) break;
   }
   return total;
