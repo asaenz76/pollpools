@@ -2862,6 +2862,30 @@ export type Database = {
           },
         ]
       }
+      platform_config: {
+        Row: {
+          config: Json
+          default_creator_share_bps: number
+          default_platform_share_bps: number
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          default_creator_share_bps?: number
+          default_platform_share_bps?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          default_creator_share_bps?: number
+          default_platform_share_bps?: number
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       prediction_revisions: {
         Row: {
           created_at: string

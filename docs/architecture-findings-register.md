@@ -38,7 +38,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-08 | `as never` casts on money-path RPC boundaries | 🟠 | §15 | Resolve | ✅ Resolved |
 | F-09 | Enum drift: hand-maintained vs generated, no check | 🟠 | §15 | Resolve | ✅ Resolved |
 | F-10 | Duplicated logic (bracket gen, label maps) | 🟡 | §7, §15 | Resolve | ✅ Resolved |
-| F-11 | Hard-coded 80/20 revenue split fallback | 🟠 | §4, §14 | Resolve | Open |
+| F-11 | Hard-coded 80/20 revenue split fallback | 🟠 | §4, §14 | Resolve | ✅ Resolved |
 | F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | ✅ Resolved |
 | F-13 | YouTube welded into event creation | 🟠 | §7, §10 | Resolve | Open |
 | F-14 | Draft scoring position-only, winner-only baseline | 🟠 | §3, §4 | Resolve | Open |
@@ -69,7 +69,7 @@ findings, tracked here so the register is the single spine):
 | P-04 | NotificationProvider adapter interface | §11 | Open |
 | P-05 | Plugin manifest (name/version/capabilities/health/…) | §12 | Open |
 | P-06 | Versioned Engine API | §13 | Open |
-| P-07 | Configuration Engine | §14 | Open |
+| P-07 | Configuration Engine | §14 | ✅ Foundation built |
 
 ---
 
@@ -213,8 +213,11 @@ Database impact · Risk · Estimated effort · Status.**
   when no rule/setting exists — a hard-coded split contradicting "no hard-coded split."
 - **Planned solution.** Source the platform default split from Configuration Engine defaults
   (tenant → platform), no literal fallback.
-- **Files affected.** `0027_billing_functions.sql` (+ migration), config seed.
-- **Database impact.** New default-config lookup; additive. **Risk.** Low. **Effort.** S. **Status.** Open.
+- **Files affected.** `0031_platform_config.sql`, `src/lib/config/platform.ts`, `src/lib/tenant/context.ts`.
+- **Database impact.** New `platform_config` singleton; `resolve_revenue_split` reads it. Additive.
+- **Risk.** Low. **Effort.** S. **Status.** ✅ **Resolved** (migration `0031`, §14): both `resolve_revenue_split`
+  (SQL) and the app-layer default settings now source the split from `platform_config`; no `8000/2000`
+  literal remains in resolution. Integration-tested (default 80/20, and 70/30 after changing the config row).
 
 ### F-12 — Recurring support renewals may not earn 🟠
 - **Description.** `creator_earnings` are recorded only on `order_created`; subscription renewal
@@ -394,3 +397,8 @@ document; this register is its actionable, status-tracked counterpart.
 - **2026-08-05** — **F-10 Resolved, F-07 Accepted** (§15/§16 finish): competition-type label map
   deduped to a shared constant (seed's demo-only bracket mirror accepted); closed enums accepted as a
   deliberate design with an additive-`ALTER TYPE` extension path. **§15/§16 complete.** 179 tests pass.
+- **2026-08-05** — **F-11 Resolved; Configuration Engine foundation (P-07)** (§14, migration `0031`):
+  added the `platform_config` platform-default tier and pointed revenue-split resolution at it (SQL +
+  app), removing the last hard-coded split. Documented the tiered config model + a full enum-governance
+  classification (every enum = stable engine state; tenant-extensible behavior = config/records) in
+  `docs/configuration.md`. 181 tests pass.

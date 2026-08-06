@@ -116,6 +116,7 @@ See [`docs/`](docs/): [architecture](docs/architecture.md),
 [social experience](docs/social.md),
 [creator product](docs/creator-product.md),
 [monetization & billing](docs/monetization.md),
+[configuration engine](docs/configuration.md),
 [role/permission matrix](docs/role-permission-matrix.md),
 [security checklist](docs/security-checklist.md),
 [decisions & assumptions](docs/decisions.md).
