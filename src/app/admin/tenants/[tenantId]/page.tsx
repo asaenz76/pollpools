@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTenantOps } from "@/lib/ops/admin";
 import { HealthBadge } from "@/components/admin/health-badge";
+import { OpsActions } from "@/components/admin/ops-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,17 @@ export default async function AdminTenantOpsPage({ params }: { params: Promise<{
         </div>
         <HealthBadge state={ops.health.state} />
       </header>
+
+      <section>
+        <h2 className="mb-2 text-sm font-medium text-muted-foreground">Actions</h2>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <OpsActions tenantId={ops.id} />
+          <p className="mt-3 text-xs text-muted-foreground">
+            Drain processes due jobs now; the monitor requeues actionable failures; requeue revives current
+            dead-letter / stuck jobs. All are idempotent and preserve originals.
+          </p>
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-2 text-sm font-medium text-muted-foreground">Job queue</h2>
