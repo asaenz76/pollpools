@@ -11,6 +11,15 @@ const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 /** True when a local Supabase is configured; integration tests skip otherwise. */
 export const integrationEnvReady = Boolean(url && anonKey && serviceKey);
 
+/**
+ * Skipping integration suites is only tolerated when explicitly opted in
+ * (local dev). Defaults false so CI cannot silently skip: the env-guard suite
+ * (_env-guard.test.ts) FAILS when the DB env is missing and this is not set, so a
+ * run that skipped every integration suite is never reported green (§11).
+ */
+export const allowIntegrationSkip =
+  process.env.ALLOW_INTEGRATION_TEST_SKIP === "true" || process.env.ALLOW_INTEGRATION_TEST_SKIP === "1";
+
 const noPersist = { auth: { persistSession: false, autoRefreshToken: false } };
 
 export function adminClient(): SupabaseClient<Database> {

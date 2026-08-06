@@ -11,10 +11,13 @@ Everything here is **super-admin / service-role only** and **tenant-scoped**.
 ## What reconciliation is (and is not)
 
 - It **reads authoritative grades** and re-derives projections using the *same*
-  deterministic rebuild functions the pipeline itself uses
-  (`rebuild_user_statistics`, `rebuild_leaderboard_scope`,
-  `rebuild_draft_competition`, `rebuild_user_achievements`). No logic is
-  duplicated — reconciliation is a thin orchestrator over the rebuilds.
+  internal recompute/refresh functions the async pipeline itself uses.
+  `app.rebuild_scope` dispatches to `app.recompute_user_statistics`,
+  `app.evaluate_achievements`, `app.refresh_creator_leaderboard`,
+  `app.refresh_competition_leaderboard`, `app.recompute_competitor_competition_stats`,
+  `app.refresh_draft_leaderboard`, and `app.refresh_global_leaderboard` — the very
+  functions the `project_*` handlers and the public `rebuild_*` admin wrappers also
+  call. No projection logic is duplicated; reconciliation is a thin orchestrator.
 - It **never** mutates grades, settlements, predictions, or any audit/history.
   It only rewrites derived caches, and only to their canonical value.
 
@@ -83,10 +86,11 @@ precise about what is *actionable now* versus historical noise:
 | `current_and_actionable` | pending/running/failed for the active version | yes |
 | `dead_letter_current` | dead, but its settlement is still active | yes |
 | `stuck` | running past `stuck_minutes` | yes |
-| `stale_version` / `superseded` | belongs to a superseded settlement | no |
+| `stale_version` | belongs to a superseded settlement version | no |
 | `dead_letter_historical` | dead for a superseded settlement | no |
 | `missing_prerequisite` | blocked pending a prereq | no (prereq drives it) |
-| `malformed_payload` | unparseable | no (needs a human) |
+| `resolved` | already succeeded / canceled (terminal) | no |
+| `unknown` | job row not found | no |
 
 `public.requeue_actionable_jobs(tenant, stuck_minutes)` enqueues a fresh
 `repair:{job_id}` job for each actionable one. The **original job row is

@@ -10,9 +10,12 @@ during implementation. Update it as decisions change.
    be linked for deploy (`supabase link`); the MVP runs fully local.
 3. **Non-default local ports (5433x)** so this project coexists with other local
    Supabase stacks on the same machine. See `supabase/config.toml`.
-4. **Subscriptions are provider-mocked in V1** (`SUBSCRIPTION_PROVIDER=mock`).
-   The subscription/webhook path proves signature verification and idempotent,
-   replay-safe handling without wiring a live processor. Swappable via env.
+4. **Billing is provider-mocked in V1** (`BILLING_PROVIDER=mock`). The single
+   unified billing/webhook pipeline proves HMAC signature verification and
+   idempotent, replay-safe handling without wiring a live processor. Swappable via
+   env (`lemon_squeezy` | `mock` | `manual`). The legacy `SUBSCRIPTION_PROVIDER` /
+   `SUBSCRIPTION_WEBHOOK_SECRET` env were removed when the payment stacks were
+   unified (F-01).
 5. **Dev tenant routing uses `/t/{slug}`** (subdomains need wildcard DNS not
    available on localhost). Host/subdomain + custom-domain resolution still runs
    in the proxy for production.

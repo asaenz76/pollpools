@@ -1,5 +1,36 @@
 # Operations runbook — settlement projections
 
+## Production scheduling (Phase 7.6)
+
+Async settlement only works if something drains the queue. Two internal endpoints
+do this, authenticated by `CRON_SECRET` (server-only; Vercel Cron sends it as
+`Authorization: Bearer <CRON_SECRET>`; `x-cron-secret` also accepted). Both refuse
+to run (503) until `CRON_SECRET` is set — they are never open.
+
+| Endpoint | Does | Suggested cadence |
+| --- | --- | --- |
+| `POST/GET /api/internal/jobs/drain` | Claims + runs due jobs under a durable worker lease (no overlapping global drains; a crashed worker's lease auto-expires). Bounded batches; respects retry/dead-letter rules; structured JSON result. | every 1 min |
+| `POST/GET /api/internal/projections/monitor` | Per-tenant projection-health check; requeues actionable (stuck / current dead-letter / retrying) jobs. Never runs a full rebuild. | every 5 min |
+
+`vercel.json` wires both as Vercel Cron; the endpoints are portable to any
+scheduler (GitHub Actions, cron-job.org, pg_cron) that can send the bearer secret.
+An optional `{ "tenantId": "…" }` POST body scopes a run to one tenant. Results
+report `claimed/succeeded/skipped/deferred/failed/deadLettered/durationMs`; a lease
+already held returns `{ acquired: false }` (not an error); failures return 500 and
+are logged, never swallowed.
+
+## CI: integration tests cannot silently skip
+
+Integration suites gate on a live Supabase (`integrationEnvReady`) and would
+otherwise `describe.skip` when the DB env is absent — green with zero coverage.
+`tests/integration/_env-guard.test.ts` prevents that: with no DB env it **fails**
+unless `ALLOW_INTEGRATION_TEST_SKIP=true` (a local-dev opt-out, default false). CI
+leaves it unset, so a run that skipped every integration suite is never green.
+
+---
+
+# Operations — reconciliation & repair
+
 How to observe and repair the async projection pipeline in production. All
 operations are tenant-scoped and super-admin / service-role only. Background on
 the mechanics: [jobs.md](jobs.md); on repair internals: [reconciliation.md](reconciliation.md).

@@ -33,29 +33,29 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-03 | Market grading is single-winner-only | 🟠 | §3 | Resolve | ✅ Resolved |
 | F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | ✅ Resolved |
 | F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | ✅ Resolved |
-| F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | Open |
+| F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | ⏭ Deferred (Phase 8) |
 | F-07 | Closed enums force migration to extend | 🟠 | §3, §15 | Accept (mitigate) | 🟦 Accepted |
 | F-08 | `as never` casts on money-path RPC boundaries | 🟠 | §15 | Resolve | ✅ Resolved |
 | F-09 | Enum drift: hand-maintained vs generated, no check | 🟠 | §15 | Resolve | ✅ Resolved |
 | F-10 | Duplicated logic (bracket gen, label maps) | 🟡 | §7, §15 | Resolve | ✅ Resolved |
 | F-11 | Hard-coded 80/20 revenue split fallback | 🟠 | §4, §14 | Resolve | ✅ Resolved |
 | F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | ✅ Resolved |
-| F-13 | YouTube welded into event creation | 🟠 | §7, §10 | Resolve | Open |
+| F-13 | YouTube welded into event creation | 🟠 | §7, §10, §7.6 | Resolve | ✅ Resolved |
 | F-14 | Draft scoring position-only, winner-only baseline | 🟠 | §3, §4 | Split | ◻ Config✅ / baseline→F-15 |
 | F-15 | Regrade drops recorded finishing positions | 🟠 | §5 | Resolve | ✅ Resolved |
-| F-16 | Public `using(true)` tables isolated by app filter | 🟡 | §16 | Accept (document) | Open |
-| F-17 | Read-time aggregation & event-page N+1 | 🟠 | §17 | Resolve | Open |
-| F-18 | Feed has no keyset pagination | 🟡 | §17 | Resolve | Open |
+| F-16 | Public `using(true)` tables isolated by app filter | 🟡 | §16 | Accept (document) | 🟦 Accepted |
+| F-17 | Read-time aggregation & event-page N+1 | 🟠 | §17 | Resolve | ⏭ Deferred (Phase 8) |
+| F-18 | Feed has no keyset pagination | 🟡 | §17 | Resolve | ⏭ Deferred (Phase 8) |
 | F-19 | Synchronous per-follower notification fan-out | 🟠 | §5, §11 | Resolve | ✅ Resolved |
-| F-20 | `market_sentiment` lacks `(market_id, status)` index | 🟡 | §17 | Resolve | Open |
-| F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | Open |
-| F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | Open |
-| F-23 | No admin / ops surface | 🟠 | — | Defer (Phase 8) | Open |
+| F-20 | Missing `predictions(market_id, status)` index | 🟡 | §17, §7.6 | Resolve | ✅ Resolved |
+| F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | ⏭ Deferred (Phase 8) |
+| F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | ⏭ Deferred (Phase 8) |
+| F-23 | No admin / ops surface | 🟠 | §7.6 | Defer (Phase 8) | ⏭ Deferred (drain/monitor endpoints landed; admin UI Phase 8) |
 | F-24 | `mock/pay` GET route lacks explicit env assertion | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-25 | `requestPayoutAction` persists unvalidated amount | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-26 | `approve_creator_payout` reject-cleanup ordering | 🟡 | §2 | Resolve | ✅ Resolved |
-| F-27 | Grading math in SQL not covered by the tested TS | 🟠 | §4, §19 | Resolve | Open |
-| F-28 | Shared global singletons (webhook ledger, job queue) | 🟡 | §17 | Accept (revisit) | Open |
+| F-27 | Grading math in SQL not covered by the tested TS | 🟠 | §4, §19, §7.6 | Resolve | ✅ Resolved |
+| F-28 | Shared global singletons (webhook ledger, job queue) | 🟡 | §17 | Accept (revisit) | 🟦 Accepted |
 | F-29 | Untyped `as unknown[]` JSONB casts | 🟡 | §15 | Resolve | ✅ Resolved |
 
 Companion — **net-new platform capabilities** the phase mandates (not review
@@ -68,8 +68,8 @@ findings, tracked here so the register is the single spine):
 | P-03 | MediaProvider adapter interface | §10 | Open |
 | P-04 | NotificationProvider adapter interface | §11 | Open |
 | P-05 | Plugin manifest (name/version/capabilities/health/…) | §12 | Open |
-| P-06 | Versioned Engine API | §13 | ✅ Foundation built |
-| P-07 | Configuration Engine | §14 | ✅ Foundation built |
+| P-06 | Versioned Engine API | §13 | ◻ Versioning Foundation Complete (pin + never-`latest` enforced; **no runtime behavior branches on version yet**) |
+| P-07 | Configuration Engine | §14 | ◻ Foundation built (tiered resolution real but **narrow** — split / engine version / flags / media config) |
 
 ---
 
@@ -258,15 +258,23 @@ Database impact · Risk · Estimated effort · Status.**
   **and** `subscription_payment_success` / `subscription_payment_recovered`, idempotent per invoice
   order id. Integration-tested (renewal → second 400¢ earning; replay is a no-op).
 
-### F-13 — YouTube welded into event creation 🟠
+### F-13 — YouTube welded into event creation 🟠 → ✅ Resolved
 - **Description.** A mandatory, non-clearable Live YouTube URL is enforced inside the generic
   `create_event_with_market`; a non-video vertical hits `YOUTUBE_REQUIRED`.
-- **Planned solution.** Replace the hard requirement with a **MediaProvider** (P-03, §10) whose
-  requirement is tenant configuration; YouTube becomes one provider, not a schema law.
-- **Files affected.** `0023_event_youtube_required.sql` (superseding migration), event creation,
-  media components, config.
-- **Database impact.** Relax the enforced constraint to config-driven; additive migration that keeps
-  existing data valid. **Risk.** Medium (touches a live constraint). **Effort.** M. **Status.** Open.
+- **Planned solution.** Replace the hard requirement with a generic, optional event-media model;
+  YouTube becomes one provider among many, not a schema law.
+- **Status.** ✅ **Resolved** (Phase 7.6, migration `0045`). `create_event_with_market` no longer takes
+  a `p_youtube_url` and never raises `YOUTUBE_REQUIRED`; the `protect_event_youtube_url` trigger is
+  dropped. An event is valid with **no** media. Media is an optional generic `event_media_links` row
+  (open `provider` registry — not an enum — + stable `event_media_type`), with DB-level tenant/owner RLS.
+  A minimal MediaProvider boundary (`src/lib/domain/media`) validates URLs (http(s) only), detects the
+  provider, embeds YouTube inline via the nocookie domain, and falls back to a safe external "Watch" link
+  for everything else (no fabricated embeds, never creator HTML). Tenant media config
+  (`event_media_enabled/optional`, `allowed_media_providers`, `preferred_media_provider`,
+  `inline_embeds_enabled`, `external_media_links_enabled`) governs behavior; YouTube is not a default.
+  Legacy `events.youtube_url` values were migrated to primary media rows (§8) and the column is retained
+  temporarily (removal plan in `docs/event-media.md`). Tested (`media.test.ts`, `event-media.test.ts`).
+  The full P-03 MediaProvider *plugin* interface (rich embed adapters per platform) remains a Phase-8 item.
 
 ### F-14 — Draft scoring position-only 🟠
 - **Description.** Draft scoring is position→points only with a winner-only auto-baseline and a
@@ -413,9 +421,33 @@ Database impact · Risk · Estimated effort · Status.**
 - **Planned solution.** Zod-parse these config blobs at the boundary (folds into the Configuration
   Engine typing, §14) and drop the casts.
 - **Files affected.** `src/lib/tenant/context.ts`, config types. **Database impact.** none. **Risk.** Low.
-- **Effort.** S. **Status.** Open.
+- **Effort.** S. **Status.** ✅ **Resolved** (§15). `as unknown[]` casts are gone repo-wide (0 occurrences);
+  the tenant JSONB link blobs are Zod-parsed at the boundary (`navLinksSchema`). (Corrected 2026-08-06:
+  this detail entry previously read "Open" while the matrix/changelog recorded Resolved — register drift
+  fixed.)
 
 ---
+
+## Phase 8 deferral ledger
+
+Findings explicitly **Deferred to Phase 8** (not open, not forgotten). Each is
+additive genericity/perf/provider work — none is a correctness or security hazard.
+
+| ID | Reason deferred | Target | Trigger for action | Residual risk |
+| --- | --- | --- | --- | --- |
+| F-06 | Result ingestion needs a real ResultProvider (P-02) with a live consumer; no adapter exists yet | Phase 8 | First automated result source (API/webhook feed) | Settlement stays manual-only; no automated-result risk today |
+| F-17 | Read-time sentiment/like aggregation + event-page N+1; needs maintained counters/batching | Phase 8 | Hot events / higher traffic | Event-page latency grows with market/like volume |
+| F-18 | Feed lacks keyset pagination (LIMIT-only) | Phase 8 | Feeds long enough to need "load more" | Older feed activity unreachable (not a data loss) |
+| F-21 | Default question is English literal; `default_locale` stored but unused; needs config vocabulary | Phase 8 | Non-English tenant onboarding | i18n claim false at the creation layer |
+| F-22 | Notifications are in-app only; needs a NotificationProvider (P-04) transport abstraction | Phase 8 | First email/push delivery requirement | No out-of-app delivery |
+| F-23 | Operator **UI** (queues, moderation, billing/recon dashboards). The scheduled drain/monitor **endpoints** landed in Phase 7.6 | Phase 8 | Operator-facing admin needs | Ops possible via endpoints + service layer, but no UI |
+
+Companion capabilities still unbuilt (Phase 8): **P-01** EventProvider, **P-02**
+ResultProvider, **P-03** MediaProvider (a minimal media boundary exists;
+per-platform embed adapters remain), **P-04** NotificationProvider, **P-05**
+plugin manifest. **P-06** engine versioning is *foundation-complete* (pin +
+never-`latest` enforced) but has **no runtime behavior branching yet** — adding a
+divergent behavior gated on the version is the trigger to call it fully realized.
 
 ## Source
 
@@ -544,11 +576,15 @@ document; this register is its actionable, status-tracked counterpart.
   (tenant, scope, mode, key)` orchestrates all scopes (user / event / settlement / competition / creator /
   season / tenant) in three modes: `dry_run` (rebuild inside a savepoint, diff, then RAISE-rollback so it
   reports drift with **zero** side effects while plpgsql locals survive), `repair` (keep the writes), and
-  `requeue`. It reuses the deterministic rebuilds (`rebuild_user_statistics` / `rebuild_leaderboard_scope`
-  / `rebuild_draft_competition` / `rebuild_user_achievements`) — no logic duplicated — and **never**
-  touches grades, settlements, predictions, or audit/history. `app.classify_projection_job` separates
-  `current_and_actionable` / `dead_letter_current` / `stuck` (requeued) from `stale_version` /
-  `superseded` / `dead_letter_historical` / `missing_prerequisite` / `malformed_payload` (left alone);
+  `requeue`. Its `app.rebuild_scope` dispatches to the shared internal recompute/refresh functions
+  (`app.recompute_user_statistics` / `evaluate_achievements` / `refresh_creator_leaderboard` /
+  `refresh_competition_leaderboard` / `recompute_competitor_competition_stats` / `refresh_draft_leaderboard`
+  / `refresh_global_leaderboard`) — the same ones the `project_*` handlers and the public `rebuild_*`
+  wrappers use, so no logic is duplicated — and **never** touches grades, settlements, predictions, or
+  audit/history. `app.classify_projection_job` separates `current_and_actionable` / `dead_letter_current`
+  / `stuck` (requeued) from `stale_version` / `dead_letter_historical` / `missing_prerequisite` /
+  `resolved` / `unknown` (left alone) [corrected 2026-08-06: earlier text listed non-existent `superseded`
+  / `malformed_payload` labels];
   `public.requeue_actionable_jobs` enqueues fresh `repair:{id}` jobs, **preserving the originals**,
   idempotent, skipping superseded history. Visibility: `projection_job_stats` (counts, oldest-pending,
   by-type, recent failures) + `projection_health` (healthy / delayed / degraded / blocked / critical,
@@ -566,3 +602,26 @@ document; this register is its actionable, status-tracked counterpart.
   history. **257 tests pass (stable ×2)**, lint + build clean. **F-02 and F-05 Resolved** — settlement is
   fully async (grade-authoritative, cache-eventual) with reconciliation as the proven safety net, and all
   four leaderboard scopes plus every derived projection are reconcilable to their canonical rebuild.
+- **2026-08-06** — **Architecture Review v2** (`docs/architecture-review-v2.md`): read-only finding-by-
+  finding audit after Phase 7.5. Confirmed F-01/F-02 (Critical) and the resolved moderates against code;
+  surfaced the operability blocker (no prod job trigger), versioning-not-branched, narrow config, the
+  YouTube weld, and register/code drift. Overall 7.4 → 8.1.
+- **2026-08-06** — **Phase 7.6 (Pre-validation Remediation)** — resolved the Review-v2 blockers:
+  - **§1–§2** (migration `0044`): production job-drain + projection-monitor endpoints
+    (`/api/internal/jobs/drain`, `/api/internal/projections/monitor`) authenticated by `CRON_SECRET`,
+    with a durable TTL worker lease (no overlapping global drains; crashed-worker reclaim), structured
+    logging, and accurate dead-letter accounting (`fail_job` returns its outcome). `vercel.json` crons;
+    endpoints portable to any scheduler. **Closes the Review-v2 operability blocker.**
+  - **§3–§9** (migration `0045`): **F-13 Resolved** — mandatory YouTube removed; generic optional
+    `event_media_links` (open provider registry + `event_media_type` enum), MediaProvider boundary,
+    tenant media config, legacy YouTube data migrated. Events are valid with no media.
+  - **§12** (migration `0046`): hardening — **F-20 Resolved** (`predictions(market_id, status)` index),
+    orphaned `recompute_after_settlement` dropped (F-02 residual), reconcile cross-tenant guard for ALL
+    scopes, hard non-prod guard on mock billing routes (F-24), draft read tenant filter (F-16
+    defense-in-depth), enum-governance reverse check (F-09), and regression tests for payout-reject
+    ordering (F-26) + revenue-split overrides (F-11). **F-27 Resolved** via §11.
+  - **§10–§11**: register/docs reconciled with code (F-29 detail, §5H rebuild-dispatch + classify labels,
+    stale `SUBSCRIPTION_PROVIDER` doc, versioning relabel); CI DB enforcement (`_env-guard.test.ts` +
+    `ALLOW_INTEGRATION_TEST_SKIP`) so integration suites can never be silently skipped green.
+  - Remaining moderates explicitly **Deferred (Phase 8)**: F-06, F-17, F-18, F-21, F-22, F-23 (see the
+    deferral ledger). **355 tests pass (stable ×2)**, lint + build clean.

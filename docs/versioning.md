@@ -1,9 +1,18 @@
 # Versioned Engine API
 
+> **Status: Versioning Foundation Complete (not yet runtime-branched).** The pin
+> and the never-`latest` guarantee below are enforced in the schema and resolver,
+> and there is a single supported version (`1.0`). **No engine behavior branches on
+> the version yet** — every tenant runs the same code path today. Introducing the
+> first behavior gated on the tenant's version (keeping the old path for pinned
+> tenants) is what turns this foundation into a live capability. Until then, a
+> behavior change would still affect existing tenants, so treat version-affecting
+> changes with the same care as before.
+
 Prediction Engine powers many independent tenants from one codebase. A change to
 how the engine *behaves* — settlement, scoring, market grading, statistics,
 leaderboards, draft rules — must never silently change results for a tenant that
-was running fine. Engine versioning is the contract that guarantees this.
+was running fine. Engine versioning is the contract that *will* guarantee this.
 
 ## The contract
 
