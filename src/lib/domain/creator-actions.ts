@@ -5,9 +5,11 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createBracket } from "@/lib/domain/competitions";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
 import { parseYouTubeId } from "@/lib/domain/youtube";
+import { getMarketGrader, UnsupportedMarketTypeError } from "@/lib/engine/graders";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { RpcArgs } from "@/types/rpc";
+import type { MarketType } from "@/types/enums";
 
 type Ok<T = object> = { ok: true } & T;
 type Err = { ok: false; error: string };
@@ -178,6 +180,26 @@ export async function submitResultAction(input: { eventId: string; winningCompet
   if (!parsed.success) return { ok: false, error: "Invalid input." };
   const supabase = await createServerSupabase();
   const key = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+
+  // Resolve the winning option(s) per market via its grader (strategy per market
+  // type). Settlement grades against these; if none resolve, it falls back to the
+  // single-winner competitor mapping.
+  const { data: markets } = await supabase
+    .from("markets")
+    .select("id, type, market_options(id, competitor_id)")
+    .eq("event_id", parsed.data.eventId);
+  const winningOptionIds: string[] = [];
+  try {
+    for (const m of markets ?? []) {
+      const grader = getMarketGrader(m.type as MarketType);
+      const opts = (m.market_options ?? []).map((o) => ({ id: o.id, competitorId: o.competitor_id }));
+      winningOptionIds.push(...grader.resolveWinningOptionIds(opts, { winningCompetitorId: parsed.data.winningCompetitorId }));
+    }
+  } catch (e) {
+    if (e instanceof UnsupportedMarketTypeError) return { ok: false, error: "This market type can't be settled yet." };
+    throw e;
+  }
+
   const { error } = await supabase.rpc("settle_event", {
     p_event_id: parsed.data.eventId,
     p_resolution: "settled",
@@ -185,6 +207,7 @@ export async function submitResultAction(input: { eventId: string; winningCompet
     p_notes: parsed.data.notes || null,
     p_result_url: parsed.data.resultUrl || null,
     p_idempotency_key: `result-${parsed.data.eventId}-${key}`,
+    p_winning_option_ids: winningOptionIds.length > 0 ? winningOptionIds : null,
   } as RpcArgs<"settle_event">);
   if (error) {
     if (error.message.includes("NOT_AUTHORIZED")) return { ok: false, error: "Results for your events are reviewed by an admin. Ask a Super Admin to enable direct settlement." };

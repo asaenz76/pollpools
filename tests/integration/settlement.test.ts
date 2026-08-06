@@ -46,6 +46,7 @@ d("settlement engine", () => {
   let ownerId: string;
   let owner: SupabaseClient<Database>;
   let u1: string, u2: string, u3: string;
+  let g1: string, g2: string; // dedicated to the grader-path test (isolated stats)
   let keyN = 0;
   const key = () => `set-${s}-${keyN++}-abcdefgh`;
 
@@ -81,6 +82,22 @@ d("settlement engine", () => {
     return { eventId: ev!.id, marketId: mkt!.id, compA, compB, optA, optB };
   }
 
+  // Settle grading against an explicit winning-OPTION set (as a MarketGrader
+  // resolves), the strategy-based path used by submitResultAction.
+  function settleByOptionsRpc(
+    a: { eventId: string; winner: string; optionIds: string[]; key: string },
+  ): RpcResult<{ graded: number }> {
+    return admin.rpc("settle_event", {
+      p_event_id: a.eventId,
+      p_resolution: "settled",
+      p_winning_competitor_id: a.winner,
+      p_notes: null,
+      p_result_url: null,
+      p_idempotency_key: a.key,
+      p_winning_option_ids: a.optionIds,
+    } as never) as unknown as RpcResult<{ graded: number }>;
+  }
+
   const predict = (marketId: string, userId: string, optionId: string) =>
     admin.from("predictions").insert({ tenant_id: tenantId, market_id: marketId, user_id: userId, option_id: optionId, original_option_id: optionId, idempotency_key: `p-${uniqueSuffix()}`, status: "active" });
 
@@ -106,7 +123,9 @@ d("settlement engine", () => {
     u1 = await createUser(`u1-${s}@example.test`, pw);
     u2 = await createUser(`u2-${s}@example.test`, pw);
     u3 = await createUser(`u3-${s}@example.test`, pw);
-    for (const uid of [ownerId, u1, u2, u3]) {
+    g1 = await createUser(`g1-${s}@example.test`, pw);
+    g2 = await createUser(`g2-${s}@example.test`, pw);
+    for (const uid of [ownerId, u1, u2, u3, g1, g2]) {
       await admin.from("tenant_memberships").insert({ tenant_id: tenantId, user_id: uid, role: "member" });
     }
     owner = await signInAs(`owner-${s}@example.test`, pw);
@@ -114,7 +133,24 @@ d("settlement engine", () => {
 
   afterAll(async () => {
     await admin.from("tenants").delete().eq("id", tenantId);
-    for (const id of [ownerId, u1, u2, u3]) if (id) await deleteUser(id);
+    for (const id of [ownerId, u1, u2, u3, g1, g2]) if (id) await deleteUser(id);
+  });
+
+  it("grades against a grader-resolved winning-option set (strategy path)", async () => {
+    const e = await makeEvent();
+    await predict(e.marketId, g1, e.optA);
+    await predict(e.marketId, g2, e.optB);
+
+    const { data, error } = await settleByOptionsRpc({ eventId: e.eventId, winner: e.compA, optionIds: [e.optA], key: key() });
+    expect(error).toBeNull();
+    expect(data!.graded).toBe(2);
+
+    const { data: opts } = await admin.from("market_options").select("id, status").eq("market_id", e.marketId);
+    expect(opts!.find((o) => o.id === e.optA)!.status).toBe("winner");
+    expect(opts!.find((o) => o.id === e.optB)!.status).toBe("loser");
+    const { data: grades } = await admin.from("settlement_grades").select("user_id, outcome, points").eq("event_id", e.eventId);
+    expect(grades!.find((g) => g.user_id === g1)!.outcome).toBe("correct");
+    expect(grades!.find((g) => g.user_id === g2)!.outcome).toBe("incorrect");
   });
 
   it("grades predictions, marks the winning option, and updates statistics", async () => {

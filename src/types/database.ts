@@ -4099,6 +4099,7 @@ export type Database = {
           p_reason: string
           p_resolution: string
           p_winning_competitor_id: string
+          p_winning_option_ids?: string[]
         }
         Returns: Json
       }
@@ -4123,6 +4124,7 @@ export type Database = {
           p_resolution: string
           p_result_url: string
           p_winning_competitor_id: string
+          p_winning_option_ids?: string[]
         }
         Returns: Json
       }

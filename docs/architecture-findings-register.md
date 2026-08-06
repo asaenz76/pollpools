@@ -30,7 +30,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | --- | --- | --- | --- | --- | --- |
 | F-01 | Dual payment stacks (FNV-1a draft vs HMAC billing) | 🔴 | §2 | Resolve | ✅ Resolved |
 | F-02 | Synchronous full-tenant recompute at settlement | 🔴 | §5, §6 | Resolve | Open |
-| F-03 | Market grading is single-winner-only | 🟠 | §3 | Resolve | Open |
+| F-03 | Market grading is single-winner-only | 🟠 | §3 | Resolve | ✅ Resolved |
 | F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | Open |
 | F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | Open |
 | F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | Open |
@@ -125,14 +125,18 @@ Database impact · Risk · Estimated effort · Status.**
 ### F-03 — Market grading is single-winner-only 🟠
 - **Description.** `market_type` declares `YES_NO` and `MULTIPLE_CHOICE`, but only
   `SINGLE_CHOICE_WINNER` is created or settled; other shapes grade every prediction to `void`.
-- **Planned solution.** A `MarketGrader` strategy per market type (Winner, Winner+Draw, Yes/No,
-  Multiple Choice, future). Settlement asks the grader for the winning outcome + per-prediction
-  result; no `switch (market_type)` scattered through the code.
-- **Files affected.** new `src/lib/domain/graders/*`, settlement RPC(s), market-creation functions, tests.
-- **Database impact.** Grading function generalized to resolve outcomes via a market-type-driven
-  rule; additive.
-- **Risk.** Medium — must preserve identical results for existing single-winner markets.
-- **Effort.** M–L. **Status.** Open.
+- **Planned solution.** A `MarketGrader` strategy per market type. Settlement asks the grader for the
+  winning outcome; the reversible SQL grading marks predictions against the resolved option set.
+- **Files affected.** `src/lib/engine/graders/*`, `0033_market_grader.sql`, `creator-actions.ts`, tests.
+- **Database impact.** `apply_grading` grades against a winning-option SET; `settle_event`/`regrade_event`
+  gain an optional `p_winning_option_ids`. Additive (competitor fallback preserved).
+- **Risk.** Medium — preserved identical results for existing single-winner markets.
+- **Status.** ✅ **Resolved** (§3, migration `0033`; decision confirmed: TS resolver → SQL grades,
+  single-winner only). `src/lib/engine/graders` is the interface + registry + the `SINGLE_CHOICE_WINNER`
+  grader (the only type with a creation path); an unregistered type **raises**, never silently voids.
+  `submitResultAction` resolves winning options via the grader and passes them to settlement; the SQL
+  no longer hard-assumes a single competitor-winner. Unit + integration tested. Additional market types
+  (YES_NO, MULTIPLE_CHOICE) register with their creation flows when there is a consumer.
 
 ### F-04 — Hard-coded SQL scoring 🟠
 - **Description.** Grading sets `v_points := 1` for correct in SQL, ignoring the typed
@@ -407,3 +411,7 @@ document; this register is its actionable, status-tracked counterpart.
   version; `src/lib/engine/version.ts` is the supported-version source of truth, resolved onto the
   tenant context. Behavior branches are added by the slices that change engine behavior. Contract in
   `docs/versioning.md`. 187 tests pass.
+- **2026-08-05** — **F-03 Resolved** (§3, migration `0033`): strategy-based market grading. User-confirmed
+  approach: a TS `MarketGrader` (interface + registry + `SINGLE_CHOICE_WINNER`) resolves winning options;
+  the reversible SQL grades against them (competitor fallback preserved for bracket auto-advance).
+  Unregistered market types raise, never silently void. 192 tests pass. §4 (config scoring) next.
