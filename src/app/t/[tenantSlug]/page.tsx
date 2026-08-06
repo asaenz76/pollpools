@@ -7,6 +7,7 @@ import { listCompetitions } from "@/features/competitions/get-competition";
 import { getLockState, formatCountdown } from "@/lib/domain/locking";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { COMPETITION_TYPE_LABEL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +24,6 @@ export default async function TenantHome() {
 
   const [events, competitions] = await Promise.all([listEvents(tenant.id), listCompetitions(tenant.id)]);
   const now = new Date();
-
-  const COMPETITION_TYPE_LABEL: Record<string, string> = {
-    STANDALONE_EVENT: "Event",
-    SEASON: "Season",
-    TOURNAMENT: "Tournament",
-    BRACKET: "Bracket",
-  };
 
   return (
     <div className="flex flex-col gap-6">

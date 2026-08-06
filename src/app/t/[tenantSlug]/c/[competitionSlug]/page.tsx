@@ -7,15 +7,9 @@ import { getDraftSection } from "@/features/draft/get-draft";
 import { BracketView } from "@/components/domain/bracket-view";
 import { DraftSection } from "@/components/domain/draft-section";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { COMPETITION_TYPE_LABEL as TYPE_LABEL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
-
-const TYPE_LABEL: Record<string, string> = {
-  STANDALONE_EVENT: "Event",
-  SEASON: "Season",
-  TOURNAMENT: "Tournament",
-  BRACKET: "Bracket",
-};
 
 export default async function CompetitionPage({
   params,

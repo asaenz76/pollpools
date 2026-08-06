@@ -15,6 +15,18 @@ export const DEFAULT_SCORING = {
 /** Development tenant route prefix, e.g. /t/marbles. */
 export const TENANT_ROUTE_PREFIX = "/t";
 
+/**
+ * Human labels for the generic competition formats. Shared so the mapping lives
+ * in one place; a tenant-configurable vocabulary (Configuration Engine) can layer
+ * over this later without touching call sites.
+ */
+export const COMPETITION_TYPE_LABEL: Record<string, string> = {
+  STANDALONE_EVENT: "Event",
+  SEASON: "Season",
+  TOURNAMENT: "Tournament",
+  BRACKET: "Bracket",
+};
+
 /** Threshold below which sentiment may be shown as "Picked by X of Y". */
 export const SMALL_PARTICIPATION_THRESHOLD = 10;
 

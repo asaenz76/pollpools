@@ -34,10 +34,10 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | Open |
 | F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | Open |
 | F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | Open |
-| F-07 | Closed enums force migration to extend | 🟠 | §3, §15 | Accept (mitigate) | Open |
+| F-07 | Closed enums force migration to extend | 🟠 | §3, §15 | Accept (mitigate) | 🟦 Accepted |
 | F-08 | `as never` casts on money-path RPC boundaries | 🟠 | §15 | Resolve | ✅ Resolved |
 | F-09 | Enum drift: hand-maintained vs generated, no check | 🟠 | §15 | Resolve | ✅ Resolved |
-| F-10 | Duplicated logic (bracket gen, label maps) | 🟡 | §7, §15 | Resolve | Open |
+| F-10 | Duplicated logic (bracket gen, label maps) | 🟡 | §7, §15 | Resolve | ✅ Resolved |
 | F-11 | Hard-coded 80/20 revenue split fallback | 🟠 | §4, §14 | Resolve | Open |
 | F-12 | Recurring support renewals may not earn | 🟠 | §2 | Resolve | ✅ Resolved |
 | F-13 | YouTube welded into event creation | 🟠 | §7, §10 | Resolve | Open |
@@ -169,7 +169,10 @@ Database impact · Risk · Estimated effort · Status.**
   a market type a code+config change with a single additive `ALTER TYPE`, not a schema redesign.
   Document the "add a market type / competition format" path in the plugin guide.
 - **Files affected.** docs. **Database impact.** none now. **Risk.** Low.
-- **Effort.** S (documentation + registry). **Status.** Open → will land **Accepted**.
+- **Effort.** S (documentation + registry). **Status.** 🟦 **Accepted**: Postgres enums are a
+  deliberate integrity choice; extending one is a single additive `ALTER TYPE ... ADD VALUE` migration
+  (precedent: `0019` already does this). The MarketGrader registry (§3) localizes the code change to a
+  strategy map; the "add a market type / competition format" how-to is documented in the plugin guide (§18).
 
 ### F-08 — `as never` casts on money-path RPC boundaries 🟠
 - **Description.** Five `as never` casts bypass generated RPC types on checkout, event creation,
@@ -197,8 +200,13 @@ Database impact · Risk · Estimated effort · Status.**
   label maps are copy-pasted across pages.
 - **Planned solution.** Import the shared bracket module in the seed; a single label-map helper
   (folds into the Configuration Engine vocabulary, F-21).
-- **Files affected.** `scripts/seed-demo.mjs`, tenant/competition pages, a shared helper.
-- **Database impact.** none. **Risk.** Low. **Effort.** S. **Status.** Open.
+- **Files affected.** `src/lib/constants.ts`, tenant home + competition pages.
+- **Database impact.** none. **Risk.** Low. **Effort.** S.
+- **Status.** ✅ **Resolved**: the competition-type label map is now a single shared
+  `COMPETITION_TYPE_LABEL` constant imported by both pages. The seed script's bracket generator keeps
+  its documented `// mirrors src/lib/domain/bracket.ts (demo only)` copy **by design** — it is a
+  standalone `node` ESM script with no TS build in its run path, so forcing TS/ESM interop there would
+  add risk for no product benefit. That single, labelled demo-only mirror is an accepted trade-off.
 
 ### F-11 — Hard-coded 80/20 revenue split fallback 🟠
 - **Description.** `resolve_revenue_split` falls back to `coalesce(…, 8000)` / `coalesce(…, 2000)`
@@ -383,3 +391,6 @@ document; this register is its actionable, status-tracked counterpart.
 - **2026-08-05** — **F-08, F-09, F-29 Resolved** (§15): removed the `as never` money-path casts
   (`RpcArgs<K>` helper), typed the tenant JSONB link blobs, and added an enum-parity test enforcing
   single source of truth. 179 tests pass. F-07 (accept-with-mitigation) and F-10 (dedup) remain for §15's finish.
+- **2026-08-05** — **F-10 Resolved, F-07 Accepted** (§15/§16 finish): competition-type label map
+  deduped to a shared constant (seed's demo-only bracket mirror accepted); closed enums accepted as a
+  deliberate design with an additive-`ALTER TYPE` extension path. **§15/§16 complete.** 179 tests pass.
