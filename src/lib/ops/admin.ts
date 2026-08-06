@@ -87,3 +87,39 @@ export async function getTenantOps(tenantId: string): Promise<TenantOps | null> 
   const [health, stats] = await Promise.all([getProjectionHealth(admin, tenantId), getProjectionJobStats(admin, tenantId)]);
   return { id: tenant.id, slug: tenant.slug, displayName: tenant.display_name, health, stats };
 }
+
+export type ReconciliationRun = {
+  id: string;
+  scopeType: string;
+  scopeId: string | null;
+  mode: string;
+  status: string;
+  differencesFound: number;
+  repairsApplied: number;
+  jobsRequeued: number;
+  error: string | null;
+  createdAt: string;
+};
+
+/** Recent reconciliation_runs for a tenant (audit history of operator runs). */
+export async function getReconciliationRuns(tenantId: string, limit = 15): Promise<ReconciliationRun[]> {
+  const admin = createAdminSupabase();
+  const { data } = await admin
+    .from("reconciliation_runs")
+    .select("id, scope_type, scope_id, mode, status, differences_found, repairs_applied, jobs_requeued, error, created_at")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  return (data ?? []).map((r) => ({
+    id: r.id,
+    scopeType: r.scope_type,
+    scopeId: r.scope_id,
+    mode: r.mode,
+    status: r.status,
+    differencesFound: r.differences_found,
+    repairsApplied: r.repairs_applied,
+    jobsRequeued: r.jobs_requeued,
+    error: r.error,
+    createdAt: r.created_at,
+  }));
+}
