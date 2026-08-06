@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { FeatureFlagService } from "@/lib/tenant/feature-flags";
 import { getPlatformConfig } from "@/lib/config/platform";
+import { resolveEngineVersion, type EngineVersion } from "@/lib/engine/version";
 import { TENANT_HEADER } from "@/lib/supabase/middleware";
 import type { SentimentVisibility, TenantStatus } from "@/types/enums";
 
@@ -25,6 +26,8 @@ export type Tenant = {
   logoUrl: string | null;
   iconUrl: string | null;
   theme: Record<string, unknown>;
+  /** The engine version this tenant is pinned to (never "latest"). */
+  engineVersion: EngineVersion;
 };
 
 export type TenantSettings = {
@@ -93,7 +96,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     supabase
       .from("tenants")
       .select(
-        "id, slug, display_name, tagline, description, status, default_locale, default_timezone, logo_url, icon_url, theme",
+        "id, slug, display_name, tagline, description, status, default_locale, default_timezone, logo_url, icon_url, theme, engine_version",
       )
       .eq("id", tenantId)
       .single(),
@@ -121,6 +124,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     logoUrl: tenantRow.logo_url,
     iconUrl: tenantRow.icon_url,
     theme: (tenantRow.theme as Record<string, unknown>) ?? {},
+    engineVersion: resolveEngineVersion(tenantRow.engine_version),
   };
 
   let settings: TenantSettings;

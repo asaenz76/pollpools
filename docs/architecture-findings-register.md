@@ -68,7 +68,7 @@ findings, tracked here so the register is the single spine):
 | P-03 | MediaProvider adapter interface | §10 | Open |
 | P-04 | NotificationProvider adapter interface | §11 | Open |
 | P-05 | Plugin manifest (name/version/capabilities/health/…) | §12 | Open |
-| P-06 | Versioned Engine API | §13 | Open |
+| P-06 | Versioned Engine API | §13 | ✅ Foundation built |
 | P-07 | Configuration Engine | §14 | ✅ Foundation built |
 
 ---
@@ -402,3 +402,8 @@ document; this register is its actionable, status-tracked counterpart.
   app), removing the last hard-coded split. Documented the tiered config model + a full enum-governance
   classification (every enum = stable engine state; tenant-extensible behavior = config/records) in
   `docs/configuration.md`. 181 tests pass.
+- **2026-08-05** — **Versioned Engine API foundation (P-06)** (§13, migration `0032`): every tenant is
+  pinned to an X.Y `engine_version` (DB check rejects `latest`), defaulting to the platform's current
+  version; `src/lib/engine/version.ts` is the supported-version source of truth, resolved onto the
+  tenant context. Behavior branches are added by the slices that change engine behavior. Contract in
+  `docs/versioning.md`. 187 tests pass.

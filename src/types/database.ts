@@ -2866,6 +2866,7 @@ export type Database = {
         Row: {
           config: Json
           default_creator_share_bps: number
+          default_engine_version: string
           default_platform_share_bps: number
           id: boolean
           updated_at: string
@@ -2873,6 +2874,7 @@ export type Database = {
         Insert: {
           config?: Json
           default_creator_share_bps?: number
+          default_engine_version?: string
           default_platform_share_bps?: number
           id?: boolean
           updated_at?: string
@@ -2880,6 +2882,7 @@ export type Database = {
         Update: {
           config?: Json
           default_creator_share_bps?: number
+          default_engine_version?: string
           default_platform_share_bps?: number
           id?: boolean
           updated_at?: string
@@ -3769,6 +3772,7 @@ export type Database = {
           default_timezone: string
           description: string | null
           display_name: string
+          engine_version: string
           icon_url: string | null
           id: string
           logo_url: string | null
@@ -3784,6 +3788,7 @@ export type Database = {
           default_timezone?: string
           description?: string | null
           display_name: string
+          engine_version?: string
           icon_url?: string | null
           id?: string
           logo_url?: string | null
@@ -3799,6 +3804,7 @@ export type Database = {
           default_timezone?: string
           description?: string | null
           display_name?: string
+          engine_version?: string
           icon_url?: string | null
           id?: string
           logo_url?: string | null
