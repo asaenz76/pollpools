@@ -88,6 +88,47 @@ export async function getTenantOps(tenantId: string): Promise<TenantOps | null> 
   return { id: tenant.id, slug: tenant.slug, displayName: tenant.display_name, health, stats };
 }
 
+export type ModerationComment = {
+  id: string;
+  body: string;
+  status: string;
+  authorName: string | null;
+  subjectType: string;
+  subjectId: string;
+  createdAt: string;
+};
+
+/**
+ * Recent comments for a tenant across all statuses (visible / hidden / deleted) so
+ * a super-admin can moderate. Hidden/deleted comments are already suppressed from
+ * public view by the comments RLS `select` policy — this reads them via the
+ * service-role client behind the super-admin gate.
+ */
+export async function getModerationComments(tenantId: string, limit = 50): Promise<ModerationComment[]> {
+  const admin = createAdminSupabase();
+  const { data } = await admin
+    .from("comments")
+    .select("id, body, status, user_id, subject_type, subject_id, created_at")
+    .eq("tenant_id", tenantId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  const comments = data ?? [];
+  const userIds = [...new Set(comments.map((c) => c.user_id))];
+  const { data: profiles } = userIds.length
+    ? await admin.from("profiles").select("user_id, display_name").in("user_id", userIds)
+    : { data: [] as { user_id: string; display_name: string | null }[] };
+  const nameBy = new Map((profiles ?? []).map((p) => [p.user_id, p.display_name]));
+  return comments.map((c) => ({
+    id: c.id,
+    body: c.body,
+    status: c.status,
+    authorName: nameBy.get(c.user_id) ?? null,
+    subjectType: c.subject_type,
+    subjectId: c.subject_id,
+    createdAt: c.created_at,
+  }));
+}
+
 export type ReconciliationRun = {
   id: string;
   scopeType: string;

@@ -32,7 +32,10 @@ export default async function AdminTenantOpsPage({ params }: { params: Promise<{
           <h1 className="text-2xl font-semibold tracking-tight">{ops.displayName}</h1>
           <p className="mt-1 text-sm text-muted-foreground">/{ops.slug} · projection operations</p>
         </div>
-        <HealthBadge state={ops.health.state} />
+        <div className="flex items-center gap-3">
+          <Link href={`/admin/tenants/${ops.id}/moderation`} className="text-sm text-primary hover:underline">Moderation →</Link>
+          <HealthBadge state={ops.health.state} />
+        </div>
       </header>
 
       <section>

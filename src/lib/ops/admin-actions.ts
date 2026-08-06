@@ -44,6 +44,25 @@ export async function requeueTenantAction(tenantId: string): Promise<ActionResul
   return { ok: true, message: `Requeued ${n} actionable job(s).` };
 }
 
+/**
+ * Moderate a comment (super-admin only). Uses SOFT status transitions
+ * (visible / hidden / deleted) — never a hard delete — so the row and its body are
+ * preserved for audit. Hidden/deleted comments are already excluded from public
+ * view by the comments RLS select policy; this exposes the moderation the RLS
+ * update policy already authorizes for super-admins.
+ */
+export async function setCommentStatusAction(
+  tenantId: string,
+  commentId: string,
+  status: "visible" | "hidden" | "deleted",
+): Promise<ActionResult> {
+  await assertSuperAdmin();
+  const { error } = await createAdminSupabase().from("comments").update({ status }).eq("id", commentId).eq("tenant_id", tenantId);
+  revalidatePath(`/admin/tenants/${tenantId}/moderation`);
+  if (error) return { ok: false, message: "Couldn't update the comment." };
+  return { ok: true, message: `Comment set to ${status}.` };
+}
+
 export async function reconcileTenantAction(
   tenantId: string,
   scope: ReconciliationScope,
