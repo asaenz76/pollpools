@@ -8,6 +8,7 @@ import { FeatureFlagService } from "@/lib/tenant/feature-flags";
 import { getPlatformConfig } from "@/lib/config/platform";
 import { resolveEngineVersion, type EngineVersion } from "@/lib/engine/version";
 import { resolveVocabulary, DEFAULT_VOCABULARY, type Vocabulary } from "@/lib/vocabulary";
+import { resolveTenantProviders, type TenantProviderManifest } from "@/lib/providers";
 import { TENANT_HEADER } from "@/lib/supabase/middleware";
 import type { SentimentVisibility, TenantStatus } from "@/types/enums";
 
@@ -58,6 +59,8 @@ export type TenantContext = {
   features: FeatureFlagService;
   /** Tenant-configured presentation vocabulary (defaults resolved). */
   vocabulary: Vocabulary;
+  /** Config-driven provider manifest (result / event / notification / media). */
+  providers: TenantProviderManifest;
 };
 
 // Non-monetary defaults for a tenant with no settings row. The revenue split is
@@ -129,7 +132,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     supabase
       .from("tenant_settings")
       .select(
-        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links, event_media_enabled, event_media_optional, external_media_links_enabled, inline_embeds_enabled, allowed_media_providers, preferred_media_provider, vocabulary",
+        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links, event_media_enabled, event_media_optional, external_media_links_enabled, inline_embeds_enabled, allowed_media_providers, preferred_media_provider, vocabulary, providers",
       )
       .eq("tenant_id", tenantId)
       .maybeSingle(),
@@ -183,6 +186,12 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
 
   const features = FeatureFlagService.fromRows(flagRows ?? []);
   const vocabulary = settingsRow ? resolveVocabulary(settingsRow.vocabulary) : DEFAULT_VOCABULARY;
+  // Provider selection is configuration; media preference already lives in its own
+  // column, folded into the manifest config here.
+  const providers = resolveTenantProviders({
+    ...(settingsRow?.providers && typeof settingsRow.providers === "object" ? settingsRow.providers : {}),
+    media: settings.media.preferredProvider,
+  });
 
-  return { tenant, settings, features, vocabulary };
+  return { tenant, settings, features, vocabulary, providers };
 });

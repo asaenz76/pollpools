@@ -4016,6 +4016,7 @@ export type Database = {
           minimum_ranked_predictions: number
           platform_share_bps: number
           preferred_media_provider: string | null
+          providers: Json
           sentiment_visibility: Database["public"]["Enums"]["sentiment_visibility"]
           settings: Json
           small_participation_display: boolean
@@ -4037,6 +4038,7 @@ export type Database = {
           minimum_ranked_predictions?: number
           platform_share_bps?: number
           preferred_media_provider?: string | null
+          providers?: Json
           sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
           settings?: Json
           small_participation_display?: boolean
@@ -4058,6 +4060,7 @@ export type Database = {
           minimum_ranked_predictions?: number
           platform_share_bps?: number
           preferred_media_provider?: string | null
+          providers?: Json
           sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
           settings?: Json
           small_participation_display?: boolean
