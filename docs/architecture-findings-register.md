@@ -33,7 +33,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-03 | Market grading is single-winner-only | 🟠 | §3 | Resolve | ✅ Resolved |
 | F-04 | Hard-coded SQL scoring (`v_points := 1`) | 🟠 | §4 | Resolve | ✅ Resolved |
 | F-05 | Only global leaderboard scope implemented | 🟠 | §6 | Resolve | ✅ Resolved |
-| F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | ⏭ Deferred (Phase 8) |
+| F-06 | Result source is manual-only (dormant enum values) | 🟠 | §9 | Resolve | ✅ Resolved (8B.3 ResultProvider) |
 | F-07 | Closed enums force migration to extend | 🟠 | §3, §15 | Accept (mitigate) | 🟦 Accepted |
 | F-08 | `as never` casts on money-path RPC boundaries | 🟠 | §15 | Resolve | ✅ Resolved |
 | F-09 | Enum drift: hand-maintained vs generated, no check | 🟠 | §15 | Resolve | ✅ Resolved |
@@ -48,8 +48,8 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-18 | Feed has no keyset pagination | 🟡 | §17 | Resolve | ⏭ Deferred (Phase 8) |
 | F-19 | Synchronous per-follower notification fan-out | 🟠 | §5, §11 | Resolve | ✅ Resolved |
 | F-20 | Missing `predictions(market_id, status)` index | 🟡 | §17, §7.6 | Resolve | ✅ Resolved |
-| F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | ⏭ Deferred (Phase 8) |
-| F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | ⏭ Deferred (Phase 8) |
+| F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | ◻ Partial (8B.1 vocabulary ✅; default-question l10n open) |
+| F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | ✅ Resolved (8B.5 NotificationProvider) |
 | F-23 | No admin / ops surface | 🟠 | §7.6, §8A | Resolve | ✅ Resolved |
 | F-24 | `mock/pay` GET route lacks explicit env assertion | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-25 | `requestPayoutAction` persists unvalidated amount | 🟡 | §2 | Resolve | ✅ Resolved |
@@ -180,14 +180,17 @@ Database impact · Risk · Estimated effort · Status.**
   the §5H reconciliation test matrix passed (register rule 19). 257 tests pass. Documented in
   `docs/settlement.md` / `jobs.md` / `reconciliation.md`.
 
-### F-06 — Result source is manual-only 🟠
+### F-06 — Result source is manual-only 🟠 → ✅ Resolved
 - **Description.** `external_provider` / `webhook` / `future_adapter` enum values exist but
   nothing produces or consumes them — no automated settlement path.
-- **Planned solution.** `ResultProvider` adapter (manual/api/webhook/csv) feeding normalized
-  results into settlement (P-02, §9).
-- **Files affected.** new `src/lib/providers/result/*`, settlement entry, tests.
-- **Database impact.** Result-source recorded per settlement (column exists); additive.
-- **Risk.** Low. **Effort.** M. **Status.** Open.
+- **Status.** ✅ **Resolved** (Phase 8B.3). `src/lib/providers/result.ts` defines a
+  `ResultProvider` (validate → normalize → submit → verify) turning a source-specific
+  submission into the engine's canonical result. `manual` is implemented and now owns the
+  exact validation the result action performed inline (so it is on the live path);
+  api/webhook/csv are recognized ids that throw `RESULT_PROVIDER_NOT_CONFIGURED` until an
+  adapter is registered. The settlement engine is untouched — `settle_event` stays the
+  authority. A live automated consumer (an actual API/webhook feed) is future work, but the
+  extension point the finding asked for now exists. 7 unit tests.
 
 ### F-07 — Closed enums force migration to extend 🟠
 - **Description.** `market_type`, `competition_type`, `billing_product_type` are Postgres enums;
@@ -352,20 +355,29 @@ Database impact · Risk · Estimated effort · Status.**
 - **Planned solution.** Add the covering index.
 - **Files affected.** new migration. **Database impact.** additive index. **Risk.** none. **Effort.** S. **Status.** Open.
 
-### F-21 — English-only default question 🟡
+### F-21 — English-only default question 🟡 → ◻ Partial
 - **Description.** The default market question ("Which competitor will win?") is hard-coded and
   English-only despite a `default_locale` column.
-- **Planned solution.** Move default questions + vocabulary into the Configuration Engine
-  (localized, tenant-overridable). Removes the last vertical/English literal from shared creation code.
-- **Files affected.** creation functions, config tables/seed, UI copy.
-- **Database impact.** Default text read from config; additive. **Risk.** Low. **Effort.** S–M. **Status.** Open.
+- **Status.** ◻ **Partially resolved** (Phase 8B.1). Tenant **concept vocabulary** is now fully
+  configurable — a tenant re-labels competitor/event/market/season/draft/… via
+  `tenant_settings.vocabulary`, resolved by `src/lib/vocabulary` and applied at the presentation
+  layer (no schema change, no UI fork). This removes the vertical/English concept labels the
+  finding was chiefly about. **Still open:** the SQL fallback string used by
+  `create_event_with_market` when a creator supplies no question is still the English literal
+  `'Which competitor will win?'` (creator-overridable; only a fallback), and `default_locale` is
+  not yet consulted for it. Recommended as a small follow-up: derive the fallback from the
+  tenant vocabulary/locale at creation. 13 vocabulary unit tests.
 
-### F-22 — No notification delivery-channel abstraction 🟠
+### F-22 — No notification delivery-channel abstraction 🟠 → ✅ Resolved
 - **Description.** Notifications are in-app rows only; there is no transport abstraction.
-- **Planned solution.** `NotificationProvider` (email/push/sms/webhook/future) with a manifest
-  (P-04, §11); producers stay transport-independent.
-- **Files affected.** new `src/lib/providers/notification/*`, notification producers, config, tests.
-- **Database impact.** Delivery metadata optional; additive. **Risk.** Low. **Effort.** M. **Status.** Open.
+- **Status.** ✅ **Resolved** (Phase 8B.5). `src/lib/providers/notification.ts` defines a
+  `NotificationProvider` (one per channel: in_app/email/sms/push/discord/slack/webhook/whatsapp)
+  with `isConfigured` + `deliver`, and `toDeliverable` mapping a notifications row to a
+  channel-agnostic shape. Production stays transport-independent — the engine still writes the
+  in-app row and respects `user_notification_preferences`. Only the interface + the existing
+  `in_app` implementation are built (its persisted row IS the delivery); other channels throw
+  `NOTIFICATION_PROVIDER_NOT_CONFIGURED` until implemented. The provider manifest
+  (`resolveTenantProviders`, 8B.6) resolves a tenant's channels from config. 6 unit tests.
 
 ### F-23 — No admin / ops surface 🟠 → ✅ Resolved
 - **Description.** Settlement queue, moderation, billing ops, reconciliation UIs don't exist.
@@ -476,11 +488,11 @@ additive genericity/perf/provider work — none is a correctness or security haz
 
 | ID | Reason deferred | Target | Trigger for action | Residual risk |
 | --- | --- | --- | --- | --- |
-| F-06 | Result ingestion needs a real ResultProvider (P-02) with a live consumer; no adapter exists yet | Phase 8 | First automated result source (API/webhook feed) | Settlement stays manual-only; no automated-result risk today |
-| F-17 | Read-time sentiment/like aggregation + event-page N+1; needs maintained counters/batching | Phase 8 | Hot events / higher traffic | Event-page latency grows with market/like volume |
-| F-18 | Feed lacks keyset pagination (LIMIT-only) | Phase 8 | Feeds long enough to need "load more" | Older feed activity unreachable (not a data loss) |
-| F-21 | Default question is English literal; `default_locale` stored but unused; needs config vocabulary | Phase 8 | Non-English tenant onboarding | i18n claim false at the creation layer |
-| F-22 | Notifications are in-app only; needs a NotificationProvider (P-04) transport abstraction | Phase 8 | First email/push delivery requirement | No out-of-app delivery |
+| ~~F-06~~ | ✅ Resolved (8B.3): ResultProvider architecture built; `manual` on the live path, api/webhook/csv are recognized-but-unconfigured ids | — | — | — |
+| F-17 | Read-time sentiment/like aggregation + event-page N+1; needs maintained counters/batching | Phase 8-C (perf) | Hot events / higher traffic | Event-page latency grows with market/like volume |
+| F-18 | Feed lacks keyset pagination (LIMIT-only) | Phase 8-C (perf) | Feeds long enough to need "load more" | Older feed activity unreachable (not a data loss) |
+| F-21 | ◻ Partial (8B.1): concept vocabulary now configurable; only the English default-question SQL fallback + `default_locale` usage remain | Phase 8-C | Non-English tenant onboarding | Fallback question English only (creator-overridable) |
+| ~~F-22~~ | ✅ Resolved (8B.5): NotificationProvider transport abstraction; in_app implemented, other channels pluggable | — | — | — |
 | F-23 | Operator **UI** (queues, moderation, billing/recon dashboards). The scheduled drain/monitor **endpoints** landed in Phase 7.6 | Phase 8 | Operator-facing admin needs | Ops possible via endpoints + service layer, but no UI |
 
 Companion capabilities still unbuilt (Phase 8): **P-01** EventProvider, **P-02**
@@ -681,3 +693,33 @@ document; this register is its actionable, status-tracked counterpart.
   revalidated (**Draw settles, no pseudo-competitor**). **Tenant Creation Validation verdict is now YES**
   — all three tenants pass with zero remaining architecture leaks. **388 tests pass (stable ×2)**,
   typecheck + lint + build clean.
+- **2026-08-07** — **Phase 8-A (Admin & Operations UI) — F-23 Resolved** — a super-admin `/admin`
+  surface over the existing ops backend: overview + per-tenant job queue with drain/monitor/requeue,
+  reconciliation UI, comment moderation (soft), and billing/payout ops. No new operational or financial
+  logic; every action orchestrates an existing tested RPC/service behind the super-admin gate.
+- **2026-08-07** — **Phase 8-B (Tenant config, white label, providers, engine breadth)** — makes the
+  engine shapeable by configuration, not forks. Migrations `0048`–`0051`.
+  - **8B.1 (F-21 partial):** tenant **vocabulary** — `tenant_settings.vocabulary` re-labels generic
+    concepts (competitor/event/market/season/draft/…) at the presentation layer; `src/lib/vocabulary`.
+  - **8B.2:** **MediaProvider** interface + open registry (`src/lib/providers/media`); `domain/media`
+    delegates to it. Media stays optional; only YouTube embeds, others degrade to external links.
+  - **8B.3 (F-06 Resolved):** **ResultProvider** (validate/normalize/submit/verify); `manual` on the
+    live path, api/webhook/csv recognized-but-unconfigured. Settlement engine untouched.
+  - **8B.4:** **EventProvider** — event creation separated from source; `manual` owns event/media
+    normalization; `create_event_with_market` untouched.
+  - **8B.5 (F-22 Resolved):** **NotificationProvider** transport abstraction; `in_app` implemented,
+    email/sms/push/discord/slack/webhook/whatsapp pluggable.
+  - **8B.6:** config-driven **provider manifest** (`resolveTenantProviders`) wired into `TenantContext`
+    (`tenant_settings.providers`) — no `switch(product)`, no `if tenant ==`.
+  - **8B.7:** runtime **engine version branching** — version `1.1` + `EngineBehavior` registry; first
+    versioned behavior is prediction-lock display (`closing soon`). Settlement not TS-branched.
+  - **8B.8:** first-class **custom domains** (extended `tenant_domains`: type, DNS-TXT verification,
+    ssl_status, one-primary index) with real DNS verify, redirect-to-primary middleware, a super-admin
+    domain admin UI, auth return-URLs bound to the tenant primary domain, and **white label**
+    (configurable platform brand + `show_powered_by` footer toggle; brand never hardcoded). SSL/DNS
+    provisioning is a documented hosting-platform (Vercel) boundary.
+  - **8B.9:** a brand-new **"Awards Night"** vertical stood up with config + data only (no code/migration)
+    exercises vocabulary, provider manifest, engine `1.1`, the predict→settle→leaderboard lifecycle,
+    reconciliation, custom domains, and isolation. Existing tenant suites unchanged.
+  - **Remaining Phase-8 items:** F-17 / F-18 (perf) and the F-21 default-question l10n residual →
+    Phase 8-C.

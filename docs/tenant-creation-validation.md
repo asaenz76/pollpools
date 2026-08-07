@@ -192,9 +192,34 @@ draining works.
 > Phase **7.76** then resolved LEAK-1 with a focused settlement-contract change,
 > which is what lifts the verdict to **YES**.
 
-Residual (non-blocking, deferred): entity-type vocabulary and the default English
-market question remain non-config-shapeable (**F-21**, Phase 8). The engine stays
-vocabulary-neutral, so this blocks no tenant.
+Residual at 7.76 (since addressed): entity-type vocabulary was not config-shapeable
+(**F-21**). Phase 8-B closes the vocabulary part (below).
 
-See also: [architecture-review-v2.md](architecture-review-v2.md),
+## Phase 8-B revalidation — Awards Night (config + data only)
+
+`tests/integration/tenant-8b-config.test.ts` stands up a **brand-new vertical**,
+"Awards Night" (an awards-show predictions community — nominees, categories, an
+awards season), with **no code change and no migration**, exercising the Phase 8-B
+capabilities end to end:
+
+- **Vocabulary** — `tenant_settings.vocabulary` re-labels competitor→Nominee,
+  event→Category, prediction→Vote, season→Awards Season; untouched concepts fall
+  back to English. Presentation only; tables stay generic.
+- **Provider manifest** — `providers` config resolves result/event = `manual`,
+  notification = `in_app` with no `switch(product)`.
+- **Engine version** — the tenant is pinned to `1.1`; the versioned lock-display
+  behavior ("closing soon") resolves for it while `1.0` tenants are unaffected.
+- **Lifecycle** — a real publish → vote → settle → drain → global-leaderboard run
+  works unchanged; reconciliation reports 0 differences.
+- **Custom domains** — add → verify → make-primary → non-primary redirect and host
+  resolution work; the one-primary DB index is enforced.
+- **White label** — `show_powered_by = false`; **isolation** from other tenants holds.
+
+Existing tenant suites (MatchCircle, ColorCircuit, Cook-off, tenant-creation) pass
+unchanged. **Verdict: YES** — a materially different product is created by
+configuration alone. The only remaining vertical literal is the **English default
+market question** SQL fallback (creator-overridable; F-21 residual → Phase 8-C).
+
+See also: [providers.md](providers.md), [domains.md](domains.md),
+[versioning.md](versioning.md), [architecture-review-v2.md](architecture-review-v2.md),
 [event-media.md](event-media.md), [architecture-findings-register.md](architecture-findings-register.md).
