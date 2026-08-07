@@ -8,6 +8,8 @@ import { slugify } from "@/lib/domain/slug";
 import { getMarketGrader, UnsupportedMarketTypeError } from "@/lib/engine/graders";
 import { resolveResultProvider } from "@/lib/providers/result";
 import { resolveEventProvider, type ManualEventInput } from "@/lib/providers/event";
+import { getTenantContext } from "@/lib/tenant/context";
+import { defaultMarketQuestion } from "@/lib/vocabulary";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { RpcArgs } from "@/types/rpc";
@@ -136,6 +138,14 @@ export async function createEventAction(input: ManualEventInput): Promise<Ok<{ s
   const ev = validated.value;
 
   const supabase = await createServerSupabase();
+  // F-21: when the creator gives no question, derive a localized default from the
+  // tenant's vocabulary + default_locale (never a hard-coded English literal).
+  let marketQuestion = ev.marketQuestion;
+  if (!marketQuestion) {
+    const ctx = await getTenantContext();
+    if (ctx) marketQuestion = defaultMarketQuestion(ctx.vocabulary, ctx.tenant.defaultLocale);
+  }
+
   const { data, error } = await supabase.rpc("create_event_with_market", {
     p_creator_id: ev.creatorId,
     p_competition_id: ev.competitionId,
@@ -145,7 +155,7 @@ export async function createEventAction(input: ManualEventInput): Promise<Ok<{ s
     p_starts_at: ev.startsAt,
     p_locks_at: ev.locksAt,
     p_competitor_ids: ev.competitorIds,
-    p_market_question: ev.marketQuestion,
+    p_market_question: marketQuestion,
     p_publish: ev.publish,
     p_media: ev.media.map((m) => ({
       url: m.url,

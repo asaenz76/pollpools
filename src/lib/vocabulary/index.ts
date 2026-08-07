@@ -104,6 +104,23 @@ export function term(
   return applyCase(opts?.plural ? entry.plural : entry.singular, opts?.case);
 }
 
+/**
+ * Default market question, derived from the tenant's vocabulary + locale (F-21) —
+ * no hard-coded English "Which competitor will win?" literal. Translation-ready:
+ * templates are keyed by locale and take the tenant's competitor term; unknown
+ * locales fall back to English (we don't fabricate locales we haven't authored).
+ * Add a locale by adding a template here — no other code changes.
+ */
+const QUESTION_TEMPLATES: Record<string, (competitor: string) => string> = {
+  en: (competitor) => `Which ${competitor.toLowerCase()} will win?`,
+};
+
+export function defaultMarketQuestion(vocab: Vocabulary, locale: string | null | undefined): string {
+  const lang = (locale ?? "en").split("-")[0]!.toLowerCase();
+  const template = QUESTION_TEMPLATES[lang] ?? QUESTION_TEMPLATES.en!;
+  return template(term(vocab, "competitor"));
+}
+
 /** Map a generic competition_type to the tenant's label for that shape. */
 export function competitionTypeLabel(vocab: Vocabulary, type: string): string {
   switch (type) {

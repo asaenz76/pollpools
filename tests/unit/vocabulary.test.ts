@@ -5,6 +5,7 @@ import {
   resolveVocabulary,
   term,
   competitionTypeLabel,
+  defaultMarketQuestion,
 } from "@/lib/vocabulary";
 
 describe("resolveVocabulary", () => {
@@ -80,6 +81,29 @@ describe("term", () => {
     expect(term(resolveVocabulary({ event: { singular: "GRAND PRIX" } }), "event", { case: "sentence" })).toBe(
       "Grand prix",
     );
+  });
+});
+
+describe("defaultMarketQuestion (F-21)", () => {
+  it("derives the default question from the tenant's competitor vocabulary", () => {
+    expect(defaultMarketQuestion(resolveVocabulary({ competitor: { singular: "Chef" } }), "en")).toBe("Which chef will win?");
+    expect(defaultMarketQuestion(resolveVocabulary({ competitor: { singular: "Marble" } }), "en")).toBe("Which marble will win?");
+  });
+
+  it("produces different defaults for different vocabularies (no code change)", () => {
+    const a = defaultMarketQuestion(resolveVocabulary({ competitor: { singular: "Racer" } }), "en");
+    const b = defaultMarketQuestion(resolveVocabulary({ competitor: { singular: "Nominee" } }), "en");
+    expect(a).not.toBe(b);
+  });
+
+  it("uses the English default vocabulary when unconfigured", () => {
+    expect(defaultMarketQuestion(DEFAULT_VOCABULARY, "en")).toBe("Which competitor will win?");
+  });
+
+  it("falls back to English for an unauthored locale (no fabricated translations)", () => {
+    // Locale not in the template catalog → English template, still vocabulary-driven.
+    expect(defaultMarketQuestion(resolveVocabulary({ competitor: { singular: "Chef" } }), "es")).toBe("Which chef will win?");
+    expect(defaultMarketQuestion(DEFAULT_VOCABULARY, null)).toBe("Which competitor will win?");
   });
 });
 
