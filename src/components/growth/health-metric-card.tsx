@@ -9,7 +9,7 @@ const CALC_EXPLANATION: Record<string, string> = {
   event_consistency: "The share of recent weeks in which you published at least one event.",
   prediction_participation: "The share of Weekly Active Users who made at least one prediction. Draft activity is not counted here.",
   draft_participation: "The share of active users who took part in your Competitor Draft. Ordinary predictions are not counted here.",
-  community_support: "The share of active users who voluntarily support you. Platform Support is not counted.",
+  community_support: "The share of active users who voluntarily support you.",
 };
 
 function toneForFraction(f: number): string {

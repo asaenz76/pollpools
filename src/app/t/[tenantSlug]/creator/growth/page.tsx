@@ -13,10 +13,13 @@ import { SuccessTimeline } from "@/components/growth/success-timeline";
 
 export const dynamic = "force-dynamic";
 
+// Only tenant-participating revenue sources are ever labelled here. Platform
+// Support (platform_premium) is platform-private and must never surface to a
+// tenant — it is excluded at the data layer (no share row) and intentionally has
+// no label.
 const SOURCE_LABEL: Record<string, string> = {
   creator_support: "Creator Support",
   paid_competitor_draft: "Competitor Draft",
-  platform_premium: "Platform Support",
 };
 const STATUS_TONE: Record<string, string> = {
   positive: "text-positive",
@@ -101,19 +104,17 @@ export default async function GrowthDashboardPage() {
           )}
           <div className="mt-3 flex flex-col gap-2">
             <p className="text-xs font-medium text-muted-foreground">Your revenue shares</p>
-            {(plan?.shares ?? []).map((sh) => (
-              <div key={sh.productType} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
-                <span>{SOURCE_LABEL[sh.productType] ?? sh.productType}</span>
-                <span className="tabular-nums">
-                  <span className="font-medium text-positive">You receive {sharePercent(sh.creatorShareBps)}</span>
-                  <span className="text-muted-foreground"> · Platform fee {sharePercent(sh.platformShareBps)}</span>
-                </span>
-              </div>
-            ))}
-            <div className="flex items-center justify-between rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
-              <span>Platform Support</span>
-              <span>100% supports the platform</span>
-            </div>
+            {(plan?.shares ?? [])
+              .filter((sh) => sh.productType !== "platform_premium" && SOURCE_LABEL[sh.productType])
+              .map((sh) => (
+                <div key={sh.productType} className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm">
+                  <span>{SOURCE_LABEL[sh.productType]}</span>
+                  <span className="tabular-nums">
+                    <span className="font-medium text-positive">You receive {sharePercent(sh.creatorShareBps)}</span>
+                    <span className="text-muted-foreground"> · Platform fee {sharePercent(sh.platformShareBps)}</span>
+                  </span>
+                </div>
+              ))}
           </div>
         </div>
 

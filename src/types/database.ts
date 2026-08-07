@@ -5016,6 +5016,16 @@ export type Database = {
       expire_draft_reservations: { Args: never; Returns: number }
       fail_job: { Args: { p_error: string; p_id: string }; Returns: string }
       lock_due_markets: { Args: never; Returns: number }
+      log_growth_change: {
+        Args: {
+          p_action: string
+          p_entity_id: string
+          p_entity_type: string
+          p_metadata?: Json
+          p_summary: string
+        }
+        Returns: undefined
+      }
       mark_creator_payout_paid: {
         Args: { p_external_reference: string; p_payout_id: string }
         Returns: undefined
