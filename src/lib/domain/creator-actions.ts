@@ -7,6 +7,7 @@ import { isValidTenantSlug } from "@/lib/tenant/resolver";
 import { validateMediaUrl, detectProvider } from "@/lib/domain/media";
 import { EVENT_MEDIA_TYPE } from "@/types/enums";
 import { getMarketGrader, UnsupportedMarketTypeError } from "@/lib/engine/graders";
+import { resolveResultProvider } from "@/lib/providers/result";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { RpcArgs } from "@/types/rpc";
@@ -212,35 +213,30 @@ export async function submitResultAction(input: {
   notes?: string;
   resultUrl?: string;
 }): Promise<Ok | Err> {
-  const parsed = z
-    .object({
-      eventId: uuid,
-      winningOptionIds: z.array(uuid).min(1).optional(),
-      winningCompetitorId: uuid.optional(),
-      notes: z.string().max(1000).optional(),
-      resultUrl: z.string().url().optional().or(z.literal("")),
-    })
-    .refine((r) => (r.winningOptionIds && r.winningOptionIds.length > 0) || r.winningCompetitorId, {
-      message: "Select the result.",
-    })
-    .safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const eventCheck = uuid.safeParse(input.eventId);
+  if (!eventCheck.success) return { ok: false, error: "Invalid input." };
+  // Manual result provider owns the raw-submission validation + normalization; the
+  // engine authority (settle_event RPC) below is untouched.
+  const validated = resolveResultProvider("manual").validate(input);
+  if (!validated.ok) return { ok: false, error: validated.error };
+  const result = validated.value;
+  const eventId = eventCheck.data;
   const supabase = await createServerSupabase();
   const key = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
 
-  const optionIds: string[] = [...(parsed.data.winningOptionIds ?? [])];
+  const optionIds: string[] = [...result.winningOptionIds];
   const { data: markets } = await supabase
     .from("markets")
     .select("id, type, market_options(id, competitor_id)")
-    .eq("event_id", parsed.data.eventId);
+    .eq("event_id", eventId);
   try {
     for (const m of markets ?? []) {
       // Ensure the market type is supported (raises loudly for an unregistered grader).
       const grader = getMarketGrader(m.type as MarketType);
       // Back-compat: a competitor-only submission resolves its option(s) via the grader.
-      if (optionIds.length === 0 && parsed.data.winningCompetitorId) {
+      if (optionIds.length === 0 && result.winningCompetitorId) {
         const opts = (m.market_options ?? []).map((o) => ({ id: o.id, competitorId: o.competitor_id }));
-        optionIds.push(...grader.resolveWinningOptionIds(opts, { winningCompetitorId: parsed.data.winningCompetitorId }));
+        optionIds.push(...grader.resolveWinningOptionIds(opts, { winningCompetitorId: result.winningCompetitorId }));
       }
     }
   } catch (e) {
@@ -249,12 +245,12 @@ export async function submitResultAction(input: {
   }
 
   const { error } = await supabase.rpc("settle_event", {
-    p_event_id: parsed.data.eventId,
+    p_event_id: eventId,
     p_resolution: "settled",
-    p_winning_competitor_id: parsed.data.winningCompetitorId ?? null,
-    p_notes: parsed.data.notes || null,
-    p_result_url: parsed.data.resultUrl || null,
-    p_idempotency_key: `result-${parsed.data.eventId}-${key}`,
+    p_winning_competitor_id: result.winningCompetitorId,
+    p_notes: result.notes,
+    p_result_url: result.resultUrl,
+    p_idempotency_key: `result-${eventId}-${key}`,
     p_winning_option_ids: optionIds.length > 0 ? optionIds : null,
   } as RpcArgs<"settle_event">);
   if (error) {
