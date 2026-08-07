@@ -3,6 +3,7 @@
   "crons": [
     { "path": "/api/internal/jobs/drain", "schedule": "* * * * *" },
     { "path": "/api/internal/projections/monitor", "schedule": "*/5 * * * *" },
-    { "path": "/api/internal/growth/evaluate", "schedule": "0 6 * * *" }
+    { "path": "/api/internal/growth/evaluate", "schedule": "0 6 * * *" },
+    { "path": "/api/internal/growth/health-snapshot", "schedule": "0 5 * * *" }
   ]
 }

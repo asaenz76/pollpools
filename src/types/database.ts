@@ -956,6 +956,137 @@ export type Database = {
           },
         ]
       }
+      community_health_bands: {
+        Row: {
+          display_order: number
+          id: string
+          key: string
+          label: string
+          max_score: number
+          min_score: number
+          tone: string
+        }
+        Insert: {
+          display_order?: number
+          id?: string
+          key: string
+          label: string
+          max_score: number
+          min_score: number
+          tone?: string
+        }
+        Update: {
+          display_order?: number
+          id?: string
+          key?: string
+          label?: string
+          max_score?: number
+          min_score?: number
+          tone?: string
+        }
+        Relationships: []
+      }
+      community_health_metrics: {
+        Row: {
+          created_at: string
+          description: string
+          display_name: string
+          display_order: number
+          enabled: boolean
+          id: string
+          key: string
+          max_score: number
+          measurement_window_days: number
+          requires_feature: string | null
+          scoring: Json
+          status: Database["public"]["Enums"]["community_health_metric_status"]
+          suggestion: string | null
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          display_name: string
+          display_order?: number
+          enabled?: boolean
+          id?: string
+          key: string
+          max_score: number
+          measurement_window_days?: number
+          requires_feature?: string | null
+          scoring?: Json
+          status?: Database["public"]["Enums"]["community_health_metric_status"]
+          suggestion?: string | null
+          updated_at?: string
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          display_name?: string
+          display_order?: number
+          enabled?: boolean
+          id?: string
+          key?: string
+          max_score?: number
+          measurement_window_days?: number
+          requires_feature?: string | null
+          scoring?: Json
+          status?: Database["public"]["Enums"]["community_health_metric_status"]
+          suggestion?: string | null
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      community_health_snapshots: {
+        Row: {
+          band_key: string | null
+          calculated_at: string
+          components: Json
+          formula_version: number
+          id: string
+          metadata: Json
+          overall_score: number | null
+          snapshot_date: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          band_key?: string | null
+          calculated_at?: string
+          components?: Json
+          formula_version: number
+          id?: string
+          metadata?: Json
+          overall_score?: number | null
+          snapshot_date: string
+          status: string
+          tenant_id: string
+        }
+        Update: {
+          band_key?: string | null
+          calculated_at?: string
+          components?: Json
+          formula_version?: number
+          id?: string
+          metadata?: Json
+          overall_score?: number | null
+          snapshot_date?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_health_snapshots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_draft_settings: {
         Row: {
           access_type: Database["public"]["Enums"]["draft_access_type"]
@@ -3077,6 +3208,11 @@ export type Database = {
           default_creator_share_bps: number
           default_engine_version: string
           default_platform_share_bps: number
+          health_baseline_min_age_days: number
+          health_baseline_min_events: number
+          health_benchmark_min_tenants: number
+          health_formula_version: number
+          health_window_days: number
           id: boolean
           platform_name: string
           updated_at: string
@@ -3091,6 +3227,11 @@ export type Database = {
           default_creator_share_bps?: number
           default_engine_version?: string
           default_platform_share_bps?: number
+          health_baseline_min_age_days?: number
+          health_baseline_min_events?: number
+          health_benchmark_min_tenants?: number
+          health_formula_version?: number
+          health_window_days?: number
           id?: boolean
           platform_name?: string
           updated_at?: string
@@ -3105,6 +3246,11 @@ export type Database = {
           default_creator_share_bps?: number
           default_engine_version?: string
           default_platform_share_bps?: number
+          health_baseline_min_age_days?: number
+          health_baseline_min_events?: number
+          health_benchmark_min_tenants?: number
+          health_formula_version?: number
+          health_window_days?: number
           id?: boolean
           platform_name?: string
           updated_at?: string
@@ -4723,6 +4869,11 @@ export type Database = {
         Args: { p_reason: string; p_tenant: string }
         Returns: undefined
       }
+      community_health_benchmarks: { Args: never; Returns: Json }
+      community_health_now: {
+        Args: { p_as_of?: string; p_tenant: string }
+        Returns: Json
+      }
       complete_job: { Args: { p_id: string }; Returns: undefined }
       create_billing_checkout: {
         Args: {
@@ -4984,6 +5135,11 @@ export type Database = {
         Returns: Json
       }
       skip_job: { Args: { p_id: string; p_reason: string }; Returns: undefined }
+      snapshot_all_community_health: { Args: never; Returns: number }
+      snapshot_community_health: {
+        Args: { p_tenant: string }
+        Returns: undefined
+      }
       submit_prediction: {
         Args: {
           p_idempotency_key: string
@@ -5040,6 +5196,7 @@ export type Database = {
         | "paid_competitor_draft"
       billing_provider_type: "lemon_squeezy" | "mock" | "manual" | "future"
       billing_refund_status: "pending" | "succeeded" | "failed"
+      community_health_metric_status: "active" | "retired"
       competition_status:
         | "draft"
         | "scheduled"
@@ -5436,6 +5593,7 @@ export const Constants = {
       ],
       billing_provider_type: ["lemon_squeezy", "mock", "manual", "future"],
       billing_refund_status: ["pending", "succeeded", "failed"],
+      community_health_metric_status: ["active", "retired"],
       competition_status: [
         "draft",
         "scheduled",
