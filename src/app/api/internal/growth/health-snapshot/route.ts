@@ -16,7 +16,9 @@ async function handle(request: NextRequest): Promise<NextResponse> {
   const admin = createAdminSupabase();
   const { data, error } = await admin.rpc("snapshot_all_community_health" as never);
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true, snapshotted: data as number });
+  // Refresh Success Timeline milestones after snapshots (idempotent).
+  const { data: milestones } = await admin.rpc("detect_all_success_milestones" as never);
+  return NextResponse.json({ ok: true, snapshotted: data as number, milestones: (milestones as number | null) ?? 0 });
 }
 
 export const GET = handle;

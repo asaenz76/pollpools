@@ -5426,6 +5426,13 @@ export type Database = {
         | "draft_competition_completed"
         | "prize_awarded"
         | "prediction_updated"
+        | "plan_upgraded"
+        | "plan_at_risk"
+        | "plan_recovered"
+        | "plan_downgraded"
+        | "health_band_improved"
+        | "health_needs_attention"
+        | "wau_milestone"
       option_status: "active" | "withdrawn" | "voided" | "winner" | "loser"
       plan_assignment_type:
         | "initial"
@@ -5840,6 +5847,13 @@ export const Constants = {
         "draft_competition_completed",
         "prize_awarded",
         "prediction_updated",
+        "plan_upgraded",
+        "plan_at_risk",
+        "plan_recovered",
+        "plan_downgraded",
+        "health_band_improved",
+        "health_needs_attention",
+        "wau_milestone",
       ],
       option_status: ["active", "withdrawn", "voided", "winner", "loser"],
       plan_assignment_type: [

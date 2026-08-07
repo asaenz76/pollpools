@@ -328,5 +328,12 @@ export const NOTIFICATION_TYPE = [
   "draft_rank_changed",
   "draft_competition_completed",
   "prize_awarded",
+  "plan_upgraded",
+  "plan_at_risk",
+  "plan_recovered",
+  "plan_downgraded",
+  "health_band_improved",
+  "health_needs_attention",
+  "wau_milestone",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPE)[number];
