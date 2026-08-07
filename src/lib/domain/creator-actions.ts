@@ -4,10 +4,10 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createBracket } from "@/lib/domain/competitions";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
-import { validateMediaUrl, detectProvider } from "@/lib/domain/media";
-import { EVENT_MEDIA_TYPE } from "@/types/enums";
+import { slugify } from "@/lib/domain/slug";
 import { getMarketGrader, UnsupportedMarketTypeError } from "@/lib/engine/graders";
 import { resolveResultProvider } from "@/lib/providers/result";
+import { resolveEventProvider, type ManualEventInput } from "@/lib/providers/event";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import type { RpcArgs } from "@/types/rpc";
@@ -19,16 +19,6 @@ type Err = { ok: false; error: string };
 const uuid = z.string().uuid();
 
 /** URL-safe slug from a title, plus a short suffix to avoid collisions. */
-function slugify(text: string): string {
-  const base = text
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-  const suffix = Math.random().toString(36).slice(2, 7);
-  return `${base || "item"}-${suffix}`;
-}
 
 async function requireUser(supabase: SupabaseClient<Database>): Promise<{ id: string } | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -137,64 +127,33 @@ export async function createBracketCompetitionAction(input: { creatorId: string;
 }
 
 // ── Events ───────────────────────────────────────────────────────────────────
-// Optional event media (Phase 7.6). A live/recorded/external link is optional but
-// recommended — publication is NEVER blocked by its absence.
-const mediaItemSchema = z.object({
-  url: z.string().trim().min(1),
-  provider: z.string().trim().max(40).optional(),
-  mediaType: z.enum(EVENT_MEDIA_TYPE).optional(),
-  label: z.string().trim().max(120).optional(),
-  isPrimary: z.boolean().optional(),
-});
-
-const eventSchema = z.object({
-  creatorId: uuid,
-  competitionId: uuid.nullable().optional(),
-  title: z.string().trim().min(2).max(120),
-  description: z.string().trim().max(1000).optional(),
-  startsAt: z.string().optional(),
-  locksAt: z.string().optional(),
-  media: z.array(mediaItemSchema).max(10).optional(),
-  competitorIds: z.array(uuid).min(2, "Select at least 2 competitors"),
-  marketQuestion: z.string().trim().max(200).optional(),
-  publish: z.boolean().default(true),
-});
-
-export async function createEventAction(input: z.infer<typeof eventSchema>): Promise<Ok<{ slug: string }> | Err> {
-  const parsed = eventSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
-
-  // Validate + normalize any media links. A single link defaults to primary.
-  const items = parsed.data.media ?? [];
-  const media: { url: string; provider: string; media_type: string; label: string | null; is_primary: boolean }[] = [];
-  for (const item of items) {
-    const v = validateMediaUrl(item.url);
-    if (!v.ok) return { ok: false, error: v.error };
-    media.push({
-      url: v.url.toString(),
-      provider: item.provider?.trim() || detectProvider(v.url),
-      media_type: item.mediaType ?? "other",
-      label: item.label ?? null,
-      is_primary: item.isPrimary ?? false,
-    });
-  }
-  if (media.length === 1) media[0]!.is_primary = true;
-  if (media.filter((m) => m.is_primary).length > 1) return { ok: false, error: "Only one media link can be primary." };
+// Event validation + normalization (incl. optional media, Phase 7.6) is owned by
+// the manual EventProvider (Phase 8B.4). Media links stay OPTIONAL — publication
+// is NEVER blocked by their absence. The create-event engine below is untouched.
+export async function createEventAction(input: ManualEventInput): Promise<Ok<{ slug: string }> | Err> {
+  const validated = resolveEventProvider("manual").validate(input);
+  if (!validated.ok) return { ok: false, error: validated.error };
+  const ev = validated.value;
 
   const supabase = await createServerSupabase();
-  const slug = slugify(parsed.data.title);
   const { data, error } = await supabase.rpc("create_event_with_market", {
-    p_creator_id: parsed.data.creatorId,
-    p_competition_id: parsed.data.competitionId ?? null,
-    p_title: parsed.data.title,
-    p_slug: slug,
-    p_description: parsed.data.description ?? null,
-    p_starts_at: parsed.data.startsAt || null,
-    p_locks_at: parsed.data.locksAt || null,
-    p_competitor_ids: parsed.data.competitorIds,
-    p_market_question: parsed.data.marketQuestion || null,
-    p_publish: parsed.data.publish,
-    p_media: media,
+    p_creator_id: ev.creatorId,
+    p_competition_id: ev.competitionId,
+    p_title: ev.title,
+    p_slug: ev.slug,
+    p_description: ev.description,
+    p_starts_at: ev.startsAt,
+    p_locks_at: ev.locksAt,
+    p_competitor_ids: ev.competitorIds,
+    p_market_question: ev.marketQuestion,
+    p_publish: ev.publish,
+    p_media: ev.media.map((m) => ({
+      url: m.url,
+      provider: m.provider,
+      media_type: m.mediaType,
+      label: m.label,
+      is_primary: m.isPrimary,
+    })),
   } as RpcArgs<"create_event_with_market">);
   if (error) return { ok: false, error: "Couldn't create the event. Check your inputs." };
   return { ok: true, slug: (data as { slug: string }).slug };
