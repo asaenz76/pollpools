@@ -121,6 +121,18 @@ export async function getBenchmarks(): Promise<Record<string, Benchmark>> {
   return (data as unknown as Record<string, Benchmark>) ?? {};
 }
 
+export type HealthBand = { key: string; label: string; minScore: number; maxScore: number; tone: string };
+
+/** Configurable score bands (Excellent / Healthy / …), ordered. */
+export async function getHealthBands(): Promise<HealthBand[]> {
+  const admin = createAdminSupabase();
+  const { data } = await admin
+    .from("community_health_bands")
+    .select("key, label, min_score, max_score, tone")
+    .order("display_order", { ascending: true });
+  return (data ?? []).map((b) => ({ key: b.key, label: b.label, minScore: b.min_score, maxScore: b.max_score, tone: b.tone }));
+}
+
 /** The weakest scored component (drives the primary coaching suggestion). */
 export function weakestComponent(health: CommunityHealth): HealthComponent | null {
   const scored = health.components.filter((c) => c.applicable && !c.building && c.score !== null);

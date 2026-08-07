@@ -4458,6 +4458,65 @@ export type Database = {
           },
         ]
       }
+      tenant_success_timeline: {
+        Row: {
+          category: string
+          created_at: string
+          dedupe_key: string
+          description: string | null
+          icon_key: string | null
+          id: string
+          is_pinned: boolean
+          is_shareable_eligible: boolean
+          metadata: Json
+          occurred_at: string
+          tenant_id: string
+          title: string
+          type: string
+          visibility: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          dedupe_key: string
+          description?: string | null
+          icon_key?: string | null
+          id?: string
+          is_pinned?: boolean
+          is_shareable_eligible?: boolean
+          metadata?: Json
+          occurred_at?: string
+          tenant_id: string
+          title: string
+          type: string
+          visibility?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          dedupe_key?: string
+          description?: string | null
+          icon_key?: string | null
+          id?: string
+          is_pinned?: boolean
+          is_shareable_eligible?: boolean
+          metadata?: Json
+          occurred_at?: string
+          tenant_id?: string
+          title?: string
+          type?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_success_timeline_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_user_activity: {
         Row: {
           action_count: number
@@ -4909,6 +4968,8 @@ export type Database = {
         Args: { p_delay_seconds?: number; p_id: string; p_reason: string }
         Returns: undefined
       }
+      detect_all_success_milestones: { Args: never; Returns: number }
+      detect_success_milestones: { Args: { p_tenant: string }; Returns: number }
       draft_competitor: {
         Args: {
           p_competition_id: string
