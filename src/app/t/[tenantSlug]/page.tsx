@@ -7,7 +7,7 @@ import { listCompetitions } from "@/features/competitions/get-competition";
 import { getLockState, formatCountdown } from "@/lib/domain/locking";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { COMPETITION_TYPE_LABEL } from "@/lib/constants";
+import { term, competitionTypeLabel } from "@/lib/vocabulary";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export default async function TenantHome() {
   // getTenantContext is memoized; the layout already guaranteed it is non-null.
   const ctx = await getTenantContext();
   if (!ctx) return null;
-  const { tenant, features } = ctx;
+  const { tenant, features, vocabulary } = ctx;
 
   const user = await getSessionUser();
   if (user) {
@@ -76,7 +76,7 @@ export default async function TenantHome() {
       {competitions.length > 0 ? (
         <section aria-labelledby="competitions-heading">
           <h2 id="competitions-heading" className="mb-3 text-sm font-medium text-muted-foreground">
-            Competitions
+            {term(vocabulary, "competition", { plural: true })}
           </h2>
           <ul className="flex flex-col gap-3">
             {competitions.map((c) => (
@@ -87,7 +87,7 @@ export default async function TenantHome() {
                       <div className="flex items-center justify-between gap-3">
                         <CardTitle className="text-base">{c.title}</CardTitle>
                         <span className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-                          {COMPETITION_TYPE_LABEL[c.type] ?? c.type}
+                          {competitionTypeLabel(vocabulary, c.type)}
                         </span>
                       </div>
                     </CardHeader>
@@ -101,13 +101,13 @@ export default async function TenantHome() {
 
       <section aria-labelledby="events-heading">
         <h2 id="events-heading" className="mb-3 text-sm font-medium text-muted-foreground">
-          Events
+          {term(vocabulary, "event", { plural: true })}
         </h2>
         {events.length === 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle>No events yet</CardTitle>
-              <CardDescription>Check back soon — new races are on the way.</CardDescription>
+              <CardTitle>No {term(vocabulary, "event", { plural: true, case: "lower" })} yet</CardTitle>
+              <CardDescription>Check back soon — more are on the way.</CardDescription>
             </CardHeader>
           </Card>
         ) : (
@@ -148,11 +148,11 @@ export default async function TenantHome() {
         <div className="flex flex-wrap gap-2 text-xs">
           {(
             [
-              ["Predictions", features.isEnabled("predictions_enabled")],
-              ["Leaderboards", features.isEnabled("global_leaderboard_enabled")],
+              [term(vocabulary, "prediction", { plural: true }), features.isEnabled("predictions_enabled")],
+              [term(vocabulary, "leaderboard", { plural: true }), features.isEnabled("global_leaderboard_enabled")],
               ["Achievements", features.isEnabled("achievements_enabled")],
               ["Following", features.isEnabled("creator_following_enabled")],
-              ["Creator support", features.isEnabled("creator_support_enabled")],
+              [`${term(vocabulary, "creator")} support`, features.isEnabled("creator_support_enabled")],
             ] as const
           ).map(([label, on]) => (
             <span

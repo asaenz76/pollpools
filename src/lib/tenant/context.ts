@@ -7,6 +7,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { FeatureFlagService } from "@/lib/tenant/feature-flags";
 import { getPlatformConfig } from "@/lib/config/platform";
 import { resolveEngineVersion, type EngineVersion } from "@/lib/engine/version";
+import { resolveVocabulary, DEFAULT_VOCABULARY, type Vocabulary } from "@/lib/vocabulary";
 import { TENANT_HEADER } from "@/lib/supabase/middleware";
 import type { SentimentVisibility, TenantStatus } from "@/types/enums";
 
@@ -55,6 +56,8 @@ export type TenantContext = {
   tenant: Tenant;
   settings: TenantSettings;
   features: FeatureFlagService;
+  /** Tenant-configured presentation vocabulary (defaults resolved). */
+  vocabulary: Vocabulary;
 };
 
 // Non-monetary defaults for a tenant with no settings row. The revenue split is
@@ -126,7 +129,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     supabase
       .from("tenant_settings")
       .select(
-        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links, event_media_enabled, event_media_optional, external_media_links_enabled, inline_embeds_enabled, allowed_media_providers, preferred_media_provider",
+        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links, event_media_enabled, event_media_optional, external_media_links_enabled, inline_embeds_enabled, allowed_media_providers, preferred_media_provider, vocabulary",
       )
       .eq("tenant_id", tenantId)
       .maybeSingle(),
@@ -179,6 +182,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
   }
 
   const features = FeatureFlagService.fromRows(flagRows ?? []);
+  const vocabulary = settingsRow ? resolveVocabulary(settingsRow.vocabulary) : DEFAULT_VOCABULARY;
 
-  return { tenant, settings, features };
+  return { tenant, settings, features, vocabulary };
 });

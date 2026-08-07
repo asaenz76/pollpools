@@ -20,8 +20,13 @@ values (
 )
 on conflict (slug) do nothing;
 
-insert into tenant_settings (tenant_id, sentiment_visibility, small_participation_display)
-values ('00000000-0000-4000-a000-000000000001', 'always', true)
+-- Marble Grand Prix vocabulary: races have marbles, not generic "competitors".
+-- Presentation only (engine tables stay generic); demonstrates 8B.1 vocabulary.
+insert into tenant_settings (tenant_id, sentiment_visibility, small_participation_display, vocabulary)
+values (
+  '00000000-0000-4000-a000-000000000001', 'always', true,
+  '{"competitor":{"singular":"Marble","plural":"Marbles"},"event":{"singular":"Race","plural":"Races"},"draft":{"singular":"Team Pick","plural":"Team Picks"}}'::jsonb
+)
 on conflict (tenant_id) do nothing;
 
 -- Feature flags for the reference tenant (mirrors sensible defaults).

@@ -4021,6 +4021,7 @@ export type Database = {
           small_participation_display: boolean
           tenant_id: string
           updated_at: string
+          vocabulary: Json
         }
         Insert: {
           allowed_media_providers?: string[]
@@ -4041,6 +4042,7 @@ export type Database = {
           small_participation_display?: boolean
           tenant_id: string
           updated_at?: string
+          vocabulary?: Json
         }
         Update: {
           allowed_media_providers?: string[]
@@ -4061,6 +4063,7 @@ export type Database = {
           small_participation_display?: boolean
           tenant_id?: string
           updated_at?: string
+          vocabulary?: Json
         }
         Relationships: [
           {

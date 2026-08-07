@@ -7,7 +7,7 @@ import { getDraftSection } from "@/features/draft/get-draft";
 import { BracketView } from "@/components/domain/bracket-view";
 import { DraftSection } from "@/components/domain/draft-section";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { COMPETITION_TYPE_LABEL as TYPE_LABEL } from "@/lib/constants";
+import { term, competitionTypeLabel } from "@/lib/vocabulary";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export default async function CompetitionPage({
 
       <header>
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          {TYPE_LABEL[competition.type] ?? competition.type}
+          {competitionTypeLabel(ctx.vocabulary, competition.type)}
         </span>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{competition.title}</h1>
         {competition.creator ? (
@@ -70,7 +70,10 @@ export default async function CompetitionPage({
             <Card>
               <CardHeader>
                 <CardTitle>No events yet</CardTitle>
-                <CardDescription>Events in this {TYPE_LABEL[competition.type]?.toLowerCase()} will appear here.</CardDescription>
+                <CardDescription>
+                  {term(ctx.vocabulary, "event", { plural: true })} in this{" "}
+                  {competitionTypeLabel(ctx.vocabulary, competition.type).toLowerCase()} will appear here.
+                </CardDescription>
               </CardHeader>
             </Card>
           ) : (
