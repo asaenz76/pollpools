@@ -51,6 +51,8 @@ export type TenantSettings = {
   legalLinks: NavLink[];
   footerLinks: NavLink[];
   media: MediaSettings;
+  /** White label: when false, hide the "Powered by <platform>" footer. */
+  showPoweredBy: boolean;
 };
 
 export type TenantContext = {
@@ -61,6 +63,8 @@ export type TenantContext = {
   vocabulary: Vocabulary;
   /** Config-driven provider manifest (result / event / notification / media). */
   providers: TenantProviderManifest;
+  /** Platform brand name for the "Powered by" footer (white label, configurable). */
+  platformName: string;
 };
 
 // Non-monetary defaults for a tenant with no settings row. The revenue split is
@@ -84,6 +88,7 @@ const DEFAULT_SETTINGS_BASE = {
   legalLinks: [] as NavLink[],
   footerLinks: [] as NavLink[],
   media: DEFAULT_MEDIA_SETTINGS,
+  showPoweredBy: true,
 };
 
 /**
@@ -132,7 +137,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     supabase
       .from("tenant_settings")
       .select(
-        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links, event_media_enabled, event_media_optional, external_media_links_enabled, inline_embeds_enabled, allowed_media_providers, preferred_media_provider, vocabulary, providers",
+        "sentiment_visibility, small_participation_display, minimum_ranked_predictions, platform_share_bps, creator_share_bps, legal_links, footer_links, event_media_enabled, event_media_optional, external_media_links_enabled, inline_embeds_enabled, allowed_media_providers, preferred_media_provider, vocabulary, providers, show_powered_by",
       )
       .eq("tenant_id", tenantId)
       .maybeSingle(),
@@ -156,6 +161,7 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     engineVersion: resolveEngineVersion(tenantRow.engine_version),
   };
 
+  const platform = await getPlatformConfig();
   let settings: TenantSettings;
   if (settingsRow) {
     settings = {
@@ -174,9 +180,9 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
         allowedProviders: settingsRow.allowed_media_providers ?? [],
         preferredProvider: settingsRow.preferred_media_provider,
       },
+      showPoweredBy: settingsRow.show_powered_by,
     };
   } else {
-    const platform = await getPlatformConfig();
     settings = {
       ...DEFAULT_SETTINGS_BASE,
       platformShareBps: platform.defaultPlatformShareBps,
@@ -193,5 +199,5 @@ export const getTenantContext = cache(async (): Promise<TenantContext | null> =>
     media: settings.media.preferredProvider,
   });
 
-  return { tenant, settings, features, vocabulary, providers };
+  return { tenant, settings, features, vocabulary, providers, platformName: platform.platformName };
 });

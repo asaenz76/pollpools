@@ -36,6 +36,11 @@ const KNOWN_UNMIRRORED = new Set<string>([
   "creator_earning_status",
   "creator_earning_type",
   "creator_payout_status",
+  // Custom-domain operational enums (8B.8) — server-only, used as strings in the
+  // admin domain UI; not branched on in shared engine code.
+  "domain_type",
+  "domain_verification_status",
+  "domain_ssl_status",
   "entitlement_source_type",
   "entitlement_status",
   "fanout_status",

@@ -62,7 +62,8 @@ export default async function TenantLayout({ children }: { children: ReactNode }
       ) : (
         <footer className="border-t border-border">
           <div className="mx-auto w-full max-w-2xl px-4 py-6 text-xs text-muted-foreground">
-            {tenant.displayName} · Powered by Prediction Engine
+            {tenant.displayName}
+            {ctx.settings.showPoweredBy ? ` · Powered by ${ctx.platformName}` : ""}
           </div>
         </footer>
       )}

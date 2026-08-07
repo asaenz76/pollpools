@@ -3078,6 +3078,7 @@ export type Database = {
           default_engine_version: string
           default_platform_share_bps: number
           id: boolean
+          platform_name: string
           updated_at: string
         }
         Insert: {
@@ -3086,6 +3087,7 @@ export type Database = {
           default_engine_version?: string
           default_platform_share_bps?: number
           id?: boolean
+          platform_name?: string
           updated_at?: string
         }
         Update: {
@@ -3094,6 +3096,7 @@ export type Database = {
           default_engine_version?: string
           default_platform_share_bps?: number
           id?: boolean
+          platform_name?: string
           updated_at?: string
         }
         Relationships: []
@@ -4037,6 +4040,7 @@ export type Database = {
           providers: Json
           sentiment_visibility: Database["public"]["Enums"]["sentiment_visibility"]
           settings: Json
+          show_powered_by: boolean
           small_participation_display: boolean
           tenant_id: string
           updated_at: string
@@ -4059,6 +4063,7 @@ export type Database = {
           providers?: Json
           sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
           settings?: Json
+          show_powered_by?: boolean
           small_participation_display?: boolean
           tenant_id: string
           updated_at?: string
@@ -4081,6 +4086,7 @@ export type Database = {
           providers?: Json
           sentiment_visibility?: Database["public"]["Enums"]["sentiment_visibility"]
           settings?: Json
+          show_powered_by?: boolean
           small_participation_display?: boolean
           tenant_id?: string
           updated_at?: string

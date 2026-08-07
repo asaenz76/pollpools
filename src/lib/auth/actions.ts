@@ -3,8 +3,8 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { publicEnv } from "@/lib/env";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
+import { resolveTenantHomeUrl } from "@/lib/tenant/urls";
 
 export type AuthFormState = { error: string | null };
 
@@ -49,10 +49,13 @@ export async function signUpAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
   const supabase = await createServerSupabase();
+  // Auth emails return to the tenant's PRIMARY domain (white label), not a shared
+  // platform URL. Built server-side from the slug — never a client return URL.
+  const returnUrl = await resolveTenantHomeUrl(supabase, parsed.data.slug);
   const { error } = await supabase.auth.signUp({
     email: parsed.data.email,
     password: parsed.data.password,
-    options: { emailRedirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}${tenantHome(parsed.data.slug)}` },
+    options: { emailRedirectTo: returnUrl },
   });
   if (error) return { error: error.message };
   redirect(tenantHome(parsed.data.slug));
@@ -67,8 +70,9 @@ export async function requestResetAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
   const supabase = await createServerSupabase();
+  const returnUrl = await resolveTenantHomeUrl(supabase, parsed.data.slug);
   await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${publicEnv.NEXT_PUBLIC_APP_URL}${tenantHome(parsed.data.slug)}`,
+    redirectTo: returnUrl,
   });
   // Always report success to avoid leaking which emails are registered.
   return { error: null };

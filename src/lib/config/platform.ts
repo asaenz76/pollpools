@@ -21,21 +21,28 @@ import { createServerSupabase } from "@/lib/supabase/server";
 export type PlatformConfig = {
   defaultCreatorShareBps: number;
   defaultPlatformShareBps: number;
+  /** Platform brand name (white label); configuration, never hardcoded. */
+  platformName: string;
 };
 
 // Resilience default if the singleton row is somehow absent (it is seeded by
 // migration 0031). Kept equal to the seeded values, not an independent policy.
-const RESILIENCE_DEFAULT: PlatformConfig = { defaultCreatorShareBps: 8000, defaultPlatformShareBps: 2000 };
+const RESILIENCE_DEFAULT: PlatformConfig = {
+  defaultCreatorShareBps: 8000,
+  defaultPlatformShareBps: 2000,
+  platformName: "Prediction Engine",
+};
 
 export const getPlatformConfig = cache(async (): Promise<PlatformConfig> => {
   const supabase = await createServerSupabase();
   const { data } = await supabase
     .from("platform_config")
-    .select("default_creator_share_bps, default_platform_share_bps")
+    .select("default_creator_share_bps, default_platform_share_bps, platform_name")
     .maybeSingle();
   if (!data) return RESILIENCE_DEFAULT;
   return {
     defaultCreatorShareBps: data.default_creator_share_bps,
     defaultPlatformShareBps: data.default_platform_share_bps,
+    platformName: data.platform_name,
   };
 });
