@@ -44,11 +44,11 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-14 | Draft scoring position-only, winner-only baseline | 🟠 | §3, §4 | Split | ◻ Config✅ / baseline→F-15 |
 | F-15 | Regrade drops recorded finishing positions | 🟠 | §5 | Resolve | ✅ Resolved |
 | F-16 | Public `using(true)` tables isolated by app filter | 🟡 | §16 | Accept (document) | 🟦 Accepted |
-| F-17 | Read-time aggregation & event-page N+1 | 🟠 | §17 | Resolve | ⏭ Deferred (Phase 8) |
-| F-18 | Feed has no keyset pagination | 🟡 | §17 | Resolve | ⏭ Deferred (Phase 8) |
+| F-17 | Read-time aggregation & event-page N+1 | 🟠 | §17 | Resolve | ✅ Resolved (8C: batched reads) |
+| F-18 | Feed has no keyset pagination | 🟡 | §17 | Resolve | ✅ Resolved (8C: keyset) |
 | F-19 | Synchronous per-follower notification fan-out | 🟠 | §5, §11 | Resolve | ✅ Resolved |
 | F-20 | Missing `predictions(market_id, status)` index | 🟡 | §17, §7.6 | Resolve | ✅ Resolved |
-| F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | ◻ Partial (8B.1 vocabulary ✅; default-question l10n open) |
+| F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | ✅ Resolved (8C: vocabulary + locale default) |
 | F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | ✅ Resolved (8B.5 NotificationProvider) |
 | F-23 | No admin / ops surface | 🟠 | §7.6, §8A | Resolve | ✅ Resolved |
 | F-24 | `mock/pay` GET route lacks explicit env assertion | 🟡 | §2 | Resolve | ✅ Resolved |
@@ -744,3 +744,24 @@ document; this register is its actionable, status-tracked counterpart.
     DB constraint + RLS + data-layer exclusion, with dedicated security tests.
   - Business rules enforced: economics (plans) and coaching (health) are independent; percentages
     visible-not-editable to tenants; plan changes affect future only; historical earnings immutable.
+- **2026-08-07** — **Phase 8-C (Performance, Pagination, Localization)** — strictly scoped;
+  no commercial/settlement/billing/Community-Health/growth-automation changes. Migrations `0061`–`0064`.
+  - **F-17 Resolved** — event-page N+1 eliminated. `getEventBySlug` batched from 3+3N queries to a
+    constant (options / new `markets_sentiment(uuid[])` RPC / user predictions, grouped in memory).
+    No maintained counters added — the batched set-based query already bounds the hot read;
+    reconciliation is unaffected.
+  - **F-18 Resolved** — feed keyset pagination by `(created_at DESC, id DESC)` with a row-value cursor
+    (no OFFSET); deterministic across equal timestamps; `loadMoreFeedAction` + `FeedList`; composite
+    index `idx_feed_tenant_keyset`. Tenant isolation preserved.
+  - **F-20 Resolved (hardened)** — verified via EXPLAIN that the prediction/sentiment/feed hot reads
+    are index-served (`idx_predictions_market_status`, `idx_predictions_option`, unique
+    `(market_id, user_id)`, `idx_market_options_market`, `idx_feed_tenant_keyset`). Added a boolean
+    `hot_path_indexes_ok()` guard + test. No speculative indexes.
+  - **F-21 Resolved** — removed the hard-coded English `'Which competitor will win?'`. The default
+    market question is derived from the tenant's vocabulary + `default_locale` (TS
+    `defaultMarketQuestion`, translation-ready; SQL fallback derives the noun from vocabulary). Tests
+    prove different vocabularies yield different defaults with no code change.
+  - **Optional** — a real **email NotificationProvider** behind the existing interface (injectable
+    EmailTransport, HTTP-API env transport, in-memory test transport; unconfigured → skips). Not
+    auto-wired to a delivery worker (out of scope). Delivery + failure unit-tested; live delivery not
+    claimed without credentials.
