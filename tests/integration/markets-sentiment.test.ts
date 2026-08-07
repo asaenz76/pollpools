@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { adminClient, createUser, deleteUser, uniqueSuffix, integrationEnvReady } from "./helpers";
 
 const d = integrationEnvReady ? describe : describe.skip;
-type Rpc<T> = Promise<{ data: T | null; error: { message: string } | null }>;
+type Rpc<T> = { data: T | null; error: { message: string } | null };
 
 /**
  * Phase 8-C F-17 — the batched markets_sentiment(uuid[]) resolves an event's whole
