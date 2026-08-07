@@ -87,47 +87,64 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
     .order("created_at");
 
   const user = await getSessionUser();
+  const marketIds = (marketRows ?? []).map((m) => m.id);
 
-  const markets: EventMarket[] = [];
-  for (const m of marketRows ?? []) {
-    const { data: optionRows } = await supabase
-      .from("market_options")
-      .select("id, label, color, image_url, competitor_id, display_order, status")
-      .eq("market_id", m.id)
-      .in("status", ["active", "winner", "loser", "voided"])
-      .order("display_order");
+  // Batched reads (F-17): options, sentiment, and the user's predictions for ALL
+  // markets in three queries total — never one-per-market. Bounded regardless of
+  // how many markets the event has.
+  const [optionsRes, sentimentRes, userPredsRes] = await Promise.all([
+    marketIds.length
+      ? supabase
+          .from("market_options")
+          .select("id, market_id, label, color, image_url, competitor_id, display_order, status")
+          .in("market_id", marketIds)
+          .in("status", ["active", "winner", "loser", "voided"])
+          .order("display_order")
+      : Promise.resolve({ data: null }),
+    marketIds.length ? supabase.rpc("markets_sentiment", { p_market_ids: marketIds }) : Promise.resolve({ data: null }),
+    user && marketIds.length
+      ? supabase.from("predictions").select("market_id, option_id, status").in("market_id", marketIds).eq("user_id", user.id)
+      : Promise.resolve({ data: null }),
+  ]);
 
-    const winningOptionId = (optionRows ?? []).find((o) => o.status === "winner")?.id ?? null;
+  type OptionRow = {
+    id: string; market_id: string; label: string; color: string | null; image_url: string | null;
+    competitor_id: string | null; display_order: number; status: string;
+  };
+  const allOptions = (optionsRes.data ?? []) as OptionRow[];
+
+  // Group the batched rows by market_id in memory.
+  const optionsByMarket = new Map<string, OptionRow[]>();
+  for (const o of allOptions) {
+    const list = optionsByMarket.get(o.market_id) ?? [];
+    list.push(o);
+    optionsByMarket.set(o.market_id, list);
+  }
+  const votesByMarket = new Map<string, Map<string, number>>();
+  for (const r of (sentimentRes.data ?? []) as { market_id: string; option_id: string; votes: number }[]) {
+    const inner = votesByMarket.get(r.market_id) ?? new Map<string, number>();
+    inner.set(r.option_id, Number(r.votes));
+    votesByMarket.set(r.market_id, inner);
+  }
+  const userPredByMarket = new Map<string, { option_id: string | null; status: string }>();
+  for (const p of (userPredsRes.data ?? []) as { market_id: string; option_id: string | null; status: string }[]) {
+    userPredByMarket.set(p.market_id, { option_id: p.option_id, status: p.status });
+  }
+
+  const markets: EventMarket[] = (marketRows ?? []).map((m) => {
+    const optionRows = optionsByMarket.get(m.id) ?? [];
+    const winningOptionId = optionRows.find((o) => o.status === "winner")?.id ?? null;
     const settled = m.status === "settled" || m.status === "voided" || m.status === "canceled";
 
-    const { data: sentimentRows } = await supabase.rpc("market_sentiment", { p_market_id: m.id });
-
-    // Map RPC counts onto options (in display order).
-    const votesById = new Map<string, number>(
-      (sentimentRows ?? []).map((r) => [r.option_id as string, Number(r.votes)]),
-    );
+    const votesById = votesByMarket.get(m.id) ?? new Map<string, number>();
     const sentiment = computeSentiment(
-      (optionRows ?? []).map((o) => ({
-        optionId: o.id,
-        label: o.label,
-        votes: votesById.get(o.id) ?? 0,
-      })),
+      optionRows.map((o) => ({ optionId: o.id, label: o.label, votes: votesById.get(o.id) ?? 0 })),
     );
 
-    let userOptionId: string | null = null;
-    let userOutcome: EventMarket["userOutcome"] = null;
-    if (user) {
-      const { data: pred } = await supabase
-        .from("predictions")
-        .select("option_id, status")
-        .eq("market_id", m.id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      userOptionId = pred?.option_id ?? null;
-      if (pred?.status === "correct" || pred?.status === "incorrect" || pred?.status === "void") {
-        userOutcome = pred.status;
-      }
-    }
+    const pred = userPredByMarket.get(m.id);
+    const userOptionId = pred?.option_id ?? null;
+    const userOutcome: EventMarket["userOutcome"] =
+      pred?.status === "correct" || pred?.status === "incorrect" || pred?.status === "void" ? pred.status : null;
 
     const lockState = getLockState({
       marketStatus: m.status as MarketStatus,
@@ -136,13 +153,13 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
       now,
     });
 
-    markets.push({
+    return {
       id: m.id,
       question: m.question,
       type: m.type as MarketType,
       status: m.status as MarketStatus,
       locksAt: m.locks_at,
-      options: (optionRows ?? []).map((o) => ({
+      options: optionRows.map((o) => ({
         id: o.id,
         label: o.label,
         color: o.color,
@@ -155,8 +172,8 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
       settled,
       winningOptionId,
       userOutcome,
-    });
-  }
+    };
+  });
 
   const creator = Array.isArray(event.creators) ? event.creators[0] : event.creators;
 

@@ -5040,6 +5040,17 @@ export type Database = {
           votes: number
         }[]
       }
+      markets_sentiment: {
+        Args: { p_market_ids: string[] }
+        Returns: {
+          display_order: number
+          label: string
+          market_id: string
+          option_id: string
+          total: number
+          votes: number
+        }[]
+      }
       process_event_publish_fanout: {
         Args: { p_batch_size?: number; p_fanout_id: string }
         Returns: string
