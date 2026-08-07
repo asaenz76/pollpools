@@ -4,7 +4,8 @@ import { getSessionUser } from "@/lib/auth/session";
 import { ensureMembership } from "@/lib/tenant/membership";
 import { listEvents } from "@/features/events/get-event";
 import { listCompetitions } from "@/features/competitions/get-competition";
-import { getLockState, formatCountdown } from "@/lib/domain/locking";
+import { getLockState, lockDisplayState, formatCountdown } from "@/lib/domain/locking";
+import { getEngineBehavior } from "@/lib/engine/behavior";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { term, competitionTypeLabel } from "@/lib/vocabulary";
@@ -24,6 +25,7 @@ export default async function TenantHome() {
 
   const [events, competitions] = await Promise.all([listEvents(tenant.id), listCompetitions(tenant.id)]);
   const now = new Date();
+  const engineBehavior = getEngineBehavior(tenant.engineVersion);
 
   return (
     <div className="flex flex-col gap-6">
@@ -118,6 +120,7 @@ export default async function TenantHome() {
                 marketLocksAt: e.locksAt,
                 now,
               });
+              const display = lockDisplayState(lock, engineBehavior.lockClosingSoonMs);
               return (
                 <li key={e.id}>
                   <Link href={`/t/${tenant.slug}/e/${e.slug}`} className="block">
@@ -125,12 +128,19 @@ export default async function TenantHome() {
                       <CardHeader>
                         <div className="flex items-center justify-between gap-3">
                           <CardTitle className="text-base">{e.title}</CardTitle>
-                          <span className="shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
-                            {lock.isOpen
-                              ? lock.effectiveLocksAt
-                                ? `Locks in ${formatCountdown(lock.msUntilLock)}`
-                                : "Open"
-                              : "Locked"}
+                          <span
+                            className={
+                              "shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs " +
+                              (display === "closing_soon" ? "text-warning" : "text-muted-foreground")
+                            }
+                          >
+                            {display === "locked"
+                              ? "Locked"
+                              : display === "closing_soon"
+                                ? `Closing soon · ${formatCountdown(lock.msUntilLock)}`
+                                : lock.effectiveLocksAt
+                                  ? `Locks in ${formatCountdown(lock.msUntilLock)}`
+                                  : "Open"}
                           </span>
                         </div>
                         {e.creator ? <CardDescription>by {e.creator}</CardDescription> : null}

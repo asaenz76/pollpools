@@ -1,13 +1,26 @@
 # Versioned Engine API
 
-> **Status: Versioning Foundation Complete (not yet runtime-branched).** The pin
-> and the never-`latest` guarantee below are enforced in the schema and resolver,
-> and there is a single supported version (`1.0`). **No engine behavior branches on
-> the version yet** — every tenant runs the same code path today. Introducing the
-> first behavior gated on the tenant's version (keeping the old path for pinned
-> tenants) is what turns this foundation into a live capability. Until then, a
-> behavior change would still affect existing tenants, so treat version-affecting
-> changes with the same care as before.
+> **Status: Runtime-branched (Phase 8B.7).** The pin and the never-`latest`
+> guarantee below are enforced in the schema and resolver. Two versions are
+> supported (`1.0`, `1.1`), and behavior now branches on the tenant's version via
+> `src/lib/engine/behavior.ts` — existing tenants stay on their pinned version and
+> are unaffected by newer ones. New tenants are still created at `1.0`
+> (`CURRENT_ENGINE_VERSION`); bumping the default is a separate, deliberate change.
+
+## Versioned behaviors
+
+Version branching is deliberately tiny and confined to surfaces where TS is the
+authority. Settlement / scoring / grading / leaderboard / notification behavior is
+authoritative in SQL and is **not** branched from TS (that would desync from the
+database). Every versioned behavior lives in `EngineBehavior` and is listed here:
+
+| Behavior | 1.0 | 1.1 | Notes |
+| --- | --- | --- | --- |
+| `lockClosingSoonMs` — prediction-lock **display** state | `null` (Open / Locked only) | `900000` (markets within 15 min of lock show a "Closing soon" badge) | Display only. The moment a prediction is actually rejected (`canSubmitPrediction` / `submit_prediction`) is identical across versions. |
+
+Adding a version: append it to `SUPPORTED_ENGINE_VERSIONS`, add a row to
+`ENGINE_BEHAVIORS`, gate the code on the resolved `EngineBehavior` field (never on
+the version string inline), and add a row to the table above.
 
 Prediction Engine powers many independent tenants from one codebase. A change to
 how the engine *behaves* — settlement, scoring, market grading, statistics,

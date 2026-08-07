@@ -10,10 +10,14 @@
  * supports. Adding a version is a deliberate act: append it here, add the gated
  * behavior, and leave existing tenants on their pinned version.
  */
-export const SUPPORTED_ENGINE_VERSIONS = ["1.0"] as const;
+export const SUPPORTED_ENGINE_VERSIONS = ["1.0", "1.1"] as const;
 export type EngineVersion = (typeof SUPPORTED_ENGINE_VERSIONS)[number];
 
-/** The version new tenants are created at. Must be a supported version. */
+/**
+ * The version new tenants are created at. Deliberately kept at "1.0": bumping the
+ * default is a separate decision (it changes what NEW tenants get). Version "1.1"
+ * is available for tenants that opt in; see src/lib/engine/behavior + docs/versioning.
+ */
 export const CURRENT_ENGINE_VERSION: EngineVersion = "1.0";
 
 export function isSupportedEngineVersion(v: string): v is EngineVersion {

@@ -48,6 +48,21 @@ export function canSubmitPrediction(input: LockInput): boolean {
   return getLockState(input).isOpen;
 }
 
+/**
+ * Display state for a market's lock, incl. the version-gated "closing soon" state.
+ * DISPLAY ONLY — the actual submission gate is `canSubmitPrediction` / the DB, and
+ * is identical regardless of this state. `closingSoonMs` comes from the tenant's
+ * engine behavior (null → the state is disabled; see src/lib/engine/behavior).
+ */
+export type LockDisplay = "open" | "closing_soon" | "locked";
+export function lockDisplayState(lock: LockState, closingSoonMs: number | null): LockDisplay {
+  if (!lock.isOpen) return "locked";
+  if (closingSoonMs != null && lock.msUntilLock > 0 && lock.msUntilLock <= closingSoonMs) {
+    return "closing_soon";
+  }
+  return "open";
+}
+
 /** Compact countdown string for a lock time, e.g. "2d 3h", "5m", "Locked". */
 export function formatCountdown(msUntilLock: number): string {
   if (msUntilLock <= 0) return "Locked";
