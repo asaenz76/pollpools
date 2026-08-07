@@ -88,6 +88,48 @@ export async function getTenantOps(tenantId: string): Promise<TenantOps | null> 
   return { id: tenant.id, slug: tenant.slug, displayName: tenant.display_name, health, stats };
 }
 
+export type PayoutRequest = {
+  id: string;
+  creatorName: string | null;
+  amountMinorUnits: number;
+  currencyCode: string;
+  status: string;
+  method: string | null;
+  destinationMasked: string | null;
+  requestedAt: string;
+  externalReference: string | null;
+  notes: string | null;
+};
+
+/** Creator payout requests for a tenant (pending first), for operator review. */
+export async function getPayoutRequests(tenantId: string, limit = 50): Promise<PayoutRequest[]> {
+  const admin = createAdminSupabase();
+  const { data } = await admin
+    .from("creator_payout_requests")
+    .select("id, amount_minor_units, currency_code, status, payout_method, payout_destination_masked, requested_at, external_reference, notes, creators(display_name)")
+    .eq("tenant_id", tenantId)
+    .order("requested_at", { ascending: false })
+    .limit(limit);
+  const rank: Record<string, number> = { requested: 0, under_review: 1, approved: 2, paid: 3, rejected: 4, canceled: 5 };
+  return (data ?? [])
+    .map((r) => {
+      const creator = Array.isArray(r.creators) ? r.creators[0] : r.creators;
+      return {
+        id: r.id,
+        creatorName: creator?.display_name ?? null,
+        amountMinorUnits: r.amount_minor_units,
+        currencyCode: r.currency_code,
+        status: r.status,
+        method: r.payout_method,
+        destinationMasked: r.payout_destination_masked,
+        requestedAt: r.requested_at,
+        externalReference: r.external_reference,
+        notes: r.notes,
+      };
+    })
+    .sort((a, b) => (rank[a.status] ?? 9) - (rank[b.status] ?? 9));
+}
+
 export type ModerationComment = {
   id: string;
   body: string;

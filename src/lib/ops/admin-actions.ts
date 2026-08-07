@@ -3,14 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { isSuperAdmin } from "@/lib/auth/session";
 import { createAdminSupabase } from "@/lib/supabase/admin";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { drainWithLease, monitorWithLease } from "@/lib/ops/scheduled";
 import { reconcile, requeueActionableJobs, type ReconciliationScope, type ReconciliationMode } from "@/lib/ops/reconciliation";
 
 /**
  * Admin operations actions (Phase 8-A). Every action is super-admin gated and runs
- * the existing, already-tested ops functions through the service-role client — the
- * UI adds no new operational logic, it just triggers what the pipeline already does
- * (drain / monitor / reconcile / requeue).
+ * the existing, already-tested ops functions — the UI adds no new operational logic,
+ * it just triggers what the pipeline already does. System ops (drain / monitor /
+ * requeue / reconcile) use the service-role client; the financial PAYOUT actions use
+ * the operator's session client so `reviewed_by` records who approved/rejected/paid.
  */
 export type ActionResult = { ok: boolean; message: string };
 
@@ -61,6 +63,42 @@ export async function setCommentStatusAction(
   revalidatePath(`/admin/tenants/${tenantId}/moderation`);
   if (error) return { ok: false, message: "Couldn't update the comment." };
   return { ok: true, message: `Comment set to ${status}.` };
+}
+
+/**
+ * Payout operations (super-admin only). Each calls the existing, already-tested,
+ * super-admin/service-role-gated payout RPC by payout id — the amount was set and
+ * validated at REQUEST time (a BEFORE-INSERT trigger rejects amounts exceeding
+ * available earnings), so NO client-controlled financial value is ever accepted
+ * here. The RPCs preserve their own audit (allocations, reviewed_by/at, audit log).
+ */
+export async function approvePayoutAction(tenantId: string, payoutId: string): Promise<ActionResult> {
+  await assertSuperAdmin();
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("approve_creator_payout", { p_payout_id: payoutId } as never);
+  revalidatePath(`/admin/tenants/${tenantId}/payouts`);
+  if (error) return { ok: false, message: error.message.includes("INSUFFICIENT_EARNINGS") ? "Rejected: request exceeds available earnings." : "Couldn't approve the payout." };
+  return { ok: true, message: "Payout approved — earnings reserved." };
+}
+
+export async function rejectPayoutAction(tenantId: string, payoutId: string, reason: string): Promise<ActionResult> {
+  await assertSuperAdmin();
+  if (!reason.trim()) return { ok: false, message: "A rejection reason is required." };
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("reject_creator_payout", { p_payout_id: payoutId, p_reason: reason.trim() } as never);
+  revalidatePath(`/admin/tenants/${tenantId}/payouts`);
+  if (error) return { ok: false, message: "Couldn't reject the payout." };
+  return { ok: true, message: "Payout rejected." };
+}
+
+export async function markPayoutPaidAction(tenantId: string, payoutId: string, reference: string): Promise<ActionResult> {
+  await assertSuperAdmin();
+  if (!reference.trim()) return { ok: false, message: "An external payment reference is required." };
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("mark_creator_payout_paid", { p_payout_id: payoutId, p_external_reference: reference.trim() } as never);
+  revalidatePath(`/admin/tenants/${tenantId}/payouts`);
+  if (error) return { ok: false, message: error.message.includes("NOT_APPROVED") ? "Only an approved payout can be marked paid." : "Couldn't mark the payout paid." };
+  return { ok: true, message: "Payout marked paid." };
 }
 
 export async function reconcileTenantAction(
