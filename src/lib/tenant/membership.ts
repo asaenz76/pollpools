@@ -46,4 +46,8 @@ export async function ensureMembership(input: {
       display_name: input.email?.split("@")[0] ?? "Member",
     });
   }
+
+  // Stamp a daily login activity so "logged in" is a real, configurable WAU
+  // signal (idempotent per day; best-effort — never blocks the page).
+  await supabase.rpc("record_tenant_activity", { p_tenant: input.tenantId } as never);
 }

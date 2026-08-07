@@ -3080,6 +3080,11 @@ export type Database = {
           id: boolean
           platform_name: string
           updated_at: string
+          wau_min_actions: number
+          wau_signal_draft: boolean
+          wau_signal_login: boolean
+          wau_signal_prediction: boolean
+          wau_window_days: number
         }
         Insert: {
           config?: Json
@@ -3089,6 +3094,11 @@ export type Database = {
           id?: boolean
           platform_name?: string
           updated_at?: string
+          wau_min_actions?: number
+          wau_signal_draft?: boolean
+          wau_signal_login?: boolean
+          wau_signal_prediction?: boolean
+          wau_window_days?: number
         }
         Update: {
           config?: Json
@@ -3098,6 +3108,11 @@ export type Database = {
           id?: boolean
           platform_name?: string
           updated_at?: string
+          wau_min_actions?: number
+          wau_signal_draft?: boolean
+          wau_signal_login?: boolean
+          wau_signal_prediction?: boolean
+          wau_window_days?: number
         }
         Relationships: []
       }
@@ -4240,6 +4255,45 @@ export type Database = {
           },
         ]
       }
+      tenant_user_activity: {
+        Row: {
+          action_count: number
+          activity_date: string
+          tenant_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          action_count?: number
+          activity_date: string
+          tenant_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          action_count?: number
+          activity_date?: string
+          tenant_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_user_activity_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_user_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           created_at: string
@@ -4662,6 +4716,17 @@ export type Database = {
           taken: boolean
         }[]
       }
+      effective_revenue_split: {
+        Args: {
+          p_creator: string
+          p_tenant: string
+          p_type: Database["public"]["Enums"]["billing_product_type"]
+        }
+        Returns: {
+          creator_bps: number
+          platform_bps: number
+        }[]
+      }
       enqueue_job: {
         Args: {
           p_dedup_key?: string
@@ -4806,6 +4871,7 @@ export type Database = {
         Args: { p_event_id: string; p_positions: Json }
         Returns: Json
       }
+      record_tenant_activity: { Args: { p_tenant: string }; Returns: undefined }
       regrade_event: {
         Args: {
           p_event_id: string
@@ -4859,6 +4925,26 @@ export type Database = {
           p_source?: string
         }
         Returns: Json
+      }
+      tenant_wau_at: {
+        Args: {
+          p_from: string
+          p_min_actions?: number
+          p_sig_draft?: boolean
+          p_sig_login?: boolean
+          p_sig_pred?: boolean
+          p_tenant: string
+          p_to: string
+        }
+        Returns: number
+      }
+      tenant_wau_current: {
+        Args: { p_as_of?: string; p_tenant: string }
+        Returns: {
+          current_wau: number
+          previous_wau: number
+          window_days: number
+        }[]
       }
     }
     Enums: {
