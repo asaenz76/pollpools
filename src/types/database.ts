@@ -4517,6 +4517,168 @@ export type Database = {
           },
         ]
       }
+      tenant_template_assignments: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          created_at: string
+          id: string
+          snapshot: Json
+          template_id: string
+          template_version: number
+          tenant_id: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          snapshot: Json
+          template_id: string
+          template_version: number
+          tenant_id: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          template_id?: string
+          template_version?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_template_assignments_applied_by_fkey"
+            columns: ["applied_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_template_assignments_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_template_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_template_versions: {
+        Row: {
+          changelog: string | null
+          configuration: Json
+          created_at: string
+          created_by: string | null
+          engine_version: string
+          id: string
+          published_at: string | null
+          seed_definition: Json | null
+          template_id: string
+          version: number
+        }
+        Insert: {
+          changelog?: string | null
+          configuration?: Json
+          created_at?: string
+          created_by?: string | null
+          engine_version: string
+          id?: string
+          published_at?: string | null
+          seed_definition?: Json | null
+          template_id: string
+          version: number
+        }
+        Update: {
+          changelog?: string | null
+          configuration?: Json
+          created_at?: string
+          created_by?: string | null
+          engine_version?: string
+          id?: string
+          published_at?: string | null
+          seed_definition?: Json | null
+          template_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_template_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_templates: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon_key: string | null
+          id: string
+          key: string
+          latest_version: number
+          name: string
+          preview_image_url: string | null
+          status: Database["public"]["Enums"]["template_status"]
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon_key?: string | null
+          id?: string
+          key: string
+          latest_version?: number
+          name: string
+          preview_image_url?: string | null
+          status?: Database["public"]["Enums"]["template_status"]
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon_key?: string | null
+          id?: string
+          key?: string
+          latest_version?: number
+          name?: string
+          preview_image_url?: string | null
+          status?: Database["public"]["Enums"]["template_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_user_activity: {
         Row: {
           action_count: number
@@ -4570,6 +4732,8 @@ export type Database = {
           slug: string
           status: Database["public"]["Enums"]["tenant_status"]
           tagline: string | null
+          template_id: string | null
+          template_version: number | null
           theme: Json
           updated_at: string
         }
@@ -4586,6 +4750,8 @@ export type Database = {
           slug: string
           status?: Database["public"]["Enums"]["tenant_status"]
           tagline?: string | null
+          template_id?: string | null
+          template_version?: number | null
           theme?: Json
           updated_at?: string
         }
@@ -4602,10 +4768,20 @@ export type Database = {
           slug?: string
           status?: Database["public"]["Enums"]["tenant_status"]
           tagline?: string | null
+          template_id?: string | null
+          template_version?: number | null
           theme?: Json
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_achievements: {
         Row: {
@@ -5521,6 +5697,7 @@ export type Database = {
         | "past_due"
         | "canceled"
         | "incomplete"
+      template_status: "draft" | "published" | "retired"
       tenant_status: "active" | "suspended" | "archived"
       user_status: "active" | "suspended" | "deleted"
       webhook_processing_status: "received" | "processed" | "failed" | "skipped"
@@ -5953,6 +6130,7 @@ export const Constants = {
         "canceled",
         "incomplete",
       ],
+      template_status: ["draft", "published", "retired"],
       tenant_status: ["active", "suspended", "archived"],
       user_status: ["active", "suspended", "deleted"],
       webhook_processing_status: ["received", "processed", "failed", "skipped"],
