@@ -5015,6 +5015,7 @@ export type Database = {
       evaluate_tenant_plan: { Args: { p_tenant: string }; Returns: string }
       expire_draft_reservations: { Args: never; Returns: number }
       fail_job: { Args: { p_error: string; p_id: string }; Returns: string }
+      hot_path_indexes_ok: { Args: never; Returns: boolean }
       lock_due_markets: { Args: never; Returns: number }
       log_growth_change: {
         Args: {
