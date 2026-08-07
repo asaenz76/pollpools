@@ -39,6 +39,9 @@ d("configuration engine — platform-default revenue split", () => {
   beforeAll(async () => {
     const { data: t } = await admin.from("tenants").insert({ slug: `cfg-${s}`, display_name: "Cfg" }).select("id").single();
     tenantId = t!.id;
+    // Revenue Plans (8-B.5) sit above platform_config; end the auto-assigned plan so
+    // the split genuinely falls back to platform_config (the tier this suite validates).
+    await admin.from("tenant_revenue_plan_assignments").update({ ended_at: new Date().toISOString() }).eq("tenant_id", tenantId).is("ended_at", null);
     // Intentionally NO tenant_settings row → the split must fall back to platform_config.
     buyerId = await createUser(`cfgbuyer-${s}@example.test`, pw);
     await admin.from("tenant_memberships").insert({ tenant_id: tenantId, user_id: buyerId, role: "member" });

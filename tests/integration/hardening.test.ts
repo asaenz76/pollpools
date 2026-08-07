@@ -87,6 +87,9 @@ d("phase 7.6 hardening", () => {
 
   // ── Item 3 — tenant and creator revenue-split overrides (F-11) ──────────────
   it("applies the tenant revenue-split override (70/30)", async () => {
+    // Revenue Plans (8-B.5) sit above the tenant_settings split; end t2's plan so
+    // resolution falls through to the tenant_settings override this test validates.
+    await admin.from("tenant_revenue_plan_assignments").update({ ended_at: new Date().toISOString() }).eq("tenant_id", t2).is("ended_at", null);
     await apply(supportOrder(support2, creator2, `hd-tov-${s}`, 500));
     const oid = (await admin.from("billing_orders").select("id").eq("provider_order_id", `hd-tov-${s}`).single()).data!.id;
     const earning = (await admin.from("creator_earnings").select("creator_share_minor_units, platform_share_minor_units").eq("billing_order_id", oid).single()).data!;

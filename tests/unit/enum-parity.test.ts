@@ -41,6 +41,11 @@ const KNOWN_UNMIRRORED = new Set<string>([
   "domain_type",
   "domain_verification_status",
   "domain_ssl_status",
+  // Growth & Revenue Engine (8-B.5) — server-only operational enums.
+  "revenue_plan_status",
+  "plan_assignment_type",
+  "plan_qualification_status",
+  "community_health_metric_status",
   "entitlement_source_type",
   "entitlement_status",
   "fanout_status",

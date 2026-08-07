@@ -152,6 +152,9 @@ d("tenant creation validation (new non-video vertical, config + data only)", () 
   });
 
   it("honors the tenant's configured revenue split (75/25) on billing", async () => {
+    // Revenue Plans (8-B.5) sit above the tenant_settings split; end t1's plan so
+    // resolution falls through to the tenant_settings override this test validates.
+    await admin.from("tenant_revenue_plan_assignments").update({ ended_at: new Date().toISOString() }).eq("tenant_id", t1).is("ended_at", null);
     await apply({
       type: "order_created",
       customData: { tenant_id: t1, user_id: buyer, internal_billing_product_id: support1, creator_id: creator1 },

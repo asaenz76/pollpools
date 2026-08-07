@@ -152,8 +152,10 @@ grant execute on function public.assign_revenue_plan(uuid, text, plan_assignment
 create or replace function app.resolve_revenue_split(p_tenant uuid, p_creator uuid, p_type billing_product_type)
 returns table (creator_bps int, platform_bps int)
 language sql stable security definer set search_path = public as $$
-  select coalesce(r.creator_share_basis_points, p.creator_share_basis_points, s.creator_share_bps, 8000),
-         coalesce(r.platform_share_basis_points, p.platform_share_basis_points, s.platform_share_bps, 2000)
+  -- Order: per-creator rule → tenant PLAN share → tenant default → platform default
+  -- floor (platform_config, F-11). A tenant with no plan resolves exactly as before.
+  select coalesce(r.creator_share_basis_points, p.creator_share_basis_points, s.creator_share_bps, pc.default_creator_share_bps),
+         coalesce(r.platform_share_basis_points, p.platform_share_basis_points, s.platform_share_bps, pc.default_platform_share_bps)
   from (select 1) one
   left join lateral (
     select creator_share_basis_points, platform_share_basis_points
@@ -169,7 +171,8 @@ language sql stable security definer set search_path = public as $$
     where a.tenant_id = p_tenant and a.ended_at is null
     limit 1
   ) p on true
-  left join tenant_settings s on s.tenant_id = p_tenant;
+  left join tenant_settings s on s.tenant_id = p_tenant
+  left join platform_config pc on pc.id;
 $$;
 
 -- Public, callable wrapper exposing the effective split (plan share, or per-creator
