@@ -3510,6 +3510,86 @@ export type Database = {
           },
         ]
       }
+      revenue_plan_shares: {
+        Row: {
+          creator_share_basis_points: number
+          id: string
+          plan_id: string
+          platform_share_basis_points: number
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+        }
+        Insert: {
+          creator_share_basis_points: number
+          id?: string
+          plan_id: string
+          platform_share_basis_points: number
+          product_type: Database["public"]["Enums"]["billing_product_type"]
+        }
+        Update: {
+          creator_share_basis_points?: number
+          id?: string
+          plan_id?: string
+          platform_share_basis_points?: number
+          product_type?: Database["public"]["Enums"]["billing_product_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "revenue_plan_shares_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      revenue_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_name: string
+          display_order: number
+          feature_eligibility: Json
+          grace_period_days: number
+          id: string
+          is_default: boolean
+          key: string
+          qualification: Json
+          status: Database["public"]["Enums"]["revenue_plan_status"]
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_name: string
+          display_order?: number
+          feature_eligibility?: Json
+          grace_period_days?: number
+          id?: string
+          is_default?: boolean
+          key: string
+          qualification?: Json
+          status?: Database["public"]["Enums"]["revenue_plan_status"]
+          tier: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          display_order?: number
+          feature_eligibility?: Json
+          grace_period_days?: number
+          id?: string
+          is_default?: boolean
+          key?: string
+          qualification?: Json
+          status?: Database["public"]["Enums"]["revenue_plan_status"]
+          tier?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scoring_rules: {
         Row: {
           config: Json
@@ -4022,6 +4102,64 @@ export type Database = {
           },
         ]
       }
+      tenant_revenue_plan_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          assignment_type: Database["public"]["Enums"]["plan_assignment_type"]
+          created_at: string
+          ended_at: string | null
+          id: string
+          plan_id: string
+          reason: string | null
+          tenant_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_type: Database["public"]["Enums"]["plan_assignment_type"]
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          plan_id: string
+          reason?: string | null
+          tenant_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          assignment_type?: Database["public"]["Enums"]["plan_assignment_type"]
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          plan_id?: string
+          reason?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_revenue_plan_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_revenue_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "revenue_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_revenue_plan_assignments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_settings: {
         Row: {
           allowed_media_providers: string[]
@@ -4427,6 +4565,15 @@ export type Database = {
         Returns: undefined
       }
       approve_creator_payout: { Args: { p_payout_id: string }; Returns: Json }
+      assign_revenue_plan: {
+        Args: {
+          p_plan_key: string
+          p_reason?: string
+          p_tenant: string
+          p_type: Database["public"]["Enums"]["plan_assignment_type"]
+        }
+        Returns: string
+      }
       award_competition_prizes: {
         Args: { p_competition_id: string }
         Returns: number
@@ -4899,6 +5046,11 @@ export type Database = {
         | "prize_awarded"
         | "prediction_updated"
       option_status: "active" | "withdrawn" | "voided" | "winner" | "loser"
+      plan_assignment_type:
+        | "initial"
+        | "automatic_upgrade"
+        | "automatic_downgrade"
+        | "manual"
       prediction_status: "active" | "locked" | "correct" | "incorrect" | "void"
       prize_award_status:
         | "awarded"
@@ -4935,6 +5087,7 @@ export type Database = {
         | "external_provider"
         | "webhook"
         | "future_adapter"
+      revenue_plan_status: "active" | "manual" | "retired"
       sentiment_visibility: "always" | "after_prediction" | "after_lock"
       settlement_status:
         | "pending"
@@ -5306,6 +5459,12 @@ export const Constants = {
         "prediction_updated",
       ],
       option_status: ["active", "withdrawn", "voided", "winner", "loser"],
+      plan_assignment_type: [
+        "initial",
+        "automatic_upgrade",
+        "automatic_downgrade",
+        "manual",
+      ],
       prediction_status: ["active", "locked", "correct", "incorrect", "void"],
       prize_award_status: [
         "awarded",
@@ -5347,6 +5506,7 @@ export const Constants = {
         "webhook",
         "future_adapter",
       ],
+      revenue_plan_status: ["active", "manual", "retired"],
       sentiment_visibility: ["always", "after_prediction", "after_lock"],
       settlement_status: [
         "pending",
