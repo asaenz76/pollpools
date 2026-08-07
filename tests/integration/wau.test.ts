@@ -76,7 +76,7 @@ d("WAU measurement", () => {
     const { data } = await admin
       .rpc("tenant_wau_current" as never, { p_tenant: tenantId, p_as_of: asOf.toISOString() } as never)
       .single();
-    const row = data as { current_wau: number; previous_wau: number; window_days: number };
+    const row = data as unknown as { current_wau: number; previous_wau: number; window_days: number };
     expect(row.window_days).toBe(7);
     expect(row.current_wau).toBe(3);
     expect(row.previous_wau).toBe(2);

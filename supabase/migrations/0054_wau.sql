@@ -70,7 +70,10 @@ create or replace function app.tenant_wau(
       union all
       select user_id from tenant_user_activity
         where p_sig_login and tenant_id = p_tenant
-          and activity_date >= p_from::date and activity_date < p_to::date
+          and activity_date >= p_from::date
+          -- Include the final day when p_to is mid-day (e.g. now()); a clean
+          -- midnight upper bound stays exclusive so adjacent windows don't overlap.
+          and activity_date < (p_to::date + (p_to > date_trunc('day', p_to))::int)
     ) actions
     group by user_id
     having count(*) >= p_min_actions

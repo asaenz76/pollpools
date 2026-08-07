@@ -4117,6 +4117,63 @@ export type Database = {
           },
         ]
       }
+      tenant_plan_state: {
+        Row: {
+          at_risk_since: string | null
+          current_wau: number
+          grace_ends_at: string | null
+          last_evaluated_at: string | null
+          manual_override: boolean
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
+          status: Database["public"]["Enums"]["plan_qualification_status"]
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          at_risk_since?: string | null
+          current_wau?: number
+          grace_ends_at?: string | null
+          last_evaluated_at?: string | null
+          manual_override?: boolean
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
+          status?: Database["public"]["Enums"]["plan_qualification_status"]
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          at_risk_since?: string | null
+          current_wau?: number
+          grace_ends_at?: string | null
+          last_evaluated_at?: string | null
+          manual_override?: boolean
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
+          status?: Database["public"]["Enums"]["plan_qualification_status"]
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_plan_state_override_by_fkey"
+            columns: ["override_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_plan_state_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_revenue_plan_assignments: {
         Row: {
           assigned_at: string
@@ -4662,6 +4719,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      clear_plan_override: {
+        Args: { p_reason: string; p_tenant: string }
+        Returns: undefined
+      }
       complete_job: { Args: { p_id: string }; Returns: undefined }
       create_billing_checkout: {
         Args: {
@@ -4738,6 +4799,8 @@ export type Database = {
         }
         Returns: string
       }
+      evaluate_all_tenant_plans: { Args: never; Returns: number }
+      evaluate_tenant_plan: { Args: { p_tenant: string }; Returns: string }
       expire_draft_reservations: { Args: never; Returns: number }
       fail_job: { Args: { p_error: string; p_id: string }; Returns: string }
       lock_due_markets: { Args: never; Returns: number }
@@ -4902,6 +4965,10 @@ export type Database = {
           p_provider_checkout_id: string
           p_url: string
         }
+        Returns: undefined
+      }
+      set_plan_override: {
+        Args: { p_plan_key: string; p_reason: string; p_tenant: string }
         Returns: undefined
       }
       settle_event: {
@@ -5137,6 +5204,7 @@ export type Database = {
         | "automatic_upgrade"
         | "automatic_downgrade"
         | "manual"
+      plan_qualification_status: "qualified" | "at_risk"
       prediction_status: "active" | "locked" | "correct" | "incorrect" | "void"
       prize_award_status:
         | "awarded"
@@ -5551,6 +5619,7 @@ export const Constants = {
         "automatic_downgrade",
         "manual",
       ],
+      plan_qualification_status: ["qualified", "at_risk"],
       prediction_status: ["active", "locked", "correct", "incorrect", "void"],
       prize_award_status: [
         "awarded",
