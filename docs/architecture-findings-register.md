@@ -50,7 +50,7 @@ Interim states while Phase 7.5 is in flight: **Open** (not started) · **In prog
 | F-20 | Missing `predictions(market_id, status)` index | 🟡 | §17, §7.6 | Resolve | ✅ Resolved |
 | F-21 | English-only default question despite `default_locale` | 🟡 | §7, §14 | Resolve | ⏭ Deferred (Phase 8) |
 | F-22 | No notification delivery-channel abstraction | 🟠 | §11 | Resolve | ⏭ Deferred (Phase 8) |
-| F-23 | No admin / ops surface | 🟠 | §7.6, §8A | Resolve | 🏗 In progress (Phase 8-A: admin ops UI) |
+| F-23 | No admin / ops surface | 🟠 | §7.6, §8A | Resolve | ✅ Resolved |
 | F-24 | `mock/pay` GET route lacks explicit env assertion | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-25 | `requestPayoutAction` persists unvalidated amount | 🟡 | §2 | Resolve | ✅ Resolved |
 | F-26 | `approve_creator_payout` reject-cleanup ordering | 🟡 | §2 | Resolve | ✅ Resolved |
@@ -367,12 +367,25 @@ Database impact · Risk · Estimated effort · Status.**
 - **Files affected.** new `src/lib/providers/notification/*`, notification producers, config, tests.
 - **Database impact.** Delivery metadata optional; additive. **Risk.** Low. **Effort.** M. **Status.** Open.
 
-### F-23 — No admin / ops surface 🟠
+### F-23 — No admin / ops surface 🟠 → ✅ Resolved
 - **Description.** Settlement queue, moderation, billing ops, reconciliation UIs don't exist.
-- **Planned solution.** **Defer to Phase 8** (Admin & Operations) — the data model is already in
-  place; this phase intentionally builds the platform substrate, not the operator UI.
-- **Files affected.** — (Phase 8). **Database impact.** none now. **Risk.** Operational.
-- **Effort.** L (Phase 8). **Status.** Open → will land **Deferred**.
+- **Planned solution.** A super-admin operations surface exposing the existing ops backend.
+- **Status.** ✅ **Resolved** (Phase 8-A). A platform-level, super-admin-gated `/admin` surface
+  (`requireSuperAdmin()` → 404 for everyone else): (1) a cross-tenant **overview** + tenant list with
+  projection-health badges; (2) a per-tenant **ops dashboard** (job-queue stats, active jobs by type,
+  recent failures) with **Drain / Run monitor / Requeue** actions; (3) **reconciliation** controls
+  (scope × dry-run/repair/requeue) + `reconciliation_runs` history; (4) a **comment moderation** queue
+  (soft Hide/Restore/Delete — never a hard delete, so audit is preserved); (5) **billing/payout ops**
+  (approve / reject / mark-paid). **No new operational or financial logic** — every action orchestrates
+  an existing, already-tested RPC/service (`drainWithLease` / `monitorWithLease` / `reconcile` /
+  `requeue_actionable_jobs` / comments RLS `status` / `approve_creator_payout` /
+  `reject_creator_payout` / `mark_creator_payout_paid`) behind the super-admin gate, with server-side
+  validation intact and **no client-controlled financial values** (payout amounts are validated at
+  request time; the operator acts by id only). Financial actions run via the operator's session client
+  so `reviewed_by` records who approved. Every slice browser-verified end to end. The `/api/internal`
+  drain/monitor endpoints (Phase 7.6) remain the scheduled path; this adds the human operator surface.
+  Files: `src/lib/ops/admin.ts`, `src/lib/ops/admin-actions.ts`, `src/app/admin/**`,
+  `src/components/admin/**`. 388 tests pass; typecheck + lint + build clean.
 
 ### F-24 — `mock/pay` route lacks explicit env assertion 🟡
 - **Description.** The mock hosted-checkout GET route self-signs webhooks and grants entitlements,
