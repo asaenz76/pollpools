@@ -723,3 +723,24 @@ document; this register is its actionable, status-tracked counterpart.
     reconciliation, custom domains, and isolation. Existing tenant suites unchanged.
   - **Remaining Phase-8 items:** F-17 / F-18 (perf) and the F-21 default-question l10n residual →
     Phase 8-C.
+- **2026-08-07** — **Phase 8-B.5 (Growth & Revenue Engine + Community Health)** — commercial layer
+  that rewards tenants for growth, built on the existing billing/earnings/config/admin/notifications/
+  provider stack (no billing/settlement/prediction rewrite). Migrations `0052`–`0060`. Docs:
+  commercial-architecture.md, revenue-plans.md, growth-engine.md, community-health.md,
+  tenant-success-timeline.md.
+  - **GRE.1** Revenue Plans (economics; immutable assignment history; split tier in
+    `resolve_revenue_split`; Platform Support never shareable). **GRE.2** configurable set-based WAU.
+    **GRE.3** automatic upgrade/downgrade with grace, recovery, hysteresis, manual override, cron.
+  - **GRE.4** Community Health — deterministic 5-metric coaching score (Draft Participation a
+    first-class peer of Prediction Participation), disabled-feature normalization, Building Baseline,
+    anonymous benchmarks, formula-versioned immutable snapshots. Platform Health is **not** scored
+    (separate unscored Platform Status). **Never** a Revenue-Plan input.
+  - **GRE.5** Tenant Growth Dashboard (This Period → Plan + Next Milestone → Community Health →
+    Platform Status → Success Timeline) + Success Timeline (positive-only, immutable). **GRE.6**
+    super-admin growth/health config (audited). **GRE.7** growth notifications (trigger-based,
+    deduped) + Platform-Support privacy.
+  - **Platform Support is platform-private** (hard rule): 100% platform, never shared, invisible to
+    tenants in every surface, creates no tenant earnings; visible to Super Admin only — enforced by
+    DB constraint + RLS + data-layer exclusion, with dedicated security tests.
+  - Business rules enforced: economics (plans) and coaching (health) are independent; percentages
+    visible-not-editable to tenants; plan changes affect future only; historical earnings immutable.
