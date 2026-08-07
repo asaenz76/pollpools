@@ -171,6 +171,42 @@ export async function getModerationComments(tenantId: string, limit = 50): Promi
   }));
 }
 
+export type TenantDomain = {
+  id: string;
+  domain: string;
+  domainType: string;
+  verificationStatus: string;
+  verificationToken: string | null;
+  sslStatus: string;
+  isPrimary: boolean;
+  verified: boolean;
+  verifiedAt: string | null;
+  createdAt: string;
+};
+
+/** All domains for a tenant (primary first, then newest), for the domain admin UI. */
+export async function getTenantDomains(tenantId: string): Promise<TenantDomain[]> {
+  const admin = createAdminSupabase();
+  const { data } = await admin
+    .from("tenant_domains")
+    .select("id, domain, domain_type, verification_status, verification_token, ssl_status, is_primary, verified, verified_at, created_at")
+    .eq("tenant_id", tenantId)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: false });
+  return (data ?? []).map((d) => ({
+    id: d.id,
+    domain: d.domain,
+    domainType: d.domain_type,
+    verificationStatus: d.verification_status,
+    verificationToken: d.verification_token,
+    sslStatus: d.ssl_status,
+    isPrimary: d.is_primary,
+    verified: d.verified,
+    verifiedAt: d.verified_at,
+    createdAt: d.created_at,
+  }));
+}
+
 export type ReconciliationRun = {
   id: string;
   scopeType: string;

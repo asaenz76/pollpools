@@ -3890,26 +3890,44 @@ export type Database = {
         Row: {
           created_at: string
           domain: string
+          domain_type: Database["public"]["Enums"]["domain_type"]
           id: string
           is_primary: boolean
+          ssl_status: Database["public"]["Enums"]["domain_ssl_status"]
           tenant_id: string
+          updated_at: string
+          verification_status: Database["public"]["Enums"]["domain_verification_status"]
+          verification_token: string | null
           verified: boolean
+          verified_at: string | null
         }
         Insert: {
           created_at?: string
           domain: string
+          domain_type?: Database["public"]["Enums"]["domain_type"]
           id?: string
           is_primary?: boolean
+          ssl_status?: Database["public"]["Enums"]["domain_ssl_status"]
           tenant_id: string
+          updated_at?: string
+          verification_status?: Database["public"]["Enums"]["domain_verification_status"]
+          verification_token?: string | null
           verified?: boolean
+          verified_at?: string | null
         }
         Update: {
           created_at?: string
           domain?: string
+          domain_type?: Database["public"]["Enums"]["domain_type"]
           id?: string
           is_primary?: boolean
+          ssl_status?: Database["public"]["Enums"]["domain_ssl_status"]
           tenant_id?: string
+          updated_at?: string
+          verification_status?: Database["public"]["Enums"]["domain_verification_status"]
+          verification_token?: string | null
           verified?: boolean
+          verified_at?: string | null
         }
         Relationships: [
           {
@@ -4748,6 +4766,14 @@ export type Database = {
         | "verified"
         | "rejected"
         | "suspended"
+      domain_ssl_status:
+        | "pending"
+        | "provisioning"
+        | "active"
+        | "failed"
+        | "disabled"
+      domain_type: "platform" | "custom_subdomain" | "custom_apex"
+      domain_verification_status: "pending" | "verified" | "failed" | "disabled"
       draft_access_type: "free" | "paid" | "invite_only" | "admin_assigned"
       draft_assignment_source:
         | "user_selected"
@@ -5134,6 +5160,15 @@ export const Constants = {
         "rejected",
         "suspended",
       ],
+      domain_ssl_status: [
+        "pending",
+        "provisioning",
+        "active",
+        "failed",
+        "disabled",
+      ],
+      domain_type: ["platform", "custom_subdomain", "custom_apex"],
+      domain_verification_status: ["pending", "verified", "failed", "disabled"],
       draft_access_type: ["free", "paid", "invite_only", "admin_assigned"],
       draft_assignment_source: [
         "user_selected",

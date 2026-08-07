@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
 import { resolveTenantRef } from "@/lib/tenant/resolver";
+import { computeDomainRedirect } from "@/lib/domain/domains";
 
 /** Header names used to pass the middleware-resolved tenant to server components. */
 export const TENANT_HEADER = {
@@ -60,6 +61,35 @@ export async function updateSessionAndTenant(request: NextRequest) {
   // Touch the user to trigger a token refresh when needed. Do not add logic
   // between client creation and this call (per Supabase SSR guidance).
   await supabase.auth.getUser();
+
+  // White-label: a request on a verified NON-primary custom domain redirects to
+  // the tenant's primary domain. Only runs for custom-domain hosts (never for the
+  // platform root, subdomains, or /t/ path routing), so there is no per-request
+  // cost on the common path. Verified rows are publicly readable (RLS).
+  if (ref?.kind === "domain") {
+    const host = request.headers.get("host") ?? "";
+    const { data: owner } = await supabase
+      .from("tenant_domains")
+      .select("tenant_id")
+      .eq("domain", ref.domain)
+      .eq("verified", true)
+      .maybeSingle();
+    if (owner) {
+      const { data: domains } = await supabase
+        .from("tenant_domains")
+        .select("domain, is_primary, verified")
+        .eq("tenant_id", owner.tenant_id)
+        .eq("verified", true);
+      const redirectHost = computeDomainRedirect(
+        host,
+        (domains ?? []).map((d) => ({ domain: d.domain, isPrimary: d.is_primary, verified: d.verified })),
+      );
+      if (redirectHost) {
+        const target = new URL(request.nextUrl.pathname + request.nextUrl.search, `https://${redirectHost}`);
+        return NextResponse.redirect(target, 308);
+      }
+    }
+  }
 
   return response;
 }
