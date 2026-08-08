@@ -765,3 +765,22 @@ document; this register is its actionable, status-tracked counterpart.
     EmailTransport, HTTP-API env transport, in-memory test transport; unconfigured → skips). Not
     auto-wired to a delivery worker (out of scope). Delivery + failure unit-tested; live delivery not
     claimed without credentials.
+- **2026-08-07** — **Phase 8-D (Tenant Template Library)** — a Super Admin can create a new tenant
+  from a versioned, immutable CONFIGURATION BLUEPRINT that maps onto the existing tenant systems.
+  Fully backwards-compatible and additive; no engine forks, no template branching. Migrations
+  `0065`–`0067`. Docs: [tenant-templates.md](tenant-templates.md).
+  - **Model:** `tenant_templates`, `tenant_template_versions` (published versions immutable via a
+    trigger; unique per template+version), immutable `tenant_template_assignments` (exact-applied
+    snapshot), nullable `tenants.template_id/template_version` (legacy tenants stay null — never forced
+    or rewritten).
+  - **Application:** one transactional `create_tenant_from_template` (super-admin/service-role) —
+    validate published + not retired, map config onto tenant_settings/flags/theme/vocabulary/providers,
+    optional demo seed, immutable snapshot, audit; **rolls back completely on any failure**.
+  - **Config:** strict Zod schema + explicit feature-compatibility validators (engine/providers/draft/
+    revenue). Five starter templates (General, Club Sports, Racing, Awards, Cook-Off).
+  - **UI:** `/admin/templates` library + preview + version lifecycle (draft/publish/retire) +
+    create-tenant flow.
+  - **Guarantees (tested):** published versions immutable; no silent migration (a v1 tenant keeps its
+    snapshot when v2 publishes); retire blocks new creation but not existing tenants; the template
+    relationship is optional. Also (config change, per request): the platform "Powered by" footer is
+    now "Poll Pools" via the existing configurable `platform_config.platform_name`, not hardcoded.
