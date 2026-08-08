@@ -46,6 +46,8 @@ const KNOWN_UNMIRRORED = new Set<string>([
   "plan_assignment_type",
   "plan_qualification_status",
   "community_health_metric_status",
+  // Tenant Template Library (8-D) — server-only operational enum.
+  "template_status",
   "entitlement_source_type",
   "entitlement_status",
   "fanout_status",
