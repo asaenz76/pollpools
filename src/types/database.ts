@@ -5140,6 +5140,16 @@ export type Database = {
         }
         Returns: Json
       }
+      create_tenant_from_template: {
+        Args: {
+          p_demo_owner?: string
+          p_identity: Json
+          p_include_demo?: boolean
+          p_overrides?: Json
+          p_template_version_id: string
+        }
+        Returns: Json
+      }
       defer_job: {
         Args: { p_delay_seconds?: number; p_id: string; p_reason: string }
         Returns: undefined

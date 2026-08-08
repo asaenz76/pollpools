@@ -62,3 +62,6 @@ values
   ('00000000-0000-4000-a000-000000000001', 'season_champion', 'Season Champion', 'Finish first in a season.', '{"type":"season_champion"}'::jsonb),
   ('00000000-0000-4000-a000-000000000001', 'creator_champion', 'Creator Champion', 'Finish first on a creator leaderboard.', '{"type":"creator_champion"}'::jsonb)
 on conflict (tenant_id, key) do nothing;
+
+-- Platform brand for this deployment (configurable; drives the "Powered by" footer).
+update platform_config set platform_name = 'Poll Pools';
