@@ -2,12 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { getTenantContext } from "@/lib/tenant/context";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser, getTenantViewer } from "@/lib/auth/session";
+import { platformRoleOf } from "@/lib/auth/roles";
 import { getUnreadNotificationCount } from "@/features/social/get-notifications";
 import { signOutAction } from "@/lib/auth/actions";
 import { Trophy } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { BottomNav } from "@/components/domain/bottom-nav";
+import { RoleContextBar } from "@/components/domain/role-context-bar";
 import { TenantLogo } from "@/components/domain/tenant-logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { resolveTenantBrand, tenantBrandCss } from "@/lib/theme/tenant-theme";
@@ -19,6 +21,9 @@ export default async function TenantLayout({ children }: { children: ReactNode }
   const { tenant } = ctx;
   const user = await getSessionUser();
   const unread = user ? await getUnreadNotificationCount() : 0;
+  // Role decides the one context-switch affordance in the header (participation is
+  // the default here; operators/admins get a deliberate entry to their surfaces).
+  const role = user ? platformRoleOf(await getTenantViewer(tenant.id)) : "guest";
 
   // Resolve this tenant's brand palette and inject it as CSS-variable overrides.
   // Server-rendered → present at first paint (no flash); values are validated hex.
@@ -31,6 +36,7 @@ export default async function TenantLayout({ children }: { children: ReactNode }
         <div className="mx-auto flex w-full max-w-2xl items-center justify-between px-4 py-3">
           <TenantLogo href={`/t/${tenant.slug}`} displayName={tenant.displayName} logoLight={brand.logoLight} logoDark={brand.logoDark} />
           <div className="flex items-center gap-1">
+            {user ? <RoleContextBar role={role} tenantSlug={tenant.slug} /> : null}
             <Link
               href={`/t/${tenant.slug}/leaderboard`}
               aria-label="Leaderboard"

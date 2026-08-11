@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTenantContext } from "@/lib/tenant/context";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser, getTenantViewer } from "@/lib/auth/session";
+import { canOperateTenant } from "@/lib/auth/roles";
 import { ensureMembership } from "@/lib/tenant/membership";
 import { listEvents } from "@/features/events/get-event";
 import { listCompetitions } from "@/features/competitions/get-competition";
@@ -22,6 +23,8 @@ export default async function TenantHome() {
   if (user) {
     await ensureMembership({ tenantId: tenant.id, userId: user.id, email: user.email });
   }
+  // Participation-first for members; operators get a deliberate manage entry.
+  const canOperate = user ? canOperateTenant(await getTenantViewer(tenant.id)) : false;
 
   const [events, competitions] = await Promise.all([listEvents(tenant.id), listCompetitions(tenant.id)]);
   const now = new Date();
@@ -39,12 +42,14 @@ export default async function TenantHome() {
         <Card>
           <CardHeader>
             <CardTitle>You&apos;re in</CardTitle>
-            <CardDescription>Predict on events below, or run your own competitions.</CardDescription>
+            <CardDescription>{canOperate ? "Predict below, or jump into managing your community." : "Predict on events below and build your streak."}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            <Link href={`/t/${tenant.slug}/creator`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Creator Studio
-            </Link>
+            {canOperate ? (
+              <Link href={`/t/${tenant.slug}/creator`} className={buttonVariants({ variant: "primary", size: "sm" })}>
+                Manage community
+              </Link>
+            ) : null}
             <Link href={`/t/${tenant.slug}/creators`} className={buttonVariants({ variant: "outline", size: "sm" })}>
               Browse creators
             </Link>
