@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { publicEnv } from "@/lib/env";
 import { resolveTenantRef } from "@/lib/tenant/resolver";
+import { classifyHost, tenantRewriteTarget, stripTenantPrefix } from "@/lib/tenant/host";
 import { computeDomainRedirect } from "@/lib/domain/domains";
 
 /** Header names used to pass the middleware-resolved tenant to server components. */
@@ -35,8 +36,9 @@ export async function updateSessionAndTenant(request: NextRequest) {
     requestHeaders.set(TENANT_HEADER.source, ref.source);
   }
 
-  let response = NextResponse.next({ request: { headers: requestHeaders } });
-
+  // Capture cookies the session refresh wants to set, so the final response — be
+  // it next(), a rewrite, or a redirect — carries them.
+  const pendingCookies: { name: string; value: string; options?: Record<string, unknown> }[] = [];
   const supabase = createServerClient(
     publicEnv.NEXT_PUBLIC_SUPABASE_URL,
     publicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -46,13 +48,8 @@ export async function updateSessionAndTenant(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
-            request.cookies.set(name, value);
-          }
-          response = NextResponse.next({ request: { headers: requestHeaders } });
-          for (const { name, value, options } of cookiesToSet) {
-            response.cookies.set(name, value, options);
-          }
+          for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
+          pendingCookies.push(...cookiesToSet);
         },
       },
     },
@@ -62,34 +59,62 @@ export async function updateSessionAndTenant(request: NextRequest) {
   // between client creation and this call (per Supabase SSR guidance).
   await supabase.auth.getUser();
 
-  // White-label: a request on a verified NON-primary custom domain redirects to
-  // the tenant's primary domain. Only runs for custom-domain hosts (never for the
-  // platform root, subdomains, or /t/ path routing), so there is no per-request
-  // cost on the common path. Verified rows are publicly readable (RLS).
-  if (ref?.kind === "domain") {
-    const host = request.headers.get("host") ?? "";
+  const applyCookies = (res: NextResponse): NextResponse => {
+    for (const { name, value, options } of pendingCookies) res.cookies.set(name, value, options);
+    return res;
+  };
+  const nextResponse = () => applyCookies(NextResponse.next({ request: { headers: requestHeaders } }));
+
+  // ── Host-based tenant routing (PL.1) ──────────────────────────────────────
+  // On a tenant host (verified custom domain or platform subdomain) the browser
+  // URL stays clean while the request is served by the `/t/{slug}` route tree
+  // internally. Platform hosts and unknown/unverified hosts are never rewritten.
+  const host = request.headers.get("host");
+  const hostClass = classifyHost(host, publicEnv.NEXT_PUBLIC_ROOT_DOMAIN);
+  const pathname = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
+
+  if (hostClass.kind === "custom") {
+    // Authoritative: the domain must be a VERIFIED row mapping to an ACTIVE tenant.
     const { data: owner } = await supabase
       .from("tenant_domains")
-      .select("tenant_id")
-      .eq("domain", ref.domain)
+      .select("tenant_id, tenants!inner(slug, status)")
+      .eq("domain", hostClass.domain)
       .eq("verified", true)
       .maybeSingle();
-    if (owner) {
+    const tenant = owner?.tenants as { slug: string; status: string } | { slug: string; status: string }[] | undefined;
+    const t = Array.isArray(tenant) ? tenant[0] : tenant;
+    if (owner && t && t.status === "active") {
+      // White-label: a verified NON-primary domain redirects to the primary host.
       const { data: domains } = await supabase
         .from("tenant_domains")
         .select("domain, is_primary, verified")
         .eq("tenant_id", owner.tenant_id)
         .eq("verified", true);
       const redirectHost = computeDomainRedirect(
-        host,
+        host ?? "",
         (domains ?? []).map((d) => ({ domain: d.domain, isPrimary: d.is_primary, verified: d.verified })),
       );
       if (redirectHost) {
-        const target = new URL(request.nextUrl.pathname + request.nextUrl.search, `https://${redirectHost}`);
-        return NextResponse.redirect(target, 308);
+        return applyCookies(NextResponse.redirect(new URL(pathname + search, `https://${redirectHost}`), 308));
       }
+      // Keep the internal /t/{slug} prefix out of the browser URL.
+      const stripped = stripTenantPrefix(t.slug, pathname);
+      if (stripped) return applyCookies(NextResponse.redirect(new URL(stripped + search, request.url), 308));
+      const target = tenantRewriteTarget(t.slug, pathname);
+      if (target) {
+        return applyCookies(NextResponse.rewrite(new URL(target + search, request.url), { request: { headers: requestHeaders } }));
+      }
+    }
+    // Unknown/unverified/inactive custom domain → fall through (no tenant served).
+  } else if (hostClass.kind === "subdomain") {
+    const stripped = stripTenantPrefix(hostClass.slug, pathname);
+    if (stripped) return applyCookies(NextResponse.redirect(new URL(stripped + search, request.url), 308));
+    const target = tenantRewriteTarget(hostClass.slug, pathname);
+    if (target) {
+      return applyCookies(NextResponse.rewrite(new URL(target + search, request.url), { request: { headers: requestHeaders } }));
     }
   }
 
-  return response;
+  return nextResponse();
 }
