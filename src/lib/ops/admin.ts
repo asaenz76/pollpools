@@ -40,6 +40,7 @@ export type PlatformOverview = {
 
 /** Cross-tenant operational overview: each tenant's projection health + roll-ups. */
 export async function getPlatformOverview(): Promise<PlatformOverview> {
+  await requireSuperAdmin();
   const admin = createAdminSupabase();
   const { data: tenants } = await admin
     .from("tenants")
@@ -81,6 +82,7 @@ export type TenantOps = {
 
 /** Full operational detail for one tenant (health + job statistics). */
 export async function getTenantOps(tenantId: string): Promise<TenantOps | null> {
+  await requireSuperAdmin();
   const admin = createAdminSupabase();
   const { data: tenant } = await admin.from("tenants").select("id, slug, display_name").eq("id", tenantId).maybeSingle();
   if (!tenant) return null;
@@ -103,6 +105,7 @@ export type PayoutRequest = {
 
 /** Creator payout requests for a tenant (pending first), for operator review. */
 export async function getPayoutRequests(tenantId: string, limit = 50): Promise<PayoutRequest[]> {
+  await requireSuperAdmin();
   const admin = createAdminSupabase();
   const { data } = await admin
     .from("creator_payout_requests")
@@ -147,6 +150,7 @@ export type ModerationComment = {
  * service-role client behind the super-admin gate.
  */
 export async function getModerationComments(tenantId: string, limit = 50): Promise<ModerationComment[]> {
+  await requireSuperAdmin();
   const admin = createAdminSupabase();
   const { data } = await admin
     .from("comments")
@@ -186,6 +190,7 @@ export type TenantDomain = {
 
 /** All domains for a tenant (primary first, then newest), for the domain admin UI. */
 export async function getTenantDomains(tenantId: string): Promise<TenantDomain[]> {
+  await requireSuperAdmin();
   const admin = createAdminSupabase();
   const { data } = await admin
     .from("tenant_domains")
@@ -222,6 +227,7 @@ export type ReconciliationRun = {
 
 /** Recent reconciliation_runs for a tenant (audit history of operator runs). */
 export async function getReconciliationRuns(tenantId: string, limit = 15): Promise<ReconciliationRun[]> {
+  await requireSuperAdmin();
   const admin = createAdminSupabase();
   const { data } = await admin
     .from("reconciliation_runs")
