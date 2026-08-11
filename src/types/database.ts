@@ -3074,6 +3074,60 @@ export type Database = {
           },
         ]
       }
+      notification_deliveries: {
+        Row: {
+          attempts: number
+          channel: string
+          created_at: string
+          error: string | null
+          id: string
+          notification_id: string
+          provider: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_id: string
+          provider?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          notification_id?: string
+          provider?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_deliveries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_fanouts: {
         Row: {
           batches_processed: number
@@ -3208,6 +3262,7 @@ export type Database = {
           default_creator_share_bps: number
           default_engine_version: string
           default_platform_share_bps: number
+          email_delivery_enabled: boolean
           health_baseline_min_age_days: number
           health_baseline_min_events: number
           health_benchmark_min_tenants: number
@@ -3227,6 +3282,7 @@ export type Database = {
           default_creator_share_bps?: number
           default_engine_version?: string
           default_platform_share_bps?: number
+          email_delivery_enabled?: boolean
           health_baseline_min_age_days?: number
           health_baseline_min_events?: number
           health_benchmark_min_tenants?: number
@@ -3246,6 +3302,7 @@ export type Database = {
           default_creator_share_bps?: number
           default_engine_version?: string
           default_platform_share_bps?: number
+          email_delivery_enabled?: boolean
           health_baseline_min_age_days?: number
           health_baseline_min_events?: number
           health_benchmark_min_tenants?: number

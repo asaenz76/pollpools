@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { MemoryEmailTransport, createEmailNotificationProvider, emailTransportFromEnv } from "@/lib/providers/email";
+import { MemoryEmailTransport, createEmailNotificationProvider, emailTransportFromEnv, applicationEmailTransportFromEnv, RESEND_ENDPOINT } from "@/lib/providers/email";
 import { deliverNotification, type DeliverableNotification } from "@/lib/providers/notification";
 
 const sample: DeliverableNotification = {
@@ -52,5 +52,13 @@ describe("email NotificationProvider (Phase 8-C)", () => {
   it("builds no transport from env when credentials are absent", () => {
     expect(emailTransportFromEnv({})).toBeNull();
     expect(emailTransportFromEnv({ EMAIL_API_ENDPOINT: "https://x", EMAIL_API_KEY: "k", EMAIL_FROM: "a@b.c" })).not.toBeNull();
+  });
+
+  it("prefers Resend (RESEND_API_KEY + EMAIL_FROM) for the application transport, else falls back / null", () => {
+    expect(applicationEmailTransportFromEnv({})).toBeNull();
+    expect(applicationEmailTransportFromEnv({ RESEND_API_KEY: "re_x", EMAIL_FROM: "a@b.c" })).not.toBeNull();
+    expect(RESEND_ENDPOINT).toContain("resend.com");
+    // Falls back to the generic transport when Resend isn't set.
+    expect(applicationEmailTransportFromEnv({ EMAIL_API_ENDPOINT: "https://x", EMAIL_API_KEY: "k", EMAIL_FROM: "a@b.c" })).not.toBeNull();
   });
 });

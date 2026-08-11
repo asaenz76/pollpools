@@ -21,3 +21,4 @@ export { JOB_TYPES, NOTIFICATION_FANOUT_BATCH_SIZE, type ProjectionPayload } fro
 import "./handlers/settlement";
 import "./handlers/event-publish";
 import "./handlers/event-lifecycle";
+import "./handlers/notification-email";

@@ -56,6 +56,22 @@ export function emailTransportFromEnv(env: Record<string, string | undefined> = 
   return createHttpEmailTransport({ endpoint, apiKey, from });
 }
 
+/** Resend's send endpoint — its REST API matches our generic {from,to,subject,text} POST. */
+export const RESEND_ENDPOINT = "https://api.resend.com/emails";
+
+/**
+ * Application email transport, preferring Resend (RESEND_API_KEY + EMAIL_FROM) — the
+ * first real production transport (PL.3) — and falling back to the generic
+ * EMAIL_API_* HTTP transport. Returns null when nothing is configured, so delivery
+ * SKIPS rather than pretending to send. Server-only env; keys never reach the client.
+ */
+export function applicationEmailTransportFromEnv(env: Record<string, string | undefined> = process.env): EmailTransport | null {
+  const resendKey = env.RESEND_API_KEY;
+  const from = env.EMAIL_FROM;
+  if (resendKey && from) return createHttpEmailTransport({ endpoint: RESEND_ENDPOINT, apiKey: resendKey, from });
+  return emailTransportFromEnv(env);
+}
+
 /**
  * An email NotificationProvider. The recipient's address is resolved via an
  * injected function (the provider stays decoupled from the user store). Reuses the
