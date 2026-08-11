@@ -10,8 +10,9 @@ import { sentimentLabel, type Sentiment } from "@/lib/domain/sentiment";
 import type { MarketStatus } from "@/types/enums";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { CompetitorMark } from "@/components/domain/competitor-mark";
 
-type Option = { id: string; label: string; color: string | null };
+type Option = { id: string; label: string; color: string | null; colors?: string[]; identifier?: string | null; imageUrl?: string | null };
 
 export type PredictionMarketProps = {
   marketId: string;
@@ -152,6 +153,9 @@ export function PredictionMarket(props: PredictionMarketProps) {
                       <Check className="size-4 text-positive" />
                     ) : isPicked ? (
                       <Check className={cn("size-4", isPickedLoser ? "text-negative" : "text-primary")} />
+                    ) : null}
+                    {(o.colors?.length ?? 0) > 0 || o.imageUrl || o.identifier || o.color ? (
+                      <CompetitorMark name={o.label} colors={o.colors ?? (o.color ? [o.color] : [])} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
                     ) : null}
                     {o.label}
                   </span>

@@ -30,7 +30,7 @@ export default defineConfig({
     // Cap worker threads to keep DB contention bounded and runs deterministic.
     poolOptions: { threads: { maxThreads: 4, minThreads: 1 } },
     // Playwright specs live in tests/e2e and are run by Playwright, not Vitest.
-    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts", "src/**/*.test.{ts,tsx}"],
+    include: ["tests/unit/**/*.test.{ts,tsx}", "tests/integration/**/*.test.{ts,tsx}", "src/**/*.test.{ts,tsx}"],
     exclude: ["tests/e2e/**", "node_modules/**"],
   },
 });

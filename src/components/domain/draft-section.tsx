@@ -10,6 +10,7 @@ import { CheckoutButton } from "@/components/billing/buttons";
 import { DRAFT_PAID_NOTICE } from "@/lib/constants";
 import { formatCountdown } from "@/lib/domain/locking";
 import { buttonVariants } from "@/components/ui/button";
+import { CompetitorMark } from "@/components/domain/competitor-mark";
 import { cn } from "@/lib/utils";
 
 function formatFee(minor: number | null, currency: string | null): string {
@@ -131,11 +132,7 @@ export function DraftSection({
                     )}
                   >
                     <span className="flex items-center gap-2">
-                      <span
-                        aria-hidden
-                        className="size-3 rounded-full border border-border"
-                        style={{ backgroundColor: r.color ?? "transparent" }}
-                      />
+                      <CompetitorMark name={r.name} colors={r.colors ?? (r.color ? [r.color] : [])} identifier={r.identifier} imageUrl={r.imageUrl} size={20} />
                       {r.name}
                     </span>
                     <span className="text-xs text-muted-foreground">

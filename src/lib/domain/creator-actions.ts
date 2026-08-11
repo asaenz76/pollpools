@@ -82,16 +82,54 @@ export async function updateCreatorProfileAction(input: { creatorId: string; dis
 }
 
 // ── Competitors ──────────────────────────────────────────────────────────────
-export async function addCompetitorAction(input: { creatorId: string; name: string; color?: string }): Promise<Ok | Err> {
-  const parsed = z.object({ creatorId: uuid, name: z.string().trim().min(1).max(80), color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional() }).safeParse(input);
-  if (!parsed.success) return { ok: false, error: "Enter a competitor name." };
+// Generic visual identity: 0–4 canonical #RRGGBB colors + an optional short
+// identifier (number OR label, e.g. "8", "A", "07"). Validated server-side; colors
+// normalized to lowercase. The legacy `color` column is kept in sync (first color)
+// for backwards compatibility. No marble/billiard-specific fields.
+const hexColor = z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, "Colors must be #RRGGBB hex.");
+const visualColorsSchema = z.array(hexColor).max(4, "A competitor can have at most 4 colors.");
+const identifierSchema = z.string().trim().min(1).max(6);
+
+function normalizeColors(colors: string[] | undefined, legacy: string | undefined): string[] {
+  const list = colors && colors.length ? colors : legacy ? [legacy] : [];
+  return list.map((c) => c.toLowerCase());
+}
+
+export async function addCompetitorAction(input: { creatorId: string; name: string; colors?: string[]; identifier?: string; color?: string }): Promise<Ok | Err> {
+  const parsed = z
+    .object({ creatorId: uuid, name: z.string().trim().min(1).max(80), colors: visualColorsSchema.optional(), identifier: identifierSchema.optional(), color: hexColor.optional() })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter a competitor name." };
   const supabase = await createServerSupabase();
   const { data: creator } = await supabase.from("creators").select("tenant_id").eq("id", parsed.data.creatorId).maybeSingle();
   if (!creator) return { ok: false, error: "Creator not found." };
+  const colors = normalizeColors(parsed.data.colors, parsed.data.color);
   const { error } = await supabase.from("competitors").insert({
-    tenant_id: creator.tenant_id, creator_id: parsed.data.creatorId, name: parsed.data.name, slug: slugify(parsed.data.name), color: parsed.data.color ?? null,
-  });
+    tenant_id: creator.tenant_id, creator_id: parsed.data.creatorId, name: parsed.data.name, slug: slugify(parsed.data.name),
+    color: colors[0] ?? null, visual_colors: colors, identifier: parsed.data.identifier ?? null,
+  } as never);
   if (error) return { ok: false, error: "Couldn't add competitor." };
+  return { ok: true };
+}
+
+/** Edit a competitor's name and visual identity (owner-scoped via RLS). */
+export async function updateCompetitorAction(input: { competitorId: string; name?: string; colors?: string[]; identifier?: string | null }): Promise<Ok | Err> {
+  const parsed = z
+    .object({ competitorId: uuid, name: z.string().trim().min(1).max(80).optional(), colors: visualColorsSchema.optional(), identifier: identifierSchema.nullable().optional() })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const supabase = await createServerSupabase();
+  const patch: Record<string, unknown> = {};
+  if (parsed.data.name !== undefined) patch.name = parsed.data.name;
+  if (parsed.data.colors !== undefined) {
+    const colors = normalizeColors(parsed.data.colors, undefined);
+    patch.visual_colors = colors;
+    patch.color = colors[0] ?? null;
+  }
+  if (parsed.data.identifier !== undefined) patch.identifier = parsed.data.identifier?.trim() || null;
+  if (Object.keys(patch).length === 0) return { ok: false, error: "Nothing to update." };
+  const { error } = await supabase.from("competitors").update(patch as never).eq("id", parsed.data.competitorId);
+  if (error) return { ok: false, error: "Couldn't update competitor." };
   return { ok: true };
 }
 

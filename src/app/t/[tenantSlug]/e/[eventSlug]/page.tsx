@@ -105,7 +105,7 @@ export default async function EventPage({ params }: { params: Promise<{ eventSlu
               question={m.question}
               marketStatus={m.status}
               effectiveLocksAt={m.locksAt ?? event.locksAt}
-              options={m.options.map((o) => ({ id: o.id, label: o.label, color: o.color }))}
+              options={m.options.map((o) => ({ id: o.id, label: o.label, color: o.color, colors: o.colors, identifier: o.identifier, imageUrl: o.imageUrl }))}
               sentiment={m.sentiment}
               userOptionId={m.userOptionId}
               signedIn={Boolean(user)}

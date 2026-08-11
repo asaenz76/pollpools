@@ -30,7 +30,7 @@ export default async function SubmitResultPage({ params }: { params: Promise<{ e
   // outcome like "Draw"), so present the options rather than competitors.
   const { data: marketRows } = await supabase
     .from("markets")
-    .select("id, market_options(id, label, competitor_id, color, display_order)")
+    .select("id, market_options(id, label, competitor_id, color, display_order, competitors(visual_colors, identifier, image_url))")
     .eq("event_id", event.id)
     .neq("status", "draft")
     .order("created_at");
@@ -38,7 +38,10 @@ export default async function SubmitResultPage({ params }: { params: Promise<{ e
     (m.market_options ?? [])
       .slice()
       .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-      .map((o) => ({ id: o.id, label: o.label, competitorId: o.competitor_id, color: o.color })),
+      .map((o) => {
+        const comp = (Array.isArray(o.competitors) ? o.competitors[0] : o.competitors) as { visual_colors: string[] | null; identifier: string | null; image_url: string | null } | null;
+        return { id: o.id, label: o.label, competitorId: o.competitor_id, color: o.color, colors: (comp?.visual_colors ?? []) as string[], identifier: comp?.identifier ?? null, imageUrl: comp?.image_url ?? null };
+      }),
   );
 
   const isSettled = event.status === "settled" || event.status === "voided";

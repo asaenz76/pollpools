@@ -36,7 +36,7 @@ export const getMyCreator = cache(async (tenantId: string): Promise<MyCreator | 
   };
 });
 
-export type CreatorCompetitor = { id: string; name: string; color: string | null };
+export type CreatorCompetitor = { id: string; name: string; color: string | null; colors: string[]; identifier: string | null; imageUrl: string | null };
 export type CreatorCompetition = { id: string; title: string; slug: string; type: CompetitionType; status: string };
 export type CreatorEvent = { id: string; title: string; slug: string; status: EventStatus; startsAt: string | null };
 
@@ -54,7 +54,7 @@ export async function getCreatorWorkspace(tenantId: string): Promise<CreatorWork
   const supabase = await createServerSupabase();
 
   const [competitors, competitions, events] = await Promise.all([
-    supabase.from("competitors").select("id, name, color").eq("creator_id", creator.id).order("name"),
+    supabase.from("competitors").select("id, name, color, visual_colors, identifier, image_url").eq("creator_id", creator.id).order("name"),
     supabase.from("competitions").select("id, title, slug, type, status").eq("creator_id", creator.id).order("created_at", { ascending: false }),
     supabase.from("events").select("id, title, slug, status, starts_at").eq("creator_id", creator.id).order("created_at", { ascending: false }).limit(50),
   ]);
@@ -73,7 +73,7 @@ export async function getCreatorWorkspace(tenantId: string): Promise<CreatorWork
 
   return {
     creator,
-    competitors: (competitors.data ?? []).map((c) => ({ id: c.id, name: c.name, color: c.color })),
+    competitors: (competitors.data ?? []).map((c) => ({ id: c.id, name: c.name, color: c.color, colors: (c.visual_colors ?? []) as string[], identifier: c.identifier, imageUrl: c.image_url })),
     competitions: (competitions.data ?? []).map((c) => ({ id: c.id, title: c.title, slug: c.slug, type: c.type as CompetitionType, status: c.status })),
     events: (events.data ?? []).map((e) => ({ id: e.id, title: e.title, slug: e.slug, status: e.status as EventStatus, startsAt: e.starts_at })),
     stats: {

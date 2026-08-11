@@ -6,6 +6,7 @@ import {
   becomeCreatorAction,
   updateCreatorProfileAction,
   addCompetitorAction,
+  updateCompetitorAction,
   createCompetitionAction,
   createBracketCompetitionAction,
   createEventAction,
@@ -19,8 +20,9 @@ import { MIN_BRACKET_COMPETITORS, MAX_BRACKET_COMPETITORS } from "@/lib/constant
 import { cn } from "@/lib/utils";
 import { EVENT_MEDIA_TYPE, type EventMediaType } from "@/types/enums";
 import { validateMediaUrl, detectProvider, providerLabel } from "@/lib/domain/media";
+import { CompetitorMark } from "@/components/domain/competitor-mark";
 
-type Competitor = { id: string; name: string; color: string | null };
+type Competitor = { id: string; name: string; color: string | null; colors?: string[]; identifier?: string | null; imageUrl?: string | null };
 
 function Err({ msg }: { msg: string | null }) {
   return msg ? <p className="text-sm text-negative">{msg}</p> : null;
@@ -63,7 +65,7 @@ function CompetitorPicker({
                 on ? "border-primary bg-muted" : "border-border hover:bg-muted",
               )}
             >
-              <span aria-hidden className="size-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: c.color ?? "transparent" }} />
+              <CompetitorMark name={c.name} colors={c.colors ?? (c.color ? [c.color] : [])} identifier={c.identifier} imageUrl={c.imageUrl} size={20} />
               <span className="min-w-0 truncate">{c.name}</span>
               {on ? <span className="ml-auto text-xs text-primary">✓</span> : null}
             </button>
@@ -134,37 +136,106 @@ export function ProfileForm({ creatorId, initial }: { creatorId: string; initial
   );
 }
 
+// ── Appearance editor (0–4 colors + optional identifier), reused create + edit ──
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+function AppearanceEditor({
+  name, colors, setColors, identifier, setIdentifier,
+}: {
+  name: string;
+  colors: string[];
+  setColors: (c: string[]) => void;
+  identifier: string;
+  setIdentifier: (v: string) => void;
+}) {
+  const setAt = (i: number, v: string) => setColors(colors.map((c, idx) => (idx === i ? v : c)));
+  return (
+    <fieldset className="flex flex-col gap-3 rounded-lg border border-border p-3">
+      <legend className="px-1 text-sm font-medium">Appearance</legend>
+      <div className="flex items-center gap-3">
+        <CompetitorMark name={name || "Competitor"} colors={colors.filter((c) => HEX_RE.test(c))} identifier={identifier} size={40} />
+        <span className="text-xs text-muted-foreground">Preview</span>
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label>Colors</Label>
+        {colors.map((c, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <input type="color" aria-label={`Color ${i + 1}`} value={HEX_RE.test(c) ? c : "#000000"} onChange={(e) => setAt(i, e.target.value)} className="h-9 w-12 rounded-md border border-input bg-card" />
+            <Input value={c} onChange={(e) => setAt(i, e.target.value)} className="w-32" placeholder="#RRGGBB" aria-label={`Color ${i + 1} hex`} />
+            <button type="button" onClick={() => setColors(colors.filter((_, idx) => idx !== i))} className="text-xs text-muted-foreground hover:text-negative">Remove</button>
+          </div>
+        ))}
+        {colors.length < 4 ? (
+          <button type="button" onClick={() => setColors([...colors, "#0c44ac"])} className="self-start text-sm text-primary hover:underline">+ Add color</button>
+        ) : null}
+      </div>
+      <Field label="Number or identifier (optional)">
+        <Input value={identifier} onChange={(e) => setIdentifier(e.target.value)} maxLength={6} placeholder="8" className="w-24" />
+      </Field>
+      <p className="text-xs text-muted-foreground">Optional. Use this for numbered or labeled competitors.</p>
+    </fieldset>
+  );
+}
+
 // ── Add competitor ───────────────────────────────────────────────────────────
 export function CompetitorForm({ creatorId }: { creatorId: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [color, setColor] = useState("#0c44ac");
+  const [colors, setColors] = useState<string[]>(["#0c44ac"]); // start with one row
+  const [identifier, setIdentifier] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   return (
     <form
-      className="flex flex-wrap items-end gap-2"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
         start(async () => {
-          const res = await addCompetitorAction({ creatorId, name, color });
+          const clean = colors.map((c) => c.trim()).filter((c) => c.length > 0);
+          const res = await addCompetitorAction({ creatorId, name, colors: clean, identifier: identifier.trim() || undefined });
           if (!res.ok) return setError(res.error);
-          setName("");
+          setName(""); setColors(["#0c44ac"]); setIdentifier("");
           router.refresh();
         });
       }}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <Label>Competitor name</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <Label>Color</Label>
-        <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="h-11 w-14 rounded-md border border-input bg-card" />
-      </div>
-      <Button type="submit" disabled={pending}>{pending ? "Adding…" : "Add"}</Button>
-      <div className="w-full"><Err msg={error} /></div>
+      <Field label="Competitor name"><Input value={name} onChange={(e) => setName(e.target.value)} required /></Field>
+      <AppearanceEditor name={name} colors={colors} setColors={setColors} identifier={identifier} setIdentifier={setIdentifier} />
+      <Err msg={error} />
+      <Button type="submit" disabled={pending}>{pending ? "Adding…" : "Add competitor"}</Button>
+    </form>
+  );
+}
+
+// ── Edit competitor appearance ───────────────────────────────────────────────
+export function CompetitorEditForm({ competitor }: { competitor: { id: string; name: string; colors: string[]; identifier: string | null } }) {
+  const router = useRouter();
+  const [name, setName] = useState(competitor.name);
+  const [colors, setColors] = useState<string[]>(competitor.colors.length ? competitor.colors : []);
+  const [identifier, setIdentifier] = useState(competitor.identifier ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [pending, start] = useTransition();
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null); setSaved(false);
+        start(async () => {
+          const clean = colors.map((c) => c.trim()).filter((c) => c.length > 0);
+          const res = await updateCompetitorAction({ competitorId: competitor.id, name, colors: clean, identifier: identifier.trim() || null });
+          if (!res.ok) return setError(res.error);
+          setSaved(true);
+          router.refresh();
+        });
+      }}
+    >
+      <Field label="Competitor name"><Input value={name} onChange={(e) => setName(e.target.value)} required minLength={1} maxLength={80} /></Field>
+      <AppearanceEditor name={name} colors={colors} setColors={setColors} identifier={identifier} setIdentifier={setIdentifier} />
+      <Err msg={error} />
+      {saved ? <p className="text-sm text-positive">Saved.</p> : null}
+      <Button type="submit" disabled={pending}>{pending ? "Saving…" : "Save appearance"}</Button>
     </form>
   );
 }
@@ -362,7 +433,7 @@ export function BracketForm({ creatorId, tenantSlug, competitors }: { creatorId:
 }
 
 // ── Submit result ────────────────────────────────────────────────────────────
-type ResultOption = { id: string; label: string; competitorId: string | null; color: string | null };
+type ResultOption = { id: string; label: string; competitorId: string | null; color: string | null; colors?: string[]; identifier?: string | null; imageUrl?: string | null };
 
 export function ResultForm({ eventId, options }: { eventId: string; options: ResultOption[] }) {
   const router = useRouter();
@@ -398,7 +469,7 @@ export function ResultForm({ eventId, options }: { eventId: string; options: Res
                 aria-pressed={optionId === o.id}
                 className={cn("flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm", optionId === o.id ? "border-positive bg-muted" : "border-border hover:bg-muted")}
               >
-                <span aria-hidden className="size-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: o.color ?? "transparent" }} />
+                <CompetitorMark name={o.label} colors={o.colors ?? (o.color ? [o.color] : [])} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
                 <span className="min-w-0 truncate">{o.label}</span>
               </button>
             </li>
@@ -449,7 +520,7 @@ export function CorrectResultForm({ eventId, options, currentLabel }: { eventId:
                 aria-pressed={optionId === o.id}
                 className={cn("flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm", optionId === o.id ? "border-positive bg-muted" : "border-border hover:bg-muted")}
               >
-                <span aria-hidden className="size-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: o.color ?? "transparent" }} />
+                <CompetitorMark name={o.label} colors={o.colors ?? (o.color ? [o.color] : [])} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
                 <span className="min-w-0 truncate">{o.label}</span>
               </button>
             </li>

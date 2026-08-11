@@ -1613,6 +1613,7 @@ export type Database = {
           created_at: string
           creator_id: string | null
           id: string
+          identifier: string | null
           image_url: string | null
           metadata: Json
           name: string
@@ -1620,12 +1621,14 @@ export type Database = {
           status: string
           tenant_id: string
           updated_at: string
+          visual_colors: string[]
         }
         Insert: {
           color?: string | null
           created_at?: string
           creator_id?: string | null
           id?: string
+          identifier?: string | null
           image_url?: string | null
           metadata?: Json
           name: string
@@ -1633,12 +1636,14 @@ export type Database = {
           status?: string
           tenant_id: string
           updated_at?: string
+          visual_colors?: string[]
         }
         Update: {
           color?: string | null
           created_at?: string
           creator_id?: string | null
           id?: string
+          identifier?: string | null
           image_url?: string | null
           metadata?: Json
           name?: string
@@ -1646,6 +1651,7 @@ export type Database = {
           status?: string
           tenant_id?: string
           updated_at?: string
+          visual_colors?: string[]
         }
         Relationships: [
           {
@@ -5243,9 +5249,11 @@ export type Database = {
           color: string
           competitor_id: string
           drafters: number
+          identifier: string
           image_url: string
           name: string
           taken: boolean
+          visual_colors: string[]
         }[]
       }
       effective_revenue_split: {

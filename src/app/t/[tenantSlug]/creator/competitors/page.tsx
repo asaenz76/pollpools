@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { getTenantContext } from "@/lib/tenant/context";
 import { getSessionUser } from "@/lib/auth/session";
 import { getCreatorWorkspace } from "@/features/creator/get-creator-workspace";
-import { CompetitorForm } from "@/components/creator/forms";
+import { CompetitorForm, CompetitorEditForm } from "@/components/creator/forms";
+import { CompetitorMark } from "@/components/domain/competitor-mark";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +34,17 @@ export default async function CompetitorsPage() {
       ) : (
         <ul className="flex flex-col gap-2">
           {ws.competitors.map((c) => (
-            <li key={c.id} className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2.5 text-sm">
-              <span aria-hidden className="size-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: c.color ?? "transparent" }} />
-              <span className="min-w-0 truncate">{c.name}</span>
+            <li key={c.id} className="rounded-md border border-border bg-card px-3 py-2.5 text-sm">
+              <details>
+                <summary className="flex cursor-pointer list-none items-center gap-2">
+                  <CompetitorMark name={c.name} colors={c.colors} identifier={c.identifier} imageUrl={c.imageUrl} size={22} />
+                  <span className="min-w-0 flex-1 truncate font-medium">{c.name}</span>
+                  <span className="text-xs text-muted-foreground">Edit</span>
+                </summary>
+                <div className="mt-3 border-t border-border pt-3">
+                  <CompetitorEditForm competitor={{ id: c.id, name: c.name, colors: c.colors, identifier: c.identifier }} />
+                </div>
+              </details>
             </li>
           ))}
         </ul>

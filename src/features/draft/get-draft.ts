@@ -8,6 +8,8 @@ export type RosterEntry = {
   competitorId: string;
   name: string;
   color: string | null;
+  colors: string[];
+  identifier: string | null;
   imageUrl: string | null;
   taken: boolean;
   drafters: number;
@@ -159,6 +161,8 @@ export async function getDraftSection(
       competitorId: r.competitor_id,
       name: r.name,
       color: r.color,
+      colors: (r.visual_colors ?? []) as string[],
+      identifier: r.identifier ?? null,
       imageUrl: r.image_url,
       taken: r.taken,
       drafters: Number(r.drafters),

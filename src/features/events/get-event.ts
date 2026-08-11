@@ -10,6 +10,8 @@ export type EventOption = {
   id: string;
   label: string;
   color: string | null;
+  colors: string[];
+  identifier: string | null;
   imageUrl: string | null;
   competitorId: string | null;
 };
@@ -96,7 +98,7 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
     marketIds.length
       ? supabase
           .from("market_options")
-          .select("id, market_id, label, color, image_url, competitor_id, display_order, status")
+          .select("id, market_id, label, color, image_url, competitor_id, display_order, status, competitors(visual_colors, identifier, image_url)")
           .in("market_id", marketIds)
           .in("status", ["active", "winner", "loser", "voided"])
           .order("display_order")
@@ -110,6 +112,7 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
   type OptionRow = {
     id: string; market_id: string; label: string; color: string | null; image_url: string | null;
     competitor_id: string | null; display_order: number; status: string;
+    competitors?: { visual_colors: string[] | null; identifier: string | null; image_url: string | null } | { visual_colors: string[] | null; identifier: string | null; image_url: string | null }[] | null;
   };
   const allOptions = (optionsRes.data ?? []) as OptionRow[];
 
@@ -159,13 +162,18 @@ export async function getEventBySlug(tenantId: string, slug: string): Promise<Ev
       type: m.type as MarketType,
       status: m.status as MarketStatus,
       locksAt: m.locks_at,
-      options: optionRows.map((o) => ({
-        id: o.id,
-        label: o.label,
-        color: o.color,
-        imageUrl: o.image_url,
-        competitorId: o.competitor_id,
-      })),
+      options: optionRows.map((o) => {
+        const comp = Array.isArray(o.competitors) ? o.competitors[0] : o.competitors;
+        return {
+          id: o.id,
+          label: o.label,
+          color: o.color,
+          colors: (comp?.visual_colors ?? []) as string[],
+          identifier: comp?.identifier ?? null,
+          imageUrl: comp?.image_url ?? o.image_url,
+          competitorId: o.competitor_id,
+        };
+      }),
       sentiment,
       userOptionId,
       lockState,
