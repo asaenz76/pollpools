@@ -71,3 +71,39 @@ Actual DNS record creation and automatic TLS certificate provisioning are
 hosting-platform concerns (e.g. Vercel Domains). The app records `ssl_status` and
 exposes the verification + primary/redirect logic; wiring a real provisioning API
 is a deployment integration, intentionally out of scope for the app layer.
+
+## Root routing on tenant hosts (PL.1)
+
+The app's routes live under `/t/[tenantSlug]/…`. On a **verified custom domain** or a
+**tenant subdomain**, the middleware serves the tenant from that route tree while the
+browser URL stays clean:
+
+- Host classification is centralized in `src/lib/tenant/host.ts` (`classifyHost` →
+  `platform | subdomain | custom | unknown`; pure `tenantRewriteTarget` /
+  `stripTenantPrefix`), authoritative via `tenant_domains`.
+- `src/lib/supabase/middleware.ts`: on a verified custom domain (or subdomain), it
+  **rewrites** `/path` → `/t/{slug}/path` internally (URL unchanged), and **308-strips**
+  the tenant's own `/t/{slug}` prefix so nested links stay prefix-free. `/api`, `/_next`,
+  `/admin`, `/terms`, `/privacy`, `/support`, and static files are never rewritten.
+- Non-primary verified domains (e.g. `www`) 308-redirect to the primary host,
+  preserving path + query (`computeDomainRedirect`).
+- Unknown / unverified / inactive hosts fail safe — no tenant is served.
+
+**Local verification (host-header simulation):**
+
+```bash
+# custom-domain root serves the tenant (seed a verified tenant_domains row first)
+curl -s -H "Host: marblegrandprix.com" http://localhost:3000/            # → Marble tenant home
+curl -s -o /dev/null -w "%{http_code}\n" -H "Host: marblegrandprix.com" http://localhost:3000/leaderboard   # → 200
+# tenant's own /t/{slug} prefix strips to a clean path
+curl -s -o /dev/null -w "%{redirect_url}\n" -H "Host: marblegrandprix.com" http://localhost:3000/t/marbles/leaderboard  # → /leaderboard
+# non-primary → primary, path+query preserved
+curl -s -o /dev/null -w "%{redirect_url}\n" -H "Host: www.marblegrandprix.com" "http://localhost:3000/events?x=1"       # → https://marblegrandprix.com/events?x=1
+# platform apex unaffected; /t/{slug} path still valid (backwards compatible)
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/t/marbles  # → 200
+```
+
+Production custom-domain serving still requires the hosting-platform steps (attach
+domain to Vercel, DNS, SSL) and the verified `tenant_domains` row — see the
+[Production Launch Runbook](production-launch-runbook.md) steps 29–34. Do not mark
+production custom-domain serving complete merely because the app supports it.

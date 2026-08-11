@@ -798,3 +798,23 @@ document; this register is its actionable, status-tracked counterpart.
   (RX.1): no privilege escalation, no Platform Support leak** — authorization enforced server/DB-side
   throughout; one LOW (admin loaders self-gating only via layout) fixed in RX.7. Additive; no existing
   permission or protected system altered.
+
+- **Pre-Launch Application Hardening (PL.1–PL.8)** — final application pass before infrastructure
+  provisioning; additive, no protected system altered. **PL.1** custom-domain root routing +
+  centralized host classification (`src/lib/tenant/host.ts`, middleware rewrite/strip/redirect;
+  [domains.md](domains.md)). **PL.2** server-derived tenant-domain billing return URLs
+  (`resolveTenantUrl`; open-redirect protection retained). **PL.3** durable email delivery via
+  `system_jobs` + Resend transport (idempotent, retries/dead-letter, opt-in, settlement-independent;
+  migration `0072`; [email.md](email.md)). **PL.4** tenant publication lifecycle (`tenants.listed`,
+  objective eligibility, `create_pollpool`/`publish_pollpool`; migration `0073`;
+  [tenant-publication.md](tenant-publication.md)). **PL.5** production-safe `platform_name` from
+  migrations (`0074`), env classification + `productionEnvIssues()` fail-loud classifier, demo-data
+  separation guard ([environment.md](environment.md)). **PL.6** `/terms` `/privacy` `/support`
+  (draft, footer-linked, no gambling framing); security headers already comprehensive; mock-billing
+  + cron guards verified ([security-launch-review.md](security-launch-review.md)). **PL.7** full
+  regression (643 tests, fresh reset of 77 migrations, build green). **PL.8** launch runbook +
+  readiness report ([production-launch-runbook.md](production-launch-runbook.md),
+  [production-launch-readiness.md](production-launch-readiness.md)) — **APP READY / INFRA NOT
+  CONFIGURED; recommendation: HOLD**, no production action taken. Also delivered:
+  **Competitor Visual Identity** — generic 0–4 colors + optional identifier + shared `CompetitorMark`
+  (migrations `0075–0077`), additive and backwards-compatible.
