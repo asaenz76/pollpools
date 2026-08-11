@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 export type CompetitorMarkProps = {
   name: string;
   colors?: readonly string[] | null;
+  /** Legacy single color — used when `colors` is empty (backwards compatibility). */
+  color?: string | null;
   identifier?: string | null;
   imageUrl?: string | null;
   /** Diameter in px. */
@@ -50,8 +52,10 @@ function accessibleLabel(name: string, colors: readonly string[], identifier?: s
   return parts.join(", ");
 }
 
-export function CompetitorMark({ name, colors, identifier, imageUrl, size = 24, className }: CompetitorMarkProps) {
-  const palette = (colors ?? []).filter((c) => typeof c === "string" && /^#[0-9A-Fa-f]{6}$/.test(c));
+export function CompetitorMark({ name, colors, color, identifier, imageUrl, size = 24, className }: CompetitorMarkProps) {
+  // Effective palette: multi-color when set, else the legacy single color.
+  const source = colors && colors.length ? colors : color ? [color] : [];
+  const palette = source.filter((c) => typeof c === "string" && /^#[0-9A-Fa-f]{6}$/.test(c));
   const id = identifier?.trim() || null;
   const hasImage = Boolean(imageUrl);
   const multi = palette.length >= 2;

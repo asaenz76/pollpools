@@ -65,7 +65,7 @@ function CompetitorPicker({
                 on ? "border-primary bg-muted" : "border-border hover:bg-muted",
               )}
             >
-              <CompetitorMark name={c.name} colors={c.colors ?? (c.color ? [c.color] : [])} identifier={c.identifier} imageUrl={c.imageUrl} size={20} />
+              <CompetitorMark name={c.name} colors={c.colors} color={c.color} identifier={c.identifier} imageUrl={c.imageUrl} size={20} />
               <span className="min-w-0 truncate">{c.name}</span>
               {on ? <span className="ml-auto text-xs text-primary">✓</span> : null}
             </button>
@@ -469,7 +469,7 @@ export function ResultForm({ eventId, options }: { eventId: string; options: Res
                 aria-pressed={optionId === o.id}
                 className={cn("flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm", optionId === o.id ? "border-positive bg-muted" : "border-border hover:bg-muted")}
               >
-                <CompetitorMark name={o.label} colors={o.colors ?? (o.color ? [o.color] : [])} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
+                <CompetitorMark name={o.label} colors={o.colors} color={o.color} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
                 <span className="min-w-0 truncate">{o.label}</span>
               </button>
             </li>
@@ -520,7 +520,7 @@ export function CorrectResultForm({ eventId, options, currentLabel }: { eventId:
                 aria-pressed={optionId === o.id}
                 className={cn("flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm", optionId === o.id ? "border-positive bg-muted" : "border-border hover:bg-muted")}
               >
-                <CompetitorMark name={o.label} colors={o.colors ?? (o.color ? [o.color] : [])} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
+                <CompetitorMark name={o.label} colors={o.colors} color={o.color} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
                 <span className="min-w-0 truncate">{o.label}</span>
               </button>
             </li>

@@ -155,7 +155,7 @@ export function PredictionMarket(props: PredictionMarketProps) {
                       <Check className={cn("size-4", isPickedLoser ? "text-negative" : "text-primary")} />
                     ) : null}
                     {(o.colors?.length ?? 0) > 0 || o.imageUrl || o.identifier || o.color ? (
-                      <CompetitorMark name={o.label} colors={o.colors ?? (o.color ? [o.color] : [])} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
+                      <CompetitorMark name={o.label} colors={o.colors} color={o.color} identifier={o.identifier} imageUrl={o.imageUrl} size={20} />
                     ) : null}
                     {o.label}
                   </span>

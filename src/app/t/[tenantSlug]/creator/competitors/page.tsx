@@ -37,7 +37,7 @@ export default async function CompetitorsPage() {
             <li key={c.id} className="rounded-md border border-border bg-card px-3 py-2.5 text-sm">
               <details>
                 <summary className="flex cursor-pointer list-none items-center gap-2">
-                  <CompetitorMark name={c.name} colors={c.colors} identifier={c.identifier} imageUrl={c.imageUrl} size={22} />
+                  <CompetitorMark name={c.name} colors={c.colors} color={c.color} identifier={c.identifier} imageUrl={c.imageUrl} size={22} />
                   <span className="min-w-0 flex-1 truncate font-medium">{c.name}</span>
                   <span className="text-xs text-muted-foreground">Edit</span>
                 </summary>

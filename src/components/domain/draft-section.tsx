@@ -132,7 +132,7 @@ export function DraftSection({
                     )}
                   >
                     <span className="flex items-center gap-2">
-                      <CompetitorMark name={r.name} colors={r.colors ?? (r.color ? [r.color] : [])} identifier={r.identifier} imageUrl={r.imageUrl} size={20} />
+                      <CompetitorMark name={r.name} colors={r.colors} color={r.color} identifier={r.identifier} imageUrl={r.imageUrl} size={20} />
                       {r.name}
                     </span>
                     <span className="text-xs text-muted-foreground">
