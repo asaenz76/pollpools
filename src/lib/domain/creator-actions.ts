@@ -225,7 +225,177 @@ export async function submitResultAction(input: {
   if (error) {
     if (error.message.includes("NOT_AUTHORIZED")) return { ok: false, error: "Results for your events are reviewed by an admin. Ask a Super Admin to enable direct settlement." };
     if (error.message.includes("ALREADY_SETTLED")) return { ok: false, error: "This event is already settled." };
+    if (error.message.includes("EVENT_CANCELED")) return { ok: false, error: "This event was canceled and can't be settled." };
     return { ok: false, error: "Couldn't submit the result." };
   }
+  return { ok: true };
+}
+
+// ── Correct result (regrade) ─────────────────────────────────────────────────
+// Reuses the existing regrade_event path: it supersedes the active grading
+// version with a new one (old versions stay immutable) and re-runs projections.
+// Same option-based contract as submitResultAction, so non-competitor outcomes
+// (Draw / Yes / No) correct without a competitor.
+export async function correctResultAction(input: {
+  eventId: string;
+  winningOptionIds?: string[];
+  winningCompetitorId?: string;
+  reason?: string;
+}): Promise<Ok | Err> {
+  const eventCheck = uuid.safeParse(input.eventId);
+  if (!eventCheck.success) return { ok: false, error: "Invalid input." };
+  const validated = resolveResultProvider("manual").validate({
+    eventId: input.eventId,
+    winningOptionIds: input.winningOptionIds,
+    winningCompetitorId: input.winningCompetitorId,
+    notes: input.reason,
+  });
+  if (!validated.ok) return { ok: false, error: validated.error };
+  const result = validated.value;
+  const eventId = eventCheck.data;
+  const supabase = await createServerSupabase();
+  const key = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+
+  const optionIds: string[] = [...result.winningOptionIds];
+  const { data: markets } = await supabase
+    .from("markets")
+    .select("id, type, market_options(id, competitor_id)")
+    .eq("event_id", eventId);
+  try {
+    for (const m of markets ?? []) {
+      const grader = getMarketGrader(m.type as MarketType);
+      if (optionIds.length === 0 && result.winningCompetitorId) {
+        const opts = (m.market_options ?? []).map((o) => ({ id: o.id, competitorId: o.competitor_id }));
+        optionIds.push(...grader.resolveWinningOptionIds(opts, { winningCompetitorId: result.winningCompetitorId }));
+      }
+    }
+  } catch (e) {
+    if (e instanceof UnsupportedMarketTypeError) return { ok: false, error: "This market type can't be settled yet." };
+    throw e;
+  }
+
+  const { error } = await supabase.rpc("regrade_event", {
+    p_event_id: eventId,
+    p_resolution: "settled",
+    p_winning_competitor_id: result.winningCompetitorId,
+    p_reason: result.notes ?? "Result corrected",
+    p_idempotency_key: `regrade-${eventId}-${key}`,
+    p_winning_option_ids: optionIds.length > 0 ? optionIds : null,
+  } as RpcArgs<"regrade_event">);
+  if (error) {
+    if (error.message.includes("NOT_AUTHORIZED")) return { ok: false, error: "Corrections for your events are reviewed by an admin. Ask a Super Admin to enable direct settlement." };
+    if (error.message.includes("NOT_SETTLED")) return { ok: false, error: "This event hasn't been settled yet, so there's nothing to correct." };
+    return { ok: false, error: "Couldn't correct the result." };
+  }
+  return { ok: true };
+}
+
+// ── Void a settled result ────────────────────────────────────────────────────
+// The distinct correction workflow for a SETTLED event that must become void
+// (spec §13). Reuses regrade_event with a 'voided' resolution: every prediction
+// re-grades to void/0 points, prior versions stay immutable, projections converge.
+export async function voidEventResultAction(input: { eventId: string; reason?: string }): Promise<Ok | Err> {
+  const eventCheck = uuid.safeParse(input.eventId);
+  if (!eventCheck.success) return { ok: false, error: "Invalid input." };
+  const eventId = eventCheck.data;
+  const supabase = await createServerSupabase();
+  const key = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+  const { error } = await supabase.rpc("regrade_event", {
+    p_event_id: eventId,
+    p_resolution: "voided",
+    p_winning_competitor_id: null,
+    p_reason: input.reason?.trim() || "Result voided",
+    p_idempotency_key: `void-${eventId}-${key}`,
+    p_winning_option_ids: null,
+  } as unknown as RpcArgs<"regrade_event">);
+  if (error) {
+    if (error.message.includes("NOT_AUTHORIZED")) return { ok: false, error: "You don't have permission to void this result." };
+    if (error.message.includes("NOT_SETTLED")) return { ok: false, error: "Only a settled event can be voided." };
+    return { ok: false, error: "Couldn't void the result." };
+  }
+  return { ok: true };
+}
+
+// ── Lifecycle transitions (publish / lock / cancel / edit) ────────────────────
+// Each maps to a SECURITY DEFINER RPC that enforces app.can_manage_event
+// (owner/super-admin) server- and DB-side. The UI only offers state-valid actions,
+// but the DB is the authority — a stale action fails loudly here.
+function mapLifecycleError(message: string): string {
+  if (message.includes("NOT_AUTHORIZED")) return "You don't have permission to manage this event.";
+  if (message.includes("EVENT_NOT_FOUND")) return "Event not found.";
+  if (message.includes("ALREADY_SETTLED")) return "This event is already settled — cancel isn't available. Correct or void the result instead.";
+  if (message.includes("INVALID_STATE")) return "This action isn't available for the event's current status.";
+  if (message.includes("EVENT_CLOSED_FOR_EDITS")) return "A settled or canceled event can't be edited.";
+  if (message.includes("PREDICTIONS_EXIST")) return "Predictions have already been submitted, so this change isn't allowed. Cancel and recreate the event instead.";
+  if (message.includes("STRUCTURAL_CHANGE_REQUIRES_RECREATE")) return "Changing competitors or market type requires canceling and recreating the event.";
+  if (message.includes("TIMING_LOCKED")) return "Start and lock times can only be edited before the event locks.";
+  return "Couldn't complete that action.";
+}
+
+export async function publishEventAction(input: { eventId: string }): Promise<Ok | Err> {
+  const check = uuid.safeParse(input.eventId);
+  if (!check.success) return { ok: false, error: "Invalid input." };
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("publish_event", { p_event_id: check.data } as RpcArgs<"publish_event">);
+  if (error) return { ok: false, error: mapLifecycleError(error.message) };
+  return { ok: true };
+}
+
+export async function lockEventAction(input: { eventId: string }): Promise<Ok | Err> {
+  const check = uuid.safeParse(input.eventId);
+  if (!check.success) return { ok: false, error: "Invalid input." };
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("lock_event", { p_event_id: check.data } as RpcArgs<"lock_event">);
+  if (error) return { ok: false, error: mapLifecycleError(error.message) };
+  return { ok: true };
+}
+
+export async function cancelEventAction(input: { eventId: string; reason?: string }): Promise<Ok | Err> {
+  const check = uuid.safeParse(input.eventId);
+  if (!check.success) return { ok: false, error: "Invalid input." };
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("cancel_event", {
+    p_event_id: check.data,
+    p_reason: input.reason?.trim() || null,
+  } as RpcArgs<"cancel_event">);
+  if (error) return { ok: false, error: mapLifecycleError(error.message) };
+  return { ok: true };
+}
+
+const updateEventSchema = z.object({
+  eventId: uuid,
+  title: z.string().trim().min(2).max(120).optional(),
+  description: z.string().trim().max(1000).nullable().optional(),
+  startsAt: z.string().nullable().optional(),
+  locksAt: z.string().nullable().optional(),
+  youtubeUrl: z.string().trim().max(500).nullable().optional(),
+  externalUrl: z.string().trim().max(500).nullable().optional(),
+  coverImageUrl: z.string().trim().max(500).nullable().optional(),
+  marketQuestion: z.string().trim().min(2).max(300).optional(),
+  options: z.array(z.object({ id: uuid, label: z.string().trim().min(1).max(120) })).optional(),
+});
+
+export async function updateEventAction(input: z.infer<typeof updateEventSchema>): Promise<Ok | Err> {
+  const parsed = updateEventSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const { eventId, ...fields } = parsed.data;
+
+  // Only include keys the caller actually provided (jsonb `?` presence checks in
+  // update_event decide what to touch), mapped to the RPC's snake_case patch keys.
+  const patch: Record<string, unknown> = {};
+  if ("title" in fields && fields.title !== undefined) patch.title = fields.title;
+  if ("description" in fields && fields.description !== undefined) patch.description = fields.description ?? "";
+  if ("startsAt" in fields && fields.startsAt !== undefined) patch.starts_at = fields.startsAt ?? "";
+  if ("locksAt" in fields && fields.locksAt !== undefined) patch.locks_at = fields.locksAt ?? "";
+  if ("youtubeUrl" in fields && fields.youtubeUrl !== undefined) patch.youtube_url = fields.youtubeUrl ?? "";
+  if ("externalUrl" in fields && fields.externalUrl !== undefined) patch.external_url = fields.externalUrl ?? "";
+  if ("coverImageUrl" in fields && fields.coverImageUrl !== undefined) patch.cover_image_url = fields.coverImageUrl ?? "";
+  if ("marketQuestion" in fields && fields.marketQuestion !== undefined) patch.market_question = fields.marketQuestion;
+  if ("options" in fields && fields.options !== undefined) patch.options = fields.options;
+  if (Object.keys(patch).length === 0) return { ok: false, error: "Nothing to update." };
+
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("update_event", { p_event_id: eventId, p_patch: patch } as RpcArgs<"update_event">);
+  if (error) return { ok: false, error: mapLifecycleError(error.message) };
   return { ok: true };
 }

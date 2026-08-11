@@ -335,5 +335,6 @@ export const NOTIFICATION_TYPE = [
   "health_band_improved",
   "health_needs_attention",
   "wau_milestone",
+  "event_canceled",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPE)[number];

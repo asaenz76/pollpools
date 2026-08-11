@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getCreatorWorkspace } from "@/features/creator/get-creator-workspace";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
+import { EventStatusBadge } from "@/components/ui/status-badge";
 import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -134,9 +135,9 @@ export default async function CreatorStudioPage() {
           <ul className="flex flex-col gap-2">
             {events.map((e) => (
               <li key={e.id}>
-                <Link href={`${base}/e/${e.id}/result`} className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-sm hover:bg-muted">
+                <Link href={`${base}/e/${e.id}`} className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-sm hover:bg-muted">
                   <span className="min-w-0 truncate font-medium">{e.title}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">{e.status}</span>
+                  <EventStatusBadge status={e.status} className="shrink-0" />
                 </Link>
               </li>
             ))}

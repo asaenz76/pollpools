@@ -52,6 +52,15 @@ export async function drainWithLease(
 
   log({ event: "drain.started", partition });
   try {
+    // Auto-lock: flip events/markets whose scheduled lock time has passed into the
+    // authoritative locked state — identical to what a manual lock_event produces
+    // (0007 lock_due_markets, idempotent, open→locked only, never reopens). Run on
+    // the global drain so it happens exactly once per tick.
+    if (!tenantId) {
+      const { data: locked, error: lockErr } = await admin.rpc("lock_due_markets" as never);
+      if (lockErr) log({ event: "drain.autolock_error", partition, error: lockErr.message });
+      else if (locked) log({ event: "drain.autolock", partition, lockedMarkets: locked });
+    }
     const result = await drainJobs(admin, tenantId, opts.maxBatches ?? DEFAULT_MAX_BATCHES);
     const durationMs = Date.now() - start;
     log({ event: "drain.completed", partition, durationMs, ...result });

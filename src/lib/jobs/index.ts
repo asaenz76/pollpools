@@ -20,3 +20,4 @@ export { JOB_TYPES, NOTIFICATION_FANOUT_BATCH_SIZE, type ProjectionPayload } fro
 // Handler registrations (side-effect imports).
 import "./handlers/settlement";
 import "./handlers/event-publish";
+import "./handlers/event-lifecycle";

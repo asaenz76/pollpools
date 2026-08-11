@@ -12,6 +12,9 @@ trusts a client-supplied tenant or creator id.
   URL slug, never a client id.
 - **Dashboard** — verification badge, stats (competitions / events / competitors /
   predictions), and lists of the creator's competitions + events.
+- **Event lifecycle** — creators publish / lock / cancel / edit / settle / correct /
+  void the events they own from a per-event management hub. See
+  [event-lifecycle.md](event-lifecycle.md).
 - **Verification status** — shown on the dashboard and the submit-result page;
   a super admin verifies creators (Phase 8).
 - **Competitors** — add/list (`addCompetitorAction`, RLS `owns_creator`).

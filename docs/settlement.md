@@ -38,6 +38,10 @@ range result), with **no pseudo-competitor**.
                                             settled (v2) with v1 → superseded
 ```
 
+Creators reach these transitions (publish / lock / cancel / settle / correct /
+void) through their own event-management surface — see
+[event-lifecycle.md](event-lifecycle.md).
+
 `settlements.status` ∈ `pending → active → (superseded | reversed | failed)`.
 A **partial unique index** guarantees at most one `active` settlement per event.
 `(event_id, grading_version)` is unique, so a retry can't create a duplicate

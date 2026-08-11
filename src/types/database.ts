@@ -5074,6 +5074,10 @@ export type Database = {
         Args: { p_assignment_id: string; p_reason: string }
         Returns: Json
       }
+      cancel_event: {
+        Args: { p_event_id: string; p_reason?: string }
+        Returns: Json
+      }
       claim_jobs: {
         Args: { p_limit?: number; p_tenant?: string }
         Returns: {
@@ -5203,6 +5207,7 @@ export type Database = {
       fail_job: { Args: { p_error: string; p_id: string }; Returns: string }
       hot_path_indexes_ok: { Args: never; Returns: boolean }
       lock_due_markets: { Args: never; Returns: number }
+      lock_event: { Args: { p_event_id: string }; Returns: Json }
       log_growth_change: {
         Args: {
           p_action: string
@@ -5261,6 +5266,10 @@ export type Database = {
         }
         Returns: string
       }
+      project_event_cancel_notifications: {
+        Args: { p_event: string }
+        Returns: boolean
+      }
       project_event_publish_feed: {
         Args: { p_event: string; p_tenant: string }
         Returns: undefined
@@ -5316,6 +5325,7 @@ export type Database = {
           submitted_at: string
         }[]
       }
+      publish_event: { Args: { p_event_id: string }; Returns: Json }
       rebuild_draft_competition: {
         Args: { p_competition: string; p_tenant: string }
         Returns: undefined
@@ -5437,6 +5447,10 @@ export type Database = {
           previous_wau: number
           window_days: number
         }[]
+      }
+      update_event: {
+        Args: { p_event_id: string; p_patch: Json }
+        Returns: Json
       }
     }
     Enums: {
@@ -5631,6 +5645,7 @@ export type Database = {
         | "health_band_improved"
         | "health_needs_attention"
         | "wau_milestone"
+        | "event_canceled"
       option_status: "active" | "withdrawn" | "voided" | "winner" | "loser"
       plan_assignment_type:
         | "initial"
@@ -6053,6 +6068,7 @@ export const Constants = {
         "health_band_improved",
         "health_needs_attention",
         "wau_milestone",
+        "event_canceled",
       ],
       option_status: ["active", "withdrawn", "voided", "winner", "loser"],
       plan_assignment_type: [

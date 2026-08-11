@@ -9,6 +9,7 @@ export const JOB_TYPES = {
   NOTIFY_SETTLEMENT: "projection.notify_settlement",
   EVENT_PUBLISH_FEED: "projection.event_publish_feed",
   EVENT_PUBLISH_FANOUT: "projection.event_publish_fanout",
+  EVENT_CANCEL: "projection.event_cancel",
 } as const;
 
 /** Bounded batch size for per-follower notification fan-out (configurable). */

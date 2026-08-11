@@ -10,6 +10,7 @@ import {
   createBracketCompetitionAction,
   createEventAction,
   submitResultAction,
+  correctResultAction,
 } from "@/lib/domain/creator-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -407,6 +408,57 @@ export function ResultForm({ eventId, options }: { eventId: string; options: Res
       <Field label="Result notes (optional)"><Input value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
       <Err msg={error} />
       <Button type="submit" disabled={pending}>{pending ? "Submitting…" : "Confirm result"}</Button>
+    </form>
+  );
+}
+
+// ── Correct result (regrade) ─────────────────────────────────────────────────
+// Same option picker as ResultForm, but corrects an already-settled event. The
+// previous result stays in history; a new grading version is created and
+// projections re-run. A correction note is encouraged.
+export function CorrectResultForm({ eventId, options, currentLabel }: { eventId: string; options: ResultOption[]; currentLabel: string | null }) {
+  const router = useRouter();
+  const [optionId, setOptionId] = useState<string>("");
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setError(null);
+        if (!optionId) return setError("Select the corrected result.");
+        const selected = options.find((o) => o.id === optionId);
+        start(async () => {
+          const res = await correctResultAction({ eventId, winningOptionIds: [optionId], winningCompetitorId: selected?.competitorId ?? undefined, reason });
+          if (!res.ok) return setError(res.error);
+          router.refresh();
+        });
+      }}
+    >
+      {currentLabel ? <p className="text-sm text-muted-foreground">Current result: <span className="font-medium text-foreground">{currentLabel}</span></p> : null}
+      <div className="flex flex-col gap-1.5">
+        <Label>Corrected result</Label>
+        <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          {options.map((o) => (
+            <li key={o.id}>
+              <button
+                type="button"
+                onClick={() => setOptionId(o.id)}
+                aria-pressed={optionId === o.id}
+                className={cn("flex w-full items-center gap-2 rounded-md border px-3 py-2 text-left text-sm", optionId === o.id ? "border-positive bg-muted" : "border-border hover:bg-muted")}
+              >
+                <span aria-hidden className="size-3 shrink-0 rounded-full border border-border" style={{ backgroundColor: o.color ?? "transparent" }} />
+                <span className="min-w-0 truncate">{o.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <Field label="Correction note (optional)"><Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why is the result changing?" /></Field>
+      <Err msg={error} />
+      <Button type="submit" disabled={pending}>{pending ? "Correcting…" : "Confirm correction"}</Button>
     </form>
   );
 }
