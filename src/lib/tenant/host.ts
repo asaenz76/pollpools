@@ -16,8 +16,8 @@
 const RESERVED_SUBDOMAINS = new Set(["www", "app", "api", "admin", "static", "assets"]);
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,60}[a-z0-9])?$/;
 
-/** Paths that are never tenant-scoped, even on a tenant host. */
-const NON_TENANT_PREFIXES = ["/api", "/_next", "/admin", "/t"];
+/** Paths that are never tenant-scoped, even on a tenant host (platform + legal). */
+const NON_TENANT_PREFIXES = ["/api", "/_next", "/admin", "/t", "/terms", "/privacy", "/support"];
 
 export type HostClass =
   | { kind: "platform" }

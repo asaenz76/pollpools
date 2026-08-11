@@ -21,7 +21,7 @@ export default async function PlatformHome() {
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
       <header className="mb-10 flex items-center justify-between">
-        <span className="text-sm font-semibold tracking-tight">Prediction Engine</span>
+        <span className="text-sm font-semibold tracking-tight">Poll Pools</span>
         <ThemeToggle />
       </header>
 
@@ -67,6 +67,13 @@ export default async function PlatformHome() {
           </Card>
         )}
       </section>
+
+      <footer className="mt-12 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border pt-6 text-xs text-muted-foreground">
+        <span>Poll Pools</span>
+        <Link href="/terms" className="hover:underline">Terms</Link>
+        <Link href="/privacy" className="hover:underline">Privacy</Link>
+        <Link href="/support" className="hover:underline">Support</Link>
+      </footer>
     </main>
   );
 }

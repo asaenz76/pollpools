@@ -47,6 +47,9 @@ describe("tenantRewriteTarget", () => {
     expect(tenantRewriteTarget("marbles", "/t/marbles/e/x")).toBeNull();
     expect(tenantRewriteTarget("marbles", "/favicon.ico")).toBeNull();
     expect(tenantRewriteTarget("marbles", "/robots.txt")).toBeNull();
+    expect(tenantRewriteTarget("marbles", "/terms")).toBeNull();
+    expect(tenantRewriteTarget("marbles", "/privacy")).toBeNull();
+    expect(tenantRewriteTarget("marbles", "/support")).toBeNull();
   });
 });
 

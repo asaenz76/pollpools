@@ -69,3 +69,26 @@ describe("production bootstrap has no demo/test identities (§46)", () => {
     }
   });
 });
+
+describe("public copy avoids gambling/betting framing (§21)", () => {
+  const files = [
+    "src/app/page.tsx",
+    "src/app/terms/page.tsx",
+    "src/app/privacy/page.tsx",
+    "src/app/support/page.tsx",
+    "src/components/legal/legal-page.tsx",
+  ];
+  // "not a betting service" negations are allowed; bare marketing terms are not.
+  const BANNED = /\b(sportsbook|wagering|gambling)\b/i;
+
+  it("no public/legal page markets the product with gambling terms", () => {
+    const offenders: string[] = [];
+    for (const f of files) {
+      const content = readFileSync(join(process.cwd(), f), "utf8");
+      // Allow the explicit "not a betting/wagering/gaming service" disclaimer lines.
+      const marketing = content.replace(/not a betting[^.]*\./gi, "").replace(/never (a wager|involve)[^.]*\./gi, "");
+      if (BANNED.test(marketing)) offenders.push(f);
+    }
+    expect(offenders).toEqual([]);
+  });
+});

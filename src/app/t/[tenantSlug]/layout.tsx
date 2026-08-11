@@ -67,9 +67,20 @@ export default async function TenantLayout({ children }: { children: ReactNode }
         <BottomNav tenantSlug={tenant.slug} unreadCount={unread} />
       ) : (
         <footer className="border-t border-border">
-          <div className="mx-auto w-full max-w-2xl px-4 py-6 text-xs text-muted-foreground">
-            {tenant.displayName}
-            {ctx.settings.showPoweredBy ? ` · Powered by ${ctx.platformName}` : ""}
+          <div className="mx-auto flex w-full max-w-2xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-6 text-xs text-muted-foreground">
+            <span>
+              {tenant.displayName}
+              {ctx.settings.showPoweredBy ? ` · Powered by ${ctx.platformName}` : ""}
+            </span>
+            {/* White-label tenants (showPoweredBy=false) intentionally hide platform
+                links; platform legal pages stay reachable directly at /terms, /privacy. */}
+            {ctx.settings.showPoweredBy ? (
+              <span className="flex gap-3">
+                <Link href="/terms" className="hover:underline">Terms</Link>
+                <Link href="/privacy" className="hover:underline">Privacy</Link>
+                <Link href="/support" className="hover:underline">Support</Link>
+              </span>
+            ) : null}
           </div>
         </footer>
       )}
