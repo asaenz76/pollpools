@@ -4785,6 +4785,7 @@ export type Database = {
           engine_version: string
           icon_url: string | null
           id: string
+          listed: boolean
           logo_url: string | null
           slug: string
           status: Database["public"]["Enums"]["tenant_status"]
@@ -4803,6 +4804,7 @@ export type Database = {
           engine_version?: string
           icon_url?: string | null
           id?: string
+          listed?: boolean
           logo_url?: string | null
           slug: string
           status?: Database["public"]["Enums"]["tenant_status"]
@@ -4821,6 +4823,7 @@ export type Database = {
           engine_version?: string
           icon_url?: string | null
           id?: string
+          listed?: boolean
           logo_url?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["tenant_status"]
@@ -5310,6 +5313,10 @@ export type Database = {
           votes: number
         }[]
       }
+      pollpool_publish_eligibility: {
+        Args: { p_tenant: string }
+        Returns: Json
+      }
       process_event_publish_fanout: {
         Args: { p_batch_size?: number; p_fanout_id: string }
         Returns: string
@@ -5393,6 +5400,7 @@ export type Database = {
         }[]
       }
       publish_event: { Args: { p_event_id: string }; Returns: Json }
+      publish_pollpool: { Args: { p_tenant: string }; Returns: Json }
       rebuild_draft_competition: {
         Args: { p_competition: string; p_tenant: string }
         Returns: undefined

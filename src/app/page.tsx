@@ -15,6 +15,7 @@ export default async function PlatformHome() {
     .from("tenants")
     .select("slug, display_name, tagline")
     .eq("status", "active")
+    .eq("listed", true) // discovery shows only published communities (PL.4)
     .order("display_name");
 
   return (

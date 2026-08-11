@@ -68,3 +68,28 @@ export async function createPollPoolAction(input: z.infer<typeof createSchema>):
   }
   return { ok: true, slug: (data as { slug: string }).slug };
 }
+
+export type PublishChecks = { owner_email_verified: boolean; name: boolean; description: boolean; has_published_event: boolean };
+export type PublishState = { eligible: boolean; listed: boolean; checks: PublishChecks };
+
+/** Objective publication eligibility for a tenant (owner/super-admin only). */
+export async function getPublishState(tenantId: string): Promise<PublishState | null> {
+  const supabase = await createServerSupabase();
+  const { data, error } = await supabase.rpc("pollpool_publish_eligibility", { p_tenant: tenantId } as RpcArgs<"pollpool_publish_eligibility">);
+  if (error || !data) return null;
+  return data as unknown as PublishState;
+}
+
+/** Deliberately publish an eligible community into platform discovery (PL.4). */
+export async function publishPollPoolAction(input: { tenantId: string }): Promise<Ok | Err> {
+  const check = z.string().uuid().safeParse(input.tenantId);
+  if (!check.success) return { ok: false, error: "Invalid input." };
+  const supabase = await createServerSupabase();
+  const { error } = await supabase.rpc("publish_pollpool", { p_tenant: check.data } as RpcArgs<"publish_pollpool">);
+  if (error) {
+    if (error.message.includes("NOT_ELIGIBLE")) return { ok: false, error: "Your community isn't ready to publish yet. Complete the checklist first." };
+    if (error.message.includes("NOT_AUTHORIZED")) return { ok: false, error: "You don't have permission to publish this community." };
+    return { ok: false, error: "Couldn't publish your community." };
+  }
+  return { ok: true };
+}

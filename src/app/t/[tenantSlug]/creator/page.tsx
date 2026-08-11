@@ -9,10 +9,12 @@ import { getTenantWau } from "@/lib/growth/wau";
 import { getCommunityHealth } from "@/lib/growth/community-health";
 import { getThisPeriodSummary } from "@/lib/growth/dashboard";
 import { getCreatorRevenue, formatMoney } from "@/features/billing/get-billing";
+import { getPublishState } from "@/lib/domain/onboarding-actions";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
 import { EventStatusBadge } from "@/components/ui/status-badge";
 import { TenantManageNav } from "@/components/creator/manage-nav";
+import { PublishPollPool } from "@/components/creator/publish-pollpool";
 import { term } from "@/lib/vocabulary";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +69,8 @@ export default async function TenantDashboardPage() {
     getCreatorRevenue(tenantId, creator.id),
   ]);
   const verified = creator.verificationStatus === "verified";
+  // Publication state (PL.4) — only fetch/show the publish card while unlisted.
+  const publish = await getPublishState(tenantId);
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,6 +86,8 @@ export default async function TenantDashboardPage() {
       </header>
 
       <TenantManageNav slug={ctx.tenant.slug} current={base} />
+
+      {publish && !publish.listed ? <PublishPollPool tenantId={tenantId} state={publish} /> : null}
 
       {/* NEEDS ATTENTION */}
       <section>
