@@ -61,6 +61,9 @@ export default async function TenantHome() {
             <Link href={`/t/${tenant.slug}/billing`} className={buttonVariants({ variant: "outline", size: "sm" })}>
               Billing
             </Link>
+            <Link href={`/t/${tenant.slug}/start`} className={buttonVariants({ variant: canOperate ? "outline" : "secondary", size: "sm" })}>
+              Create your PollPool
+            </Link>
           </CardContent>
         </Card>
       ) : (

@@ -5144,6 +5144,15 @@ export type Database = {
         }
         Returns: Json
       }
+      create_pollpool: {
+        Args: {
+          p_identity: Json
+          p_include_demo?: boolean
+          p_overrides?: Json
+          p_template_version_id: string
+        }
+        Returns: Json
+      }
       create_tenant_from_template: {
         Args: {
           p_demo_owner?: string
@@ -5206,6 +5215,7 @@ export type Database = {
       expire_draft_reservations: { Args: never; Returns: number }
       fail_job: { Args: { p_error: string; p_id: string }; Returns: string }
       hot_path_indexes_ok: { Args: never; Returns: boolean }
+      list_starter_templates: { Args: never; Returns: Json }
       lock_due_markets: { Args: never; Returns: number }
       lock_event: { Args: { p_event_id: string }; Returns: Json }
       log_growth_change: {
