@@ -4,8 +4,11 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { getBillingProvider, paidDraftCheckoutEnabled } from "@/lib/billing/index";
-import { serverEnv, publicEnv } from "@/lib/env";
+import { serverEnv } from "@/lib/env";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
+import { resolveTenantUrl } from "@/lib/tenant/urls";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
 import type { RpcArgs } from "@/types/rpc";
 
 type Ok<T = object> = { ok: true } & T;
@@ -13,9 +16,13 @@ type Err = { ok: false; error: string };
 
 const uuid = z.string().uuid();
 
-/** Build an allowlisted return URL (server-side only — never a client value). */
-function returnUrl(tenantSlug: string, status: string): string {
-  return `${publicEnv.NEXT_PUBLIC_APP_URL}/t/${tenantSlug}/billing?status=${status}`;
+/**
+ * Server-derived checkout return URL — bound to the tenant's verified primary
+ * custom domain when it has one, else the platform tenant URL. Never a client
+ * value (prevents open redirects).
+ */
+function returnUrl(supabase: SupabaseClient<Database>, tenantSlug: string, status: string): Promise<string> {
+  return resolveTenantUrl(supabase, tenantSlug, `/billing?status=${status}`);
 }
 
 const startSchema = z.object({
@@ -91,7 +98,7 @@ export async function startCheckoutAction(input: z.infer<typeof startSchema>): P
     providerVariantId: result.provider_variant_id ?? "mock_variant",
     customData,
     customerEmail: user.email ?? null,
-    redirectUrl: returnUrl(parsed.data.tenantSlug, "pending"),
+    redirectUrl: await returnUrl(supabase, parsed.data.tenantSlug, "pending"),
     testMode: serverEnv().LEMON_SQUEEZY_TEST_MODE,
   });
   if (!checkout.url) return { ok: false, error: "Checkout could not be created." };

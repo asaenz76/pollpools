@@ -17,6 +17,24 @@ export async function resolveTenantHomeUrl(
   supabase: SupabaseClient<Database>,
   slug: string,
 ): Promise<string> {
+  return resolveTenantUrl(supabase, slug, "/");
+}
+
+/**
+ * Absolute, SERVER-DERIVED URL for a path within a tenant, bound to the tenant's
+ * PRIMARY custom domain when it has a verified one (so the browser URL stays clean —
+ * `https://marblegrandprix.com/billing`), else the platform fallback
+ * `${APP_URL}/t/{slug}/billing`. `subpath` MUST be a caller-controlled application
+ * path beginning with "/" (e.g. "/billing?status=pending") — never a client-supplied
+ * URL. This is the single safe way to build tenant return/redirect URLs (billing,
+ * auth emails); it prevents open redirects by construction.
+ */
+export async function resolveTenantUrl(
+  supabase: SupabaseClient<Database>,
+  slug: string,
+  subpath: string,
+): Promise<string> {
+  const path = subpath.startsWith("/") ? subpath : `/${subpath}`;
   const { data: tenant } = await supabase
     .from("tenants")
     .select("id")
@@ -31,7 +49,9 @@ export async function resolveTenantHomeUrl(
       .eq("is_primary", true)
       .eq("verified", true)
       .maybeSingle();
-    if (primary) return `${baseUrlForHost(primary.domain)}/`;
+    // On the primary custom domain the tenant is served at the root — no /t/{slug}.
+    if (primary) return `${baseUrlForHost(primary.domain)}${path === "/" ? "/" : path}`;
   }
-  return `${publicEnv.NEXT_PUBLIC_APP_URL}/t/${slug}`;
+  // Platform fallback keeps the /t/{slug} prefix. "/" collapses to the bare home.
+  return `${publicEnv.NEXT_PUBLIC_APP_URL}/t/${slug}${path === "/" ? "" : path}`;
 }
