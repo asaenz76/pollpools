@@ -1,8 +1,17 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll } from "vitest";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { productionEnvIssues } from "@/lib/env";
+
+// env.ts validates NEXT_PUBLIC_* at import; supply the two required ones (only if
+// absent) and import dynamically, so this test never depends on a global env load
+// (which would leak CRON_SECRET etc. into tests that assert their absence).
+let productionEnvIssues: (typeof import("@/lib/env"))["productionEnvIssues"];
+beforeAll(async () => {
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||= "https://placeholder.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||= "placeholder-anon";
+  ({ productionEnvIssues } = await import("@/lib/env"));
+});
 
 /** A minimally valid production env (no dangerous config). */
 const PROD_OK: Record<string, string | undefined> = {
