@@ -1,5 +1,7 @@
-import { config } from "dotenv";
-config({ path: ".env.local" });
+// Loads test-only env (.env.test.local → .env.test) and enforces the local-only
+// DB guard. NEVER reads .env.local (may hold production credentials). Must be the
+// first import so process.env is populated before the reads below.
+import "./test-env";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";

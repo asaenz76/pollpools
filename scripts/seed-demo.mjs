@@ -3,16 +3,17 @@
 // market, a Season grouping it, and a single-elimination Bracket (via the
 // authorized create_bracket RPC signed in as the creator owner).
 //
-// Usage: npm run db:seed:demo   (requires local Supabase running + .env.local)
-import { config } from "dotenv";
-config({ path: ".env.local" });
+// Usage: npm run db:seed:demo   (requires local Supabase running + .env.test.local)
+import { loadLocalEnv, assertLocalDb } from "./local-env.mjs";
+loadLocalEnv();
+assertLocalDb();
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 if (!url || !serviceKey || !anonKey) {
-  console.error("Missing Supabase env in .env.local");
+  console.error("Missing Supabase env in .env.test.local");
   process.exit(1);
 }
 const db = createClient(url, serviceKey, { auth: { persistSession: false } });

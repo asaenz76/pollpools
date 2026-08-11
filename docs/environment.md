@@ -38,3 +38,26 @@ email transport unconfigured (notification emails safely skip).
 
 Optional providers (email, custom domains, external media, paid draft) never become
 errors merely because support exists — they stay optional per tenant.
+
+## Test + seed environment (never production)
+
+`.env.local` is the **application/dev** env and, at launch time, may hold
+**production** Supabase credentials. To make it impossible for `npm test` or a
+`scripts/seed-*.mjs` seeder to touch production, neither reads `.env.local`. Their
+env is resolved (precedence high→low):
+
+1. real shell / CI environment,
+2. `.env.test.local` — gitignored, your real **local** Supabase keys (copy from
+   `.env.test.local.example`; values from `npx supabase status`),
+3. `.env.test` — committed, safe local defaults (pins `NEXT_PUBLIC_SUPABASE_URL`
+   to the local stack; no secrets).
+
+Loaders: tests → `tests/integration/test-env.ts`; seed scripts →
+`scripts/local-env.mjs`. Both run a **production-target safety guard**: if the
+resolved Supabase URL is not a loopback host (`localhost`/`127.0.0.1`/`::1`), the
+run aborts immediately — so a production `*.supabase.co` URL can never be reached
+from a test or seed. If no local DB env is present, integration suites skip under
+the existing CI policy (`ALLOW_INTEGRATION_TEST_SKIP` + `_env-guard.test.ts`);
+they never fall back to production.
+
+Emergency-only override (never for production): `PE_ALLOW_NONLOCAL_TEST_DB=1`.

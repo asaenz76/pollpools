@@ -48,9 +48,16 @@ npm run db:start        # equivalently: npx supabase start
 cp .env.example .env.local
 #   NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 
+# 3b. Tests + seed scripts use a SEPARATE local env (they never read .env.local,
+#     which may hold production creds). Fill it with local keys from `supabase status`.
+cp .env.test.local.example .env.test.local
+
 # 4. Run the app
 npm run dev             # http://localhost:3000
 ```
+
+> Tests and `scripts/seed-*.mjs` load `.env.test.local` → `.env.test` (never
+> `.env.local`) and refuse any non-local Supabase host. See `docs/environment.md`.
 
 Visit `http://localhost:3000` for the platform directory, or
 `http://localhost:3000/t/marbles` for the reference tenant.

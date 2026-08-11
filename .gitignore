@@ -56,6 +56,10 @@ next-env.d.ts
 
 # keep the template
 !.env.example
+# keep committed test-only env (safe local defaults, no secrets); the real local
+# keys live in the still-ignored .env.test.local
+!.env.test
+!.env.test.local.example
 
 # Claude Code local settings (keep launch.json)
 .claude/settings.local.json

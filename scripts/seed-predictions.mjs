@@ -1,8 +1,9 @@
 // Adds sample predictions + one fully-settled past race so community sentiment,
 // settled-result UI, statistics, achievements, and the leaderboard are all
 // populated. Demo-only. Usage: node scripts/seed-predictions.mjs
-import { config } from "dotenv";
-config({ path: ".env.local" });
+import { loadLocalEnv, assertLocalDb } from "./local-env.mjs";
+loadLocalEnv();
+assertLocalDb();
 import { createClient } from "@supabase/supabase-js";
 
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {

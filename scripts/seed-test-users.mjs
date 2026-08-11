@@ -1,15 +1,16 @@
 // Idempotent test-user seed for local manual testing of every user type.
 // Creates: a pure Super Admin, and a plain Member of the marbles tenant.
 // (The existing creator@marblegp.test remains Super Admin + Creator/Owner.)
-// Usage: node scripts/seed-test-users.mjs   (requires local Supabase + .env.local)
-import { config } from "dotenv";
-config({ path: ".env.local" });
+// Usage: node scripts/seed-test-users.mjs   (requires local Supabase + .env.test.local)
+import { loadLocalEnv, assertLocalDb } from "./local-env.mjs";
+loadLocalEnv();
+assertLocalDb();
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !serviceKey) {
-  console.error("Missing Supabase env in .env.local");
+  console.error("Missing Supabase env in .env.test.local");
   process.exit(1);
 }
 const db = createClient(url, serviceKey, { auth: { persistSession: false } });
