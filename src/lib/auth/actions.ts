@@ -5,6 +5,8 @@ import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { isValidTenantSlug } from "@/lib/tenant/resolver";
 import { resolveTenantHomeUrl } from "@/lib/tenant/urls";
+import { safeReturnPath } from "@/lib/domain/domains";
+import { resolveDefaultDestination } from "@/lib/auth/roles";
 
 export type AuthFormState = { error: string | null };
 
@@ -32,12 +34,18 @@ export async function signInAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
   const supabase = await createServerSupabase();
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
     password: parsed.data.password,
   });
-  if (error) return { error: "Incorrect email or password" };
-  redirect(tenantHome(parsed.data.slug));
+  if (error || !data.user) return { error: "Incorrect email or password" };
+
+  // A legitimate return target (the page the user was trying to reach before being
+  // sent to sign in) wins — sanitized to a same-origin path, never trusted raw.
+  // Otherwise land the user in their ROLE's default experience (RX.2).
+  const requested = safeReturnPath(String(formData.get("next") ?? ""));
+  const dest = requested !== "/" ? requested : await resolveDefaultDestination(supabase, data.user.id, parsed.data.slug);
+  redirect(dest);
 }
 
 export async function signUpAction(

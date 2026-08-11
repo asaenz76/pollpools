@@ -22,7 +22,7 @@ const config = {
   reset: { action: requestResetAction, cta: "Send reset link", needsPassword: false },
 } as const;
 
-export function AuthForm({ mode, slug }: { mode: Mode; slug: string }) {
+export function AuthForm({ mode, slug, next }: { mode: Mode; slug: string; next?: string }) {
   const { action, cta, needsPassword } = config[mode];
   const [state, formAction, pending] = useActionState(action, initial);
   const resetSent = mode === "reset" && !state.error && state !== initial;
@@ -30,6 +30,7 @@ export function AuthForm({ mode, slug }: { mode: Mode; slug: string }) {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <input type="hidden" name="slug" value={slug} />
+      {mode === "sign-in" && next ? <input type="hidden" name="next" value={next} /> : null}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">Email</Label>
