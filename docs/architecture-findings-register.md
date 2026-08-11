@@ -784,3 +784,17 @@ document; this register is its actionable, status-tracked counterpart.
     snapshot when v2 publishes); retire blocks new creation but not existing tenants; the template
     relationship is optional. Also (config change, per request): the platform "Powered by" footer is
     now "Poll Pools" via the existing configurable `platform_config.platform_name`, not hardcoded.
+
+- **Role & Tenant Experience Hardening (RX)** — three intentional experiences (Member / Tenant /
+  Super Admin) on one app, differing by information architecture, default routing, navigation, and
+  visibility — never forked business logic. Central resolver `src/lib/auth/roles.ts`; role-aware
+  post-login routing honoring a safe return path (`safeReturnPath`, previously dead code); a real
+  Tenant Dashboard + management IA reusing existing growth/health/revenue loaders; the reused Phase
+  8-A `/admin`. Read-only baseline: [role-experience-audit.md](role-experience-audit.md); architecture:
+  [role-experience.md](role-experience.md). **Self-service onboarding (RX.4):** `create_pollpool`
+  (migration `0071`) reuses the atomic provisioning (extracted `app.provision_tenant_from_template`,
+  shared with the unchanged super-admin `create_tenant_from_template`), owner-scoped + guardrailed
+  (authenticated, per-user cap, pending-verification creator, never super-admin). **Security audit
+  (RX.1): no privilege escalation, no Platform Support leak** — authorization enforced server/DB-side
+  throughout; one LOW (admin loaders self-gating only via layout) fixed in RX.7. Additive; no existing
+  permission or protected system altered.

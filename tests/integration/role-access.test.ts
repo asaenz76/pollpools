@@ -1,6 +1,5 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { randomUUID } from "node:crypto";
 import { adminClient, anonClient, createUser, signInAs, deleteUser, uniqueSuffix, integrationEnvReady } from "./helpers";
 
 const d = integrationEnvReady ? describe : describe.skip;
