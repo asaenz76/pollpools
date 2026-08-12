@@ -22,7 +22,12 @@ export default async function PlatformHome() {
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
       <header className="mb-10 flex items-center justify-between">
         <span className="text-sm font-semibold tracking-tight">Poll Pools</span>
-        <ThemeToggle />
+        <div className="flex items-center gap-4">
+          <Link href="/sign-in" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+            Sign in
+          </Link>
+          <ThemeToggle />
+        </div>
       </header>
 
       <section className="mb-10">

@@ -49,6 +49,34 @@ export function defaultPathForRole(role: PlatformRole, slug: string): string {
 }
 
 /**
+ * Whether a user holds the global super_admin grant, using the passed client (so a
+ * just-established session is visible). Shared by the tenant + platform sign-in flows.
+ */
+async function hasSuperAdminGrant(supabase: SupabaseClient<Database>, userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("user_roles")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("role", "super_admin")
+    .is("tenant_id", null)
+    .maybeSingle();
+  return Boolean(data);
+}
+
+/**
+ * Post-login destination for the PLATFORM sign-in (`/sign-in`), which has no tenant
+ * context. A super admin lands in the admin console; everyone else lands on the
+ * platform directory (they pick or reach their community from there). Reads only
+ * standing — never a client-supplied hint.
+ */
+export async function resolvePlatformDestination(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+): Promise<string> {
+  return (await hasSuperAdminGrant(supabase, userId)) ? "/admin" : "/";
+}
+
+/**
  * Resolve the default post-login destination for a just-authenticated user, using
  * the SAME client that performed the sign-in (so the new session is visible). Reads
  * only membership/ownership standing — never a client-supplied hint.
@@ -58,14 +86,7 @@ export async function resolveDefaultDestination(
   userId: string,
   slug: string,
 ): Promise<string> {
-  const { data: superAdmin } = await supabase
-    .from("user_roles")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("role", "super_admin")
-    .is("tenant_id", null)
-    .maybeSingle();
-  if (superAdmin) return "/admin";
+  if (await hasSuperAdminGrant(supabase, userId)) return "/admin";
 
   const { data: tenant } = await supabase
     .from("tenants")
