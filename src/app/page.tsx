@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { signOutAction } from "@/lib/auth/actions";
+import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -11,21 +13,33 @@ export const dynamic = "force-dynamic";
  */
 export default async function PlatformHome() {
   const supabase = await createServerSupabase();
-  const { data: tenants } = await supabase
-    .from("tenants")
-    .select("slug, display_name, tagline")
-    .eq("status", "active")
-    .eq("listed", true) // discovery shows only published communities (PL.4)
-    .order("display_name");
+  const [{ data: tenants }, { data: auth }] = await Promise.all([
+    supabase
+      .from("tenants")
+      .select("slug, display_name, tagline")
+      .eq("status", "active")
+      .eq("listed", true) // discovery shows only published communities (PL.4)
+      .order("display_name"),
+    supabase.auth.getUser(),
+  ]);
+  const signedIn = Boolean(auth.user);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10">
       <header className="mb-10 flex items-center justify-between">
         <span className="text-sm font-semibold tracking-tight">Poll Pools</span>
-        <div className="flex items-center gap-4">
-          <Link href="/sign-in" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
-            Sign in
-          </Link>
+        <div className="flex items-center gap-3">
+          {signedIn ? (
+            <form action={signOutAction}>
+              <Button variant="ghost" size="sm" type="submit">
+                Sign out
+              </Button>
+            </form>
+          ) : (
+            <Link href="/sign-in" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+              Sign in
+            </Link>
+          )}
           <ThemeToggle />
         </div>
       </header>

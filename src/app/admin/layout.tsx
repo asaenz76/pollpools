@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { requireSuperAdmin } from "@/lib/ops/admin";
+import { signOutAction } from "@/lib/auth/actions";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
             <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm" })}>
               ← Platform
             </Link>
+            <form action={signOutAction}>
+              <Button variant="ghost" size="sm" type="submit">
+                Sign out
+              </Button>
+            </form>
             <ThemeToggle />
           </div>
         </div>
